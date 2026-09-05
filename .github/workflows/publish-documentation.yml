@@ -1,0 +1,51 @@
+name: publish-documentation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - docs/**
+      # The site documents the packages and copies their changelogs in, so a
+      # change to a package can change the site.
+      - packages/**
+      - .github/workflows/publish-documentation.yml
+  workflow_dispatch:
+
+jobs:
+  publish-documentation:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          # Every commit, so that "last updated" on a page is the date the page
+          # was last touched rather than the date of this run.
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: docs/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: ./docs
+
+      # `build` copies the package's changelog into every locale before
+      # VitePress runs.
+      - name: Build the site
+        run: npm run build
+        working-directory: ./docs
+
+      # @see https://github.com/crazy-max/ghaction-github-pages
+      - name: Deploy to GitHub Pages
+        uses: crazy-max/ghaction-github-pages@v4
+        with:
+          target_branch: gh-pages
+          build_dir: docs-dist
+          jekyll: false
+          fqdn: 'diffine.cdget.com'
+        env:
+          GITHUB_TOKEN: ${{ secrets.ACCESS_TOKEN }}

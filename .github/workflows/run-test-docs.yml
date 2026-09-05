@@ -1,0 +1,46 @@
+name: run-test-docs
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+    paths:
+      - docs/**
+      # The demos render the library's own source, so a change to the package
+      # can break the site's build.
+      - packages/**
+      - .github/workflows/run-test-docs.yml
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: ./docs
+
+jobs:
+  run-test-docs:
+    runs-on: ubuntu-latest
+    name: Lint and build the site
+
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v6
+        name: Setup Node.js
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: docs/package-lock.json
+      # `npm ci` rather than `npm install`, and only in `docs/`. The site
+      # resolves the library through an alias to its source, so nothing is
+      # installed in `packages/react` — which is what makes an import the
+      # library makes but this folder has not declared fail here rather than on
+      # a machine that happens to have run `npm install` in both places.
+      - run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Check formatting
+        run: npx prettier . --check
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Build
+        run: npm run build

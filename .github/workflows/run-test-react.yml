@@ -1,0 +1,67 @@
+name: run-test-react
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+    paths:
+      - packages/react/**
+      - .github/workflows/run-test-react.yml
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: ./packages/react
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    name: Lint, typecheck and build
+
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v6
+        name: Setup Node.js
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: packages/react/package-lock.json
+      - run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Check formatting
+        run: npx prettier . --check
+      - name: Typecheck
+        run: npm run typecheck
+      # The only step that makes `dist/` the way `npm publish` would, so a
+      # change that compiles in the editor but not through `tsconfig.prod.json`
+      # fails here rather than in a release.
+      - name: Build
+        run: npm run build
+
+  run-test-react:
+    runs-on: ${{ matrix.os }}
+    name: Test Node.js ${{ matrix.node_version }} on ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        node_version: ['20', '22', '24']
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v6
+        name: Setup Node.js ${{ matrix.node_version }}
+        with:
+          node-version: ${{ matrix.node_version }}
+          cache: npm
+          cache-dependency-path: packages/react/package-lock.json
+      - run: npm ci
+      # The suite is the comparison, which is arithmetic over arrays, and the
+      # viewer's markup through `react-dom/server`. Neither needs a browser.
+      # What the viewer measures off a drawn document does, and is not tested
+      # here rather than being tested against a DOM emulator that would answer
+      # zero to every question about a height.
+      - name: Test
+        run: npm test
