@@ -1,0 +1,342 @@
+/**
+ * The viewer's stylesheet.
+ *
+ * One file, imported once, and nothing in it reaches outside `.diffine`. Every
+ * colour is a custom property declared on that element, so an application that
+ * wants its own palette overrides the properties rather than the rules — which
+ * is the difference between theming a component and fighting it.
+ *
+ * The published copy of this file has the prose taken out of it. `src/styles.css`
+ * is the one to read and the one to edit; see `scripts/build-styles.mjs`.
+ */
+
+.diffine {
+  /* ---- The palette, in the light theme ---------------------------------- */
+  --diffine-surface: #ffffff;
+  --diffine-text: #1f2733;
+  --diffine-muted: #6e798c;
+  --diffine-border: #d6dee9;
+  --diffine-gutter: #f4f7fb;
+  --diffine-accent: #0e7ffc;
+
+  /* A whole line, and the words inside it. The paler pair tints the row; the
+     stronger pair picks out what actually moved, and only ever sits on top of
+     the paler one, which is what the contrast of both was chosen against. */
+  --diffine-insert-line: #e7f8ee;
+  --diffine-insert-piece: #a5e9c1;
+  --diffine-delete-line: #fdecee;
+  --diffine-delete-piece: #ffc3c8;
+
+  /* The space opposite a line that has no counterpart. */
+  --diffine-blank: #f0f3f7;
+
+  /* ---- Measurements ------------------------------------------------------ */
+  --diffine-height: 24rem;
+  --diffine-radius: 0.5rem;
+  --diffine-font:
+    ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+  --diffine-font-size: 0.8125rem;
+  --diffine-line-height: 1.5rem;
+  --diffine-links-width: 3rem;
+  --diffine-tab-size: 4;
+
+  /* How many digits the widest line number has. The component measures this
+     and writes it on the element, so the gutter is the width it needs rather
+     than a guess that is too narrow at a thousand lines. */
+  --diffine-digits: 3;
+  --diffine-number-width: calc(var(--diffine-digits) * 1ch + 1.25rem);
+
+  display: flex;
+  flex-direction: column;
+  height: var(--diffine-height);
+  overflow: hidden;
+  border: 1px solid var(--diffine-border);
+  border-radius: var(--diffine-radius);
+  background: var(--diffine-surface);
+  color: var(--diffine-text);
+  font-family: var(--diffine-font);
+  font-size: var(--diffine-font-size);
+  line-height: var(--diffine-line-height);
+}
+
+/* ---- The dark theme, twice ----------------------------------------------
+ *
+ * Once for a reader whose system asks for it and a viewer that was left to
+ * follow along, and once for an application that has decided. The two blocks
+ * hold the same declarations because a custom property cannot be set from
+ * inside a media query for one case and outside it for the other without one
+ * of the two winning at the wrong moment.
+ * ----------------------------------------------------------------------- */
+
+.diffine[data-scheme='system'] {
+  color-scheme: light dark;
+}
+
+.diffine[data-scheme='dark'] {
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  .diffine[data-scheme='system'] {
+    --diffine-surface: #1b222c;
+    --diffine-text: #e4e9f0;
+    --diffine-muted: #8d99ad;
+    --diffine-border: #2f3945;
+    --diffine-gutter: #232b36;
+    --diffine-accent: #4c9dff;
+    --diffine-insert-line: #12301f;
+    --diffine-insert-piece: #206c42;
+    --diffine-delete-line: #351c20;
+    --diffine-delete-piece: #7f303a;
+    --diffine-blank: #151b23;
+  }
+}
+
+.diffine[data-scheme='dark'] {
+  --diffine-surface: #1b222c;
+  --diffine-text: #e4e9f0;
+  --diffine-muted: #8d99ad;
+  --diffine-border: #2f3945;
+  --diffine-gutter: #232b36;
+  --diffine-accent: #4c9dff;
+  --diffine-insert-line: #12301f;
+  --diffine-insert-piece: #206c42;
+  --diffine-delete-line: #351c20;
+  --diffine-delete-piece: #7f303a;
+  --diffine-blank: #151b23;
+}
+
+/* ---- Resets --------------------------------------------------------------
+ *
+ * At zero specificity, every one of them. These are undoing what the page
+ * around the viewer already says about a `<p>` or a `<mark>`, and a reset that
+ * beats the application's own styling is worse than no reset at all.
+ * ----------------------------------------------------------------------- */
+
+:where(.diffine) * {
+  box-sizing: border-box;
+}
+
+:where(.diffine) p {
+  margin: 0;
+}
+
+:where(.diffine) mark {
+  background: none;
+  color: inherit;
+}
+
+/* ---- The bar above, and the line below ---------------------------------- */
+
+.diffine-header {
+  display: grid;
+  grid-template-columns: 1fr var(--diffine-links-width) 1fr;
+  flex: 0 0 auto;
+  border-bottom: 1px solid var(--diffine-border);
+  background: var(--diffine-gutter);
+}
+
+.diffine[data-view='unified'] .diffine-header {
+  grid-template-columns: 1fr 1fr;
+}
+
+.diffine-title {
+  overflow: hidden;
+  padding: 0.375rem 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.diffine-summary {
+  flex: 0 0 auto;
+  padding: 0.375rem 0.75rem;
+  border-top: 1px solid var(--diffine-border);
+  background: var(--diffine-gutter);
+  color: var(--diffine-muted);
+}
+
+.diffine-empty {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  color: var(--diffine-muted);
+}
+
+/* ---- The panes ---------------------------------------------------------- */
+
+.diffine-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.diffine-pane {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.diffine-pane:focus-visible {
+  outline: 2px solid var(--diffine-accent);
+  outline-offset: -2px;
+}
+
+/* As wide as the widest line, and never narrower than the pane — which is what
+   makes a row's tint reach the right-hand edge instead of stopping where its
+   text does. */
+.diffine-lines {
+  width: max-content;
+  min-width: 100%;
+}
+
+.diffine[data-wrap='true'] .diffine-pane {
+  overflow-x: hidden;
+}
+
+.diffine[data-wrap='true'] .diffine-lines {
+  width: auto;
+}
+
+/* ---- One line ----------------------------------------------------------- */
+
+.diffine-line {
+  display: flex;
+  align-items: stretch;
+  min-height: var(--diffine-line-height);
+}
+
+.diffine-gutter {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  display: flex;
+  flex: 0 0 auto;
+  border-right: 1px solid var(--diffine-border);
+  background: var(--diffine-gutter);
+  color: var(--diffine-muted);
+  user-select: none;
+}
+
+.diffine-number {
+  width: var(--diffine-number-width);
+  padding-inline: 0.5rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.diffine-marker {
+  width: 1.25rem;
+  text-align: center;
+}
+
+.diffine-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding-inline: 0.5rem;
+  tab-size: var(--diffine-tab-size);
+  white-space: pre;
+}
+
+.diffine[data-wrap='true'] .diffine-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* What a screen reader hears in front of a changed line, and what nothing else
+   does: it is out of the page's flow, out of the picture, and out of anything
+   the reader copies. */
+.diffine-said {
+  position: absolute;
+  overflow: hidden;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  user-select: none;
+}
+
+/* ---- What changed --------------------------------------------------------
+ *
+ * A replaced line is a deletion on the left and an insertion on the right, so
+ * `replace` is not a colour of its own — it is whichever of the two the side it
+ * is on would have had. That is what makes an edit read as an edit rather than
+ * as a third kind of thing to learn.
+ * ----------------------------------------------------------------------- */
+
+.diffine-line[data-side='before'][data-kind='delete'],
+.diffine-line[data-side='before'][data-kind='replace'] {
+  background: var(--diffine-delete-line);
+}
+
+.diffine-line[data-side='after'][data-kind='insert'],
+.diffine-line[data-side='after'][data-kind='replace'] {
+  background: var(--diffine-insert-line);
+}
+
+.diffine-line[data-kind='blank'] {
+  background: var(--diffine-blank);
+}
+
+.diffine-line[data-kind='blank'] .diffine-gutter {
+  opacity: 0.6;
+}
+
+.diffine-piece {
+  border-radius: 0.1875rem;
+  padding-block: 0.0625rem;
+}
+
+.diffine-piece[data-kind='insert'] {
+  background: var(--diffine-insert-piece);
+}
+
+.diffine-piece[data-kind='delete'] {
+  background: var(--diffine-delete-piece);
+}
+
+/* ---- The column between the panes --------------------------------------- */
+
+.diffine-links {
+  position: relative;
+  flex: 0 0 var(--diffine-links-width);
+  overflow: hidden;
+  border-inline: 1px solid var(--diffine-border);
+  background: var(--diffine-gutter);
+}
+
+.diffine-links-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.diffine-link {
+  stroke-width: 1;
+}
+
+.diffine-link[data-kind='insert'] {
+  fill: var(--diffine-insert-line);
+  stroke: var(--diffine-insert-piece);
+}
+
+.diffine-link[data-kind='delete'] {
+  fill: var(--diffine-delete-line);
+  stroke: var(--diffine-delete-piece);
+}
+
+/* An edit went out on one side and came in on the other, so its band is both
+   colours — the left edge the one it left and the right edge the one it
+   arrived as. */
+.diffine-link[data-kind='replace'] {
+  fill: var(--diffine-delete-line);
+  stroke: var(--diffine-insert-piece);
+}

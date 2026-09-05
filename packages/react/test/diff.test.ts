@@ -79,6 +79,29 @@ describe('diffText', () => {
     ]);
   });
 
+  it('pairs the line that was edited rather than the line that came first', () => {
+    // A run that inserts a line *and* edits one. Taken straight down, every row
+    // after the insertion pairs two lines that have nothing to do with each
+    // other, and the words inside them get compared on that basis.
+    const before = 'header\nconst total = price * quantity;\nfooter';
+    const after = 'header\nconst tax = price * rate;\nconst total = price * quantity * 2;\nfooter';
+
+    expect(shapes(diffText(before, after))).toEqual([
+      'equal header | header',
+      'insert · | const tax = price * rate;',
+      'replace const total = price * quantity; | const total = price * quantity * 2;',
+      'equal footer | footer'
+    ]);
+  });
+
+  it('takes a run with nothing alike in it from the top', () => {
+    expect(shapes(diffText('a\nb\nc', 'X'))).toEqual([
+      'replace a | X',
+      'delete b | ·',
+      'delete c | ·'
+    ]);
+  });
+
   it('counts every line exactly once', () => {
     const result = diffText('a\nb\nc', 'a\nB\nc\nd');
 

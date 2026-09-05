@@ -4,7 +4,11 @@
  * These are the types that more than one module needs, which is why they sit
  * here rather than beside whichever module introduced them — and why they are
  * also exported from `diffine-react/types`, so an application can name one in
- * its own props without importing the engine to get at it.
+ * its own props without importing the engine or the component to get at it.
+ *
+ * The first half is the comparison and the second is the view of it. Only the
+ * props of a component live anywhere else, beside the component that takes
+ * them.
  */
 
 /** What happened to one piece of a comparison. */
@@ -226,4 +230,76 @@ export interface DiffResult {
    * and called a range replaced outright. See {@link DiffOptions.maxCost}.
    */
   complete: boolean;
+}
+
+/* ---------------------------------------------------------------------------
+ * The view
+ *
+ * Everything above is the comparison. What follows is how it is shown, and it
+ * is here rather than beside the component for the same reason: an application
+ * that keeps the view's settings in its own state has to be able to name their
+ * types without importing a component to reach them.
+ * ------------------------------------------------------------------------- */
+
+/** Which of the two documents a line belongs to. */
+export type DiffineSide = 'before' | 'after';
+
+/**
+ * How the two documents are laid out.
+ *
+ * - `split` — one document either side, held level with each other.
+ * - `unified` — one column, with what went out above what came in.
+ */
+export type DiffineView = 'split' | 'unified';
+
+/**
+ * Which palette the viewer draws in.
+ *
+ * `system` follows the reader's own setting, which is what a component dropped
+ * into somebody else's page should do unless that page says otherwise.
+ */
+export type DiffineColorScheme = 'system' | 'light' | 'dark';
+
+/** The languages the viewer's own words are written in. */
+export type DiffineLocale = 'en' | 'ko';
+
+/**
+ * A document to compare, and what to call it.
+ *
+ * A bare string is the document, which is all most applications need. The
+ * object form is for a viewer with a header on it, where each side is named —
+ * a file path, a version, a date.
+ */
+export type DiffineInput = string | DiffineSource;
+
+/** A document with a name on it. */
+export interface DiffineSource {
+  content: string;
+  /** What the header calls this side. Its default is the word for it. */
+  label?: string;
+}
+
+/**
+ * Every word the viewer puts on the screen.
+ *
+ * Two of these are read by a screen reader rather than shown, which is why they
+ * are sentences rather than labels.
+ */
+export interface DiffineStrings {
+  /** The header over the left side, and its region's name. */
+  before: string;
+  /** The header over the right side. */
+  after: string;
+  /** What is said when there is nothing on either side yet. */
+  empty: string;
+  /** What is said when the two documents turned out to be the same. */
+  identical: string;
+  /** What a screen reader hears in front of a line that is only in `after`. */
+  added: string;
+  /** What it hears in front of a line that is only in `before`. */
+  removed: string;
+  /** What it hears in front of a line that has a different counterpart. */
+  changed: string;
+  /** How the counts are read out: `{changes}`, `{inserted}` and `{deleted}`. */
+  summary: string;
 }

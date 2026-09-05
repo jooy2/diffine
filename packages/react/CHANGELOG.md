@@ -19,3 +19,17 @@ The first published version.
 - **`maxCost` stops two documents with nothing in common from taking the page down with them.** Finding the smallest set of edits costs the size of the documents multiplied by the number of edits between them, and the answer for that case is "all of it changed" — which is not worth waiting for. Past the limit the range comes back as one replacement and `complete` says the engine gave up.
 
 - **`diffine-react/diff` is an entry of its own**, for an application that wants the comparison without the component.
+
+- **`DiffineViewer` draws two documents side by side.** The matching lines are held level with each other, a line with no counterpart gets a blank opposite it, and the column between the panes draws each change as a band from where it left to where it arrived. Scrolling one pane scrolls the other, and a line that wraps takes its counterpart's row down with it so the two documents never fall out of step.
+
+- **Every part of the view is a prop with a default.** Line numbers, the `+` and `−` markers, wrapping, holding the two sides level, the connectors, the synchronised scrolling, the header, the summary, the tab width, the palette and the language — each one on its own, so the component goes from a full side-by-side down to a bare column of lines without a stylesheet being touched.
+
+- **`view="unified"` puts what went out above what came in**, in one column, with both documents' line numbers down the side. It is the same comparison read a second way rather than a second comparison.
+
+- **The viewer takes a comparison instead of two documents.** `result` is for an application that worked one out in a worker, on a server, or once for a list of viewers.
+
+- **Every colour and measurement is a custom property.** An application with a palette of its own overrides `--diffine-*` on the element rather than writing rules that have to beat the package's.
+
+- **The viewer says what it is showing to a reader who cannot see it.** Each pane is a named region, every changed line carries the word for what happened to it where a screen reader will find it and a copy will not, and the `+`, `−` and `~` markers say in shape what the colours say in colour.
+
+- **English and Korean, and any other language an application writes itself.** `locale` picks one of the two and `strings` replaces any word in either.

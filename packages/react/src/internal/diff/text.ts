@@ -19,6 +19,7 @@ import type {
 } from '../../types.js';
 import { compareInline, type InlineOptions } from './inline.js';
 import { matchSequences } from './myers.js';
+import { pairLines } from './pair.js';
 import { comparisonKey, splitLines } from './tokens.js';
 
 /** Every option settled, with nothing left to fall back on. */
@@ -56,14 +57,18 @@ export function compareText(before: string, after: string, options: TextOptions)
       beforeCount === 0 ? 'insert' : afterCount === 0 ? 'delete' : 'replace';
     const rowStart = rows.length;
 
-    // Lines are paired off in the order they were written, and whatever is left
-    // over on the longer side follows as lines with nothing opposite them. It is
-    // the only pairing that holds a rewritten paragraph together: matching by
-    // similarity instead would reorder the rows, and a reader following an edit
-    // down the page reads the order it was written in.
-    for (let offset = 0; offset < Math.max(beforeCount, afterCount); offset += 1) {
-      const beforeIndex = offset < beforeCount ? beforeCursor + offset : -1;
-      const afterIndex = offset < afterCount ? afterCursor + offset : -1;
+    // Which line goes opposite which, in the order they were written. See
+    // `pair.ts`: taking them straight down the run is right until a run both
+    // edits lines and inserts them, and from there every row after the
+    // insertion is a pair of lines that have nothing to do with each other.
+    const pairs = pairLines(
+      beforeLines.slice(beforeCursor, beforeEnd),
+      afterLines.slice(afterCursor, afterEnd)
+    );
+
+    for (const [beforeOffset, afterOffset] of pairs) {
+      const beforeIndex = beforeOffset < 0 ? -1 : beforeCursor + beforeOffset;
+      const afterIndex = afterOffset < 0 ? -1 : afterCursor + afterOffset;
 
       if (beforeIndex >= 0 && afterIndex >= 0) {
         const inside = compareInline(beforeLines[beforeIndex], afterLines[afterIndex], options);

@@ -14,7 +14,22 @@ import { matchSequences } from './internal/diff/myers.js';
 import { comparisonKey } from './internal/diff/tokens.js';
 import { compareText, type TextOptions } from './internal/diff/text.js';
 
-export * from './types.js';
+export type {
+  DiffChange,
+  DiffChangeKind,
+  DiffEdit,
+  DiffEditKind,
+  DiffInlineMode,
+  DiffInlineResult,
+  DiffLine,
+  DiffOptions,
+  DiffResult,
+  DiffRow,
+  DiffRowKind,
+  DiffSegment,
+  DiffStats,
+  DiffWhitespace
+} from './types.js';
 
 /** What every option falls back to. */
 export const DIFFINE_DEFAULTS: Required<DiffOptions> = {
