@@ -1,0 +1,11 @@
+.idea/
+.vscode/
+node_modules/
+.vitepress/cache/
+../docs-dist/
+
+# Written by `scripts/copy-changelog.mjs` from the package's own changelog.
+*/changelog.md
+
+*-lock.json
+*-lock.yaml

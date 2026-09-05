@@ -1,0 +1,48 @@
+{
+  "name": "diffine-docs",
+  "version": "0.0.1",
+  "description": "The documentation site for Diffine, shared by every language the library ships for.",
+  "private": true,
+  "type": "module",
+  "author": "CDGet <jooy2.contact@gmail.com>",
+  "license": "MIT",
+  "scripts": {
+    "changelog": "node scripts/copy-changelog.mjs",
+    "dev": "npm run changelog && vitepress dev",
+    "build": "npm run changelog && vitepress build",
+    "serve": "npm run build && vitepress serve",
+    "format": "prettier .",
+    "format:fix": "prettier . --write",
+    "lint": "eslint . --report-unused-disable-directives",
+    "lint:fix": "eslint . --report-unused-disable-directives --fix",
+    "typecheck": "tsc --project tsconfig.json"
+  },
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "dependencies": {
+    "vue": "^3.5.39"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^26.4.0",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.5",
+    "@typescript-eslint/parser": "^8.68.0",
+    "@vitejs/plugin-react": "^4.7.0",
+    "eslint": "^10.9.1",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-n": "^18.3.0",
+    "globals": "^17.11.0",
+    "jiti": "^2.7.0",
+    "prettier": "^3.9.6",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.68.0",
+    "vite": "^5.4.21",
+    "vitepress": "^1.6.4",
+    "vitepress-i18n": "^1.4.0",
+    "vitepress-sidebar": "^1.40.0"
+  }
+}
