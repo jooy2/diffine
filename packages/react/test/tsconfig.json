@@ -1,14 +1,22 @@
 {
-  "extends": "../tsconfig.json",
   "compilerOptions": {
+    "target": "esnext",
+    "lib": ["esnext", "dom", "dom.iterable"],
+    "module": "preserve",
+    "moduleDetection": "force",
+    "jsx": "react-jsx",
+    "strict": true,
     "noEmit": true,
-    "types": ["node"],
+    "skipLibCheck": true,
+    "isolatedModules": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
     "paths": {
       "diffine-react": ["../src/index.ts"],
       "diffine-react/diff": ["../src/diff.ts"],
       "diffine-react/types": ["../src/types.ts"]
     }
   },
-  "include": ["**/*.ts", "**/*.tsx"],
-  "exclude": []
+  "include": ["**/*.ts", "**/*.tsx"]
 }
