@@ -43,6 +43,10 @@ export interface DiffineViewerLineProps {
    * column with nothing to put in it on this line.
    */
   numbers: readonly (number | null)[];
+  /** Which change this belongs to, or -1 for a line that did not change. */
+  change: number;
+  /** Whether this is the change a reader has moved to. */
+  current: boolean;
   lineNumbers: boolean;
   markers: boolean;
   strings: DiffineStrings;
@@ -62,6 +66,8 @@ export function DiffineViewerLine({
   side,
   line,
   numbers,
+  change,
+  current,
   lineNumbers,
   markers,
   strings
@@ -74,6 +80,8 @@ export function DiffineViewerLine({
       data-kind={line ? kind : 'blank'}
       data-side={side}
       {...(row === null ? {} : { 'data-row': row })}
+      {...(change < 0 ? {} : { 'data-change': change })}
+      {...(current ? { 'data-current': 'true' } : {})}
     >
       {lineNumbers || markers ? (
         // One element around the numbers and the marker so that the whole of it

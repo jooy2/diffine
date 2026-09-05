@@ -302,4 +302,10 @@ export interface DiffineStrings {
   changed: string;
   /** How the counts are read out: `{changes}`, `{inserted}` and `{deleted}`. */
   summary: string;
+  /** The name of the button that moves back a change. */
+  previousChange: string;
+  /** The name of the button that moves on a change. */
+  nextChange: string;
+  /** Which change is being looked at: `{position}` of `{total}`. */
+  changePosition: string;
 }

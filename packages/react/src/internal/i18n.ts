@@ -1,7 +1,7 @@
 /**
  * The words the viewer puts on the screen.
  *
- * There are eight of them, and there will not be many more: this component draws
+ * There are eleven of them, and there will not be many more: this component draws
  * two documents and everything else on it came out of those documents. What is
  * here is the frame around them — what each side is called, what is said when
  * there is nothing to show, and what a screen reader is told about a view whose
@@ -22,7 +22,10 @@ const LOCALES: Record<DiffineLocale, DiffineStrings> = {
     added: 'Added',
     removed: 'Removed',
     changed: 'Changed',
-    summary: '{changes} changes, {inserted} lines added, {deleted} lines removed'
+    summary: '{changes} changes, {inserted} lines added, {deleted} lines removed',
+    previousChange: 'Previous change',
+    nextChange: 'Next change',
+    changePosition: 'Change {position} of {total}'
   },
   ko: {
     before: '이전',
@@ -32,7 +35,10 @@ const LOCALES: Record<DiffineLocale, DiffineStrings> = {
     added: '추가됨',
     removed: '삭제됨',
     changed: '변경됨',
-    summary: '변경 {changes}건, {inserted}줄 추가, {deleted}줄 삭제'
+    summary: '변경 {changes}건, {inserted}줄 추가, {deleted}줄 삭제',
+    previousChange: '이전 변경',
+    nextChange: '다음 변경',
+    changePosition: '변경 {total}건 중 {position}번째'
   }
 };
 

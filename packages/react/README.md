@@ -50,6 +50,7 @@ Every part of the view is a prop with a default, so the component goes from a fu
 | `connectors`  | `true`     | Whether the column between the panes draws each change as a band. |
 | `syncScroll`  | `true`     | Whether scrolling one pane scrolls the other.                     |
 | `header`      | `true`     | Whether each side is named above it.                              |
+| `navigation`  | `true`     | Whether the buttons for moving between changes are drawn.         |
 | `summary`     | `true`     | Whether the counts are written under the view.                    |
 | `virtualize`  | `true`     | Whether only the lines a reader can see are drawn.                |
 | `tabSize`     | `4`        | How wide a tab is drawn.                                          |
@@ -58,6 +59,21 @@ Every part of the view is a prop with a default, so the component goes from a fu
 | `strings`     | —          | Words to use instead of the locale's, for any of them.            |
 
 Anything else is passed straight to the element, so `id`, `className`, `style` and the `aria-*` attributes work as they would on a `<div>`.
+
+### Moving between changes
+
+The buttons in the bar above the panes step through the changes and wrap at either end. Which one a reader is on is the viewer's to keep, or the application's:
+
+```tsx
+<DiffineViewer
+  before={saved}
+  after={draft}
+  selected={index}
+  onSelectedChange={(next, change) => setIndex(next)}
+/>
+```
+
+Setting `selected` scrolls the view, so an application with its own list of changes beside the viewer can drive it from there.
 
 ### Long documents
 

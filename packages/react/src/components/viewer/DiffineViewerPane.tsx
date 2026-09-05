@@ -14,6 +14,8 @@ export interface DiffineViewerPaneProps {
   window: VirtualWindow;
   /** The height of one line, or `0` when every line is being drawn. */
   rowHeight: number;
+  /** Which change a reader has moved to, or -1. */
+  current: number;
   lineNumbers: boolean;
   markers: boolean;
   strings: DiffineStrings;
@@ -27,6 +29,7 @@ export function DiffineViewerPane({
   layout,
   window: shown,
   rowHeight,
+  current,
   lineNumbers,
   markers,
   strings,
@@ -64,6 +67,8 @@ export function DiffineViewerPane({
               side={drawn.side}
               line={drawn.line}
               numbers={drawn.numbers}
+              change={drawn.change}
+              current={drawn.change >= 0 && drawn.change === current}
               lineNumbers={lineNumbers}
               markers={markers}
               strings={strings}
@@ -88,6 +93,8 @@ export function DiffineViewerPane({
               side={layout.widest.side}
               line={layout.widest.line}
               numbers={layout.widest.numbers}
+              change={-1}
+              current={false}
               lineNumbers={lineNumbers}
               markers={markers}
               strings={strings}

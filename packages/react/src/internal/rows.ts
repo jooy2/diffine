@@ -30,6 +30,8 @@ export interface PaneLine {
   line: DiffLine | null;
   /** The numbers down the side: one for a split view, two for a unified one. */
   numbers: readonly (number | null)[];
+  /** Which change this belongs to, or -1 for a line that did not change. */
+  change: number;
 }
 
 /** Everything a pane needs to draw, and to be pointed at from outside. */
@@ -41,9 +43,21 @@ export interface PaneLayout {
   widest: PaneLine | null;
 }
 
+/** Which change each row belongs to, or -1 where a row did not change. */
+export function changeOfRow(rowCount: number, changes: readonly DiffChange[]): Int32Array {
+  const owner = new Int32Array(rowCount).fill(-1);
+
+  for (const [index, change] of changes.entries()) {
+    owner.fill(index, change.rowStart, change.rowEnd);
+  }
+
+  return owner;
+}
+
 /** One side of a split view. */
 export function splitLayout(
   rows: readonly DiffRow[],
+  owner: Int32Array,
   side: DiffineSide,
   blanks: boolean
 ): PaneLayout {
@@ -62,7 +76,8 @@ export function splitLayout(
       kind: entry.kind,
       side,
       line,
-      numbers: [line ? line.index + 1 : null]
+      numbers: [line ? line.index + 1 : null],
+      change: owner[row]
     };
 
     positions[row] = lines.length;
@@ -91,7 +106,8 @@ export function splitLayout(
  */
 export function unifiedLayout(
   rows: readonly DiffRow[],
-  changes: readonly DiffChange[]
+  changes: readonly DiffChange[],
+  owner: Int32Array
 ): PaneLayout {
   const lines: PaneLine[] = [];
   const positions = new Int32Array(rows.length).fill(-1);
@@ -105,7 +121,7 @@ export function unifiedLayout(
     numbers: (number | null)[],
     row: number
   ): void {
-    const drawn: PaneLine = { kind, side, line, numbers };
+    const drawn: PaneLine = { kind, side, line, numbers, change: owner[row] };
 
     if (positions[row] < 0) {
       positions[row] = lines.length;

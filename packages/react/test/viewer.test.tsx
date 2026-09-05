@@ -67,6 +67,7 @@ describe('DiffineViewer', () => {
       lineNumbers: false,
       markers: false,
       header: false,
+      navigation: false,
       summary: false
     });
 
@@ -156,6 +157,14 @@ describe('DiffineViewer', () => {
     expect(render({ before: 'a', after: 'b' })).toContain('--diffine-digits:1');
   });
 
+  it('keeps the bar above the panes for the buttons when the names are off', () => {
+    const markup = render({ before: BEFORE, after: AFTER, header: false });
+
+    expect(markup).toContain('diffine-header');
+    expect(markup).toContain('diffine-nav');
+    expect(markup).not.toContain('diffine-label');
+  });
+
   it('passes anything else it was given through to the element', () => {
     const markup = render({
       before: BEFORE,
@@ -168,6 +177,52 @@ describe('DiffineViewer', () => {
     expect(markup).toContain('class="diffine mine"');
     expect(markup).toContain('id="review"');
     expect(markup).toContain('aria-describedby="notes"');
+  });
+});
+
+describe('moving between changes', () => {
+  it('draws the buttons, and says how many changes there are to move through', () => {
+    const markup = render({ before: BEFORE, after: AFTER });
+
+    expect(markup).toContain('aria-label="Previous change"');
+    expect(markup).toContain('aria-label="Next change"');
+    expect(markup).toContain('– / 2');
+  });
+
+  it('leaves them out when it is told to', () => {
+    expect(render({ before: BEFORE, after: AFTER, navigation: false })).not.toContain(
+      'diffine-nav'
+    );
+  });
+
+  it('says which change each line belongs to', () => {
+    const markup = render({ before: BEFORE, after: AFTER });
+
+    expect(markup).toContain('data-kind="replace" data-side="before" data-row="1" data-change="0"');
+    expect(markup).toContain('data-kind="insert" data-side="after" data-row="3" data-change="1"');
+    expect(markup).not.toContain('data-kind="equal" data-side="before" data-row="0" data-change');
+  });
+
+  it('marks the change the application says a reader is on', () => {
+    const markup = render({ before: BEFORE, after: AFTER, selected: 1 });
+
+    expect(markup).toContain('2 / 2');
+    expect(markup).toContain('data-change="1" data-current="true"');
+    expect(markup).not.toContain('data-change="0" data-current="true"');
+  });
+
+  it('marks nothing when the number points past the changes there are', () => {
+    const markup = render({ before: BEFORE, after: AFTER, selected: 7 });
+
+    expect(markup).not.toContain('data-current');
+    expect(markup).toContain('– / 2');
+  });
+
+  it('has nothing to move through when the two documents are the same', () => {
+    const markup = render({ before: BEFORE, after: BEFORE });
+
+    expect(markup).toContain('– / 0');
+    expect(markup).toContain('disabled=""');
   });
 });
 

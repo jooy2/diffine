@@ -9,6 +9,7 @@ import { useScrollWatch } from '../../internal/scroll.js';
 /** One change, drawn as the shape between where it left and where it arrived. */
 interface Link {
   kind: DiffChangeKind;
+  current: boolean;
   d: string;
 }
 
@@ -88,6 +89,8 @@ export interface DiffineViewerLinksProps {
   after: React.RefObject<HTMLDivElement | null>;
   /** The height of one line, or `0` when the rows have to be measured. */
   rowHeight: number;
+  /** Which change a reader has moved to, or -1. */
+  current: number;
   /** What has to change before the geometry is worth reading again. */
   deps: React.DependencyList;
 }
@@ -112,6 +115,7 @@ export function DiffineViewerLinks({
   before,
   after,
   rowHeight,
+  current,
   deps
 }: DiffineViewerLinksProps): React.JSX.Element {
   const column = React.useRef<HTMLDivElement>(null);
@@ -136,7 +140,7 @@ export function DiffineViewerLinks({
     const bend = width / 2;
     const next: Link[] = [];
 
-    for (const change of changes) {
+    for (const [index, change] of changes.entries()) {
       const left = bandFor(beforeLayout, beforeBoxes, rowHeight, change.rowStart, change.rowEnd);
       const right = bandFor(afterLayout, afterBoxes, rowHeight, change.rowStart, change.rowEnd);
       const leftTop = left.top - panes[0].scrollTop;
@@ -153,6 +157,7 @@ export function DiffineViewerLinks({
 
       next.push({
         kind: change.kind,
+        current: index === current,
         d:
           `M0 ${leftTop}` +
           `C${bend} ${leftTop} ${bend} ${rightTop} ${width} ${rightTop}` +
@@ -163,7 +168,8 @@ export function DiffineViewerLinks({
     }
 
     setLinks((held) =>
-      held.length === next.length && held.every((link, index) => link.d === next[index].d)
+      held.length === next.length &&
+      held.every((link, index) => link.d === next[index].d && link.current === next[index].current)
         ? held
         : next
     );
@@ -180,14 +186,20 @@ export function DiffineViewerLinks({
 
   const watched = [column, before, after];
 
-  useMeasure(watched, measure, [...deps, rowHeight]);
+  useMeasure(watched, measure, [...deps, rowHeight, current]);
   useScrollWatch(watched, paint, true, deps);
 
   return (
     <div className="diffine-links" ref={column} aria-hidden="true">
       <svg className="diffine-links-canvas" focusable="false">
         {links.map((link, index) => (
-          <path key={index} className="diffine-link" data-kind={link.kind} d={link.d} />
+          <path
+            key={index}
+            className="diffine-link"
+            data-kind={link.kind}
+            data-current={link.current ? 'true' : undefined}
+            d={link.d}
+          />
         ))}
       </svg>
     </div>

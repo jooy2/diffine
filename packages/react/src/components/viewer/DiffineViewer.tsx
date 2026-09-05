@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import type {
+  DiffChange,
   DiffInlineMode,
   DiffOptions,
   DiffResult,
@@ -14,12 +15,14 @@ import type {
   DiffineView
 } from '../../types.js';
 import { diffText } from '../../diff.js';
+import { useControlled } from '../../internal/controlled.js';
 import { fill, stringsFor } from '../../internal/i18n.js';
-import { useRowAlignment } from '../../internal/layout.js';
-import { splitLayout, unifiedLayout } from '../../internal/rows.js';
+import { useIsomorphicLayoutEffect, useRowAlignment } from '../../internal/layout.js';
+import { changeOfRow, splitLayout, unifiedLayout, type PaneLayout } from '../../internal/rows.js';
 import { useSyncedScroll } from '../../internal/scroll.js';
 import { useVirtualRows } from '../../internal/virtual.js';
 import { DiffineViewerLinks } from './DiffineViewerLinks.js';
+import { DiffineViewerNav } from './DiffineViewerNav.js';
 import { DiffineViewerPane } from './DiffineViewerPane.js';
 
 export interface DiffineViewerProps extends Omit<
@@ -113,6 +116,16 @@ export interface DiffineViewerProps extends Omit<
   header?: boolean;
 
   /**
+   * Whether the buttons for moving between changes are drawn.
+   *
+   * They sit in the bar above the panes, and that bar is drawn for them even
+   * when `header` is off.
+   *
+   * @default true
+   */
+  navigation?: boolean;
+
+  /**
    * Whether the counts are written under the view.
    * @default true
    */
@@ -135,6 +148,19 @@ export interface DiffineViewerProps extends Omit<
    * @default true
    */
   virtualize?: boolean;
+
+  /**
+   * Which change a reader has moved to, as an index into `changes`, or -1.
+   *
+   * Passing it makes it the application's: it will not change on its own, and
+   * the buttons report through `onSelectedChange` instead. Leaving it out makes
+   * it the viewer's, and the reporting still happens.
+   */
+  selected?: number;
+  /** Which change to start on, when the viewer is to keep it itself. @default -1 */
+  defaultSelected?: number;
+  /** A change was moved to, by the buttons or by the application. */
+  onSelectedChange?: (selected: number, change: DiffChange | null) => void;
 
   /**
    * How wide a tab is drawn, in characters.
@@ -167,6 +193,25 @@ function sourceOf(input: DiffineInput | undefined, label: string): Required<Diff
   return { content: input?.content ?? '', label: input?.label ?? label };
 }
 
+/** Where in a pane a change begins, or -1 for a pane that has no part of it. */
+function startOf(layout: PaneLayout, change: DiffChange): number {
+  for (let row = change.rowStart; row < change.rowEnd; row += 1) {
+    if (layout.positions[row] >= 0) {
+      return layout.positions[row];
+    }
+  }
+
+  // A change this side has no lines for. The nearest line above it is where a
+  // reader would look for the hole.
+  for (let row = change.rowStart - 1; row >= 0; row -= 1) {
+    if (layout.positions[row] >= 0) {
+      return layout.positions[row];
+    }
+  }
+
+  return -1;
+}
+
 /**
  * Two documents, and what happened between them.
  *
@@ -195,8 +240,12 @@ export function DiffineViewer({
   connectors = true,
   syncScroll = true,
   header = true,
+  navigation = true,
   summary = true,
   virtualize = true,
+  selected: selectedProp,
+  defaultSelected = -1,
+  onSelectedChange,
   tabSize = 4,
   colorScheme = 'system',
   locale = 'en',
@@ -243,17 +292,21 @@ export function DiffineViewer({
   const split = view === 'split';
   const empty = beforeText === '' && afterText === '';
 
+  const owner = React.useMemo(
+    () => changeOfRow(comparison.rows.length, comparison.changes),
+    [comparison]
+  );
   const beforeLayout = React.useMemo(
-    () => splitLayout(comparison.rows, 'before', alignLines),
-    [comparison, alignLines]
+    () => splitLayout(comparison.rows, owner, 'before', alignLines),
+    [comparison, owner, alignLines]
   );
   const afterLayout = React.useMemo(
-    () => splitLayout(comparison.rows, 'after', alignLines),
-    [comparison, alignLines]
+    () => splitLayout(comparison.rows, owner, 'after', alignLines),
+    [comparison, owner, alignLines]
   );
   const oneColumn = React.useMemo(
-    () => unifiedLayout(comparison.rows, comparison.changes),
-    [comparison]
+    () => unifiedLayout(comparison.rows, comparison.changes, owner),
+    [comparison, owner]
   );
 
   const layouts = split ? [beforeLayout, afterLayout] : [oneColumn];
@@ -265,7 +318,7 @@ export function DiffineViewer({
   // and left alone the rest of the time.
   const layoutDeps = [comparison, view, wrap, alignLines, lineNumbers, markers];
 
-  const { windows, rowHeight } = useVirtualRows(
+  const { windows, rowHeight, remeasure } = useVirtualRows(
     panes,
     layouts.map((layout) => layout.lines.length),
     virtualize && !wrap && !empty,
@@ -278,7 +331,102 @@ export function DiffineViewer({
   // two documents would have listeners on the elements it no longer has.
   useSyncedScroll(firstPane, secondPane, split && syncScroll && !empty, alignLines);
 
+  const [held, setHeld] = useControlled(selectedProp, defaultSelected);
+  // A comparison with fewer changes than the last one leaves the old number
+  // pointing at nothing, and a number pointing at nothing is no selection.
+  const current = held >= 0 && held < comparison.changes.length ? held : -1;
+
+  /**
+   * Where the last button press landed, tracked as it happens.
+   *
+   * Two presses inside one task both see the state the render before them had,
+   * so both would work out the same next change and the second would do
+   * nothing. This is written the moment a press is handled, so the second press
+   * steps on from where the first one went.
+   */
+  const pending = React.useRef(current);
+
+  useIsomorphicLayoutEffect(() => {
+    pending.current = current;
+  });
+
+  function step(direction: 1 | -1): void {
+    const total = comparison.changes.length;
+
+    if (total === 0) {
+      return;
+    }
+
+    const from = pending.current;
+    const index = from < 0 ? (direction > 0 ? 0 : total - 1) : (from + direction + total) % total;
+
+    pending.current = index;
+    setHeld(index);
+    onSelectedChange?.(index, comparison.changes[index]);
+  }
+
+  /** Puts a change on the screen. `false` when there was nothing to point at. */
+  function reveal(index: number): boolean {
+    const change = comparison.changes[index];
+    let moved = false;
+
+    if (!change) {
+      return false;
+    }
+
+    for (const [side, pane] of panes.entries()) {
+      const element = pane.current;
+      const position = startOf(layouts[side], change);
+
+      if (!element || position < 0) {
+        continue;
+      }
+
+      const top =
+        rowHeight > 0
+          ? position * rowHeight
+          : (element.querySelector<HTMLElement>(`[data-row="${position}"]`)?.offsetTop ?? -1);
+
+      if (top >= 0) {
+        // A third of the way down rather than hard against the top: a change
+        // reads better with the lines that led up to it still on the screen.
+        element.scrollTop = Math.max(0, top - element.clientHeight / 3);
+        moved = true;
+      }
+    }
+
+    if (moved) {
+      // The pane has jumped somewhere the drawn lines do not cover, and waiting
+      // for the scroll it just raised would leave a reader looking at nothing
+      // for a frame.
+      remeasure();
+    }
+
+    return moved;
+  }
+
+  /*
+   * Scrolling follows the selection rather than the button, so an application
+   * that sets `selected` itself moves the view the same way a reader does.
+   *
+   * The number is only remembered once the scrolling worked. On the first pass
+   * the lines a virtualised pane needs have not been drawn and there is no
+   * height to place them by; the pass after the measurement has both.
+   */
+  const revealed = React.useRef(current);
+
+  useIsomorphicLayoutEffect(() => {
+    if (revealed.current === current) {
+      return;
+    }
+
+    if (current < 0 || reveal(current)) {
+      revealed.current = current;
+    }
+  });
+
   const digits = String(Math.max(comparison.before.length, comparison.after.length, 1)).length;
+  const bar = header || (navigation && !empty);
 
   return (
     <div
@@ -296,14 +444,22 @@ export function DiffineViewer({
       }
       {...rest}
     >
-      {header ? (
+      {bar ? (
         <div className="diffine-header">
           <div className="diffine-title" data-side="before">
-            <span className="diffine-label">{beforeSource.label}</span>
+            {header ? <span className="diffine-label">{beforeSource.label}</span> : null}
           </div>
           {split ? <div className="diffine-title-gap" aria-hidden="true" /> : null}
           <div className="diffine-title" data-side="after">
-            <span className="diffine-label">{afterSource.label}</span>
+            {header ? <span className="diffine-label">{afterSource.label}</span> : null}
+            {navigation && !empty ? (
+              <DiffineViewerNav
+                total={comparison.changes.length}
+                current={current}
+                onStep={step}
+                strings={strings}
+              />
+            ) : null}
           </div>
         </div>
       ) : null}
@@ -318,6 +474,7 @@ export function DiffineViewer({
             layout={layouts[0]}
             window={windows[0]}
             rowHeight={rowHeight}
+            current={current}
             lineNumbers={lineNumbers}
             markers={markers}
             strings={strings}
@@ -331,6 +488,7 @@ export function DiffineViewer({
               before={firstPane}
               after={secondPane}
               rowHeight={rowHeight}
+              current={current}
               deps={layoutDeps}
             />
           ) : null}
@@ -341,6 +499,7 @@ export function DiffineViewer({
               layout={afterLayout}
               window={windows[1]}
               rowHeight={rowHeight}
+              current={current}
               lineNumbers={lineNumbers}
               markers={markers}
               strings={strings}

@@ -34,6 +34,10 @@ The first published version.
 
 - **English and Korean, and any other language an application writes itself.** `locale` picks one of the two and `strings` replaces any word in either.
 
+- **Two buttons for reading a comparison one change at a time.** They sit in the bar above the panes, with the count beside them, and they wrap — a reader working down a file wants the next change rather than a button that stops at the bottom. The change they land on is marked down its left edge and its band between the panes is drawn in the accent colour, so where a reader is stays visible after the scrolling has stopped.
+
+  `selected` and `onSelectedChange` make that an application's to hold, in the usual React pair, and setting `selected` scrolls the view the same way pressing a button does. `navigation` turns the buttons off; the bar they sit in is drawn for them even when `header` is not.
+
 - **A long comparison draws the lines a reader can see and no more.** Twenty thousand lines is twenty thousand rows in the page and forty of them are on the screen; the rest are now height and nothing else. The scrollbar is still the length of the document, the sideways scroll is still the width of its longest line, and the bands between the panes are worked out by arithmetic rather than from elements that are not there.
 
   It needs every line to be the same height, which only a pane that is not wrapping gives, so `wrap` turns it off. It also leaves a short document alone. `virtualize={false}` turns it off outright, which is what a page needs if the browser's own find has to reach text that is scrolled away.

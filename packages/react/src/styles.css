@@ -350,6 +350,71 @@
   stroke: var(--diffine-insert-piece);
 }
 
+/* ---- Moving between changes ---------------------------------------------- */
+
+.diffine-nav {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 0.125rem;
+  color: var(--diffine-muted);
+}
+
+.diffine-nav-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  border: 0;
+  border-radius: 0.25rem;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.diffine-nav-button:hover:not(:disabled) {
+  background: var(--diffine-surface);
+  color: var(--diffine-text);
+}
+
+.diffine-nav-button:focus-visible {
+  outline: 2px solid var(--diffine-accent);
+  outline-offset: -2px;
+}
+
+.diffine-nav-button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.diffine-nav-position {
+  min-width: 3.5ch;
+  padding-inline: 0.125rem;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  user-select: none;
+}
+
+/*
+ * The change a reader has moved to.
+ *
+ * The bar goes on the row's first child rather than on the row, because the row
+ * has a sticky gutter over its left edge and an inset shadow underneath one is
+ * a shadow nobody sees. `:first-child` is that gutter when there is one and the
+ * text itself when both columns are off.
+ */
+.diffine-line[data-current='true'] > :first-child {
+  box-shadow: inset 2px 0 0 var(--diffine-accent);
+}
+
+.diffine-link[data-current='true'] {
+  stroke: var(--diffine-accent);
+  stroke-width: 1.5;
+}
+
 /* ---- The lines that are not drawn ---------------------------------------- */
 
 /*
