@@ -3,6 +3,7 @@
 import * as React from 'react';
 import type { DiffChange, DiffChangeKind } from '../../types.js';
 import { readRows, useMeasure, type RowBox } from '../../internal/layout.js';
+import type { PaneLayout } from '../../internal/rows.js';
 import { useScrollWatch } from '../../internal/scroll.js';
 
 /** One change, drawn as the shape between where it left and where it arrived. */
@@ -23,18 +24,40 @@ const MARGIN = 48;
 /**
  * The rows of one change on one side, as a single band.
  *
+ * Where a line is comes from one of two places. With every line the same height
+ * it is arithmetic — line `n` starts at `n` times that height — which is the
+ * only way to answer for a line that has not been drawn, and with the rows
+ * virtualised most of them have not. Otherwise it is a measurement, because a
+ * wrapped line's height is not knowable any other way.
+ *
  * A change that took lines out of one document put none into that side of the
- * view, so there is nothing to measure — and the honest answer for it is not
+ * view, so there is nothing to point at — and the honest answer for it is not
  * "nowhere" but "here, between these two lines". The band collapses to the
- * bottom edge of the last line before the change, which is exactly where a
- * reader would point.
+ * bottom edge of the last line before the change, which is where a reader would
+ * point.
  */
-function bandFor(boxes: Map<number, RowBox>, rowStart: number, rowEnd: number): Band {
+function bandFor(
+  layout: PaneLayout,
+  boxes: Map<number, RowBox>,
+  rowHeight: number,
+  rowStart: number,
+  rowEnd: number
+): Band {
+  const boxAt = (row: number): RowBox | undefined => {
+    const position = layout.positions[row];
+
+    if (position < 0) {
+      return undefined;
+    }
+
+    return rowHeight > 0 ? { top: position * rowHeight, height: rowHeight } : boxes.get(position);
+  };
+
   let top = Number.POSITIVE_INFINITY;
   let bottom = Number.NEGATIVE_INFINITY;
 
   for (let row = rowStart; row < rowEnd; row += 1) {
-    const box = boxes.get(row);
+    const box = boxAt(row);
 
     if (box) {
       top = Math.min(top, box.top);
@@ -47,7 +70,7 @@ function bandFor(boxes: Map<number, RowBox>, rowStart: number, rowEnd: number): 
   }
 
   for (let row = rowStart - 1; row >= 0; row -= 1) {
-    const box = boxes.get(row);
+    const box = boxAt(row);
 
     if (box) {
       return { top: box.top + box.height, bottom: box.top + box.height };
@@ -59,8 +82,12 @@ function bandFor(boxes: Map<number, RowBox>, rowStart: number, rowEnd: number): 
 
 export interface DiffineViewerLinksProps {
   changes: readonly DiffChange[];
+  beforeLayout: PaneLayout;
+  afterLayout: PaneLayout;
   before: React.RefObject<HTMLDivElement | null>;
   after: React.RefObject<HTMLDivElement | null>;
+  /** The height of one line, or `0` when the rows have to be measured. */
+  rowHeight: number;
   /** What has to change before the geometry is worth reading again. */
   deps: React.DependencyList;
 }
@@ -80,8 +107,11 @@ export interface DiffineViewerLinksProps {
  */
 export function DiffineViewerLinks({
   changes,
+  beforeLayout,
+  afterLayout,
   before,
   after,
+  rowHeight,
   deps
 }: DiffineViewerLinksProps): React.JSX.Element {
   const column = React.useRef<HTMLDivElement>(null);
@@ -107,8 +137,8 @@ export function DiffineViewerLinks({
     const next: Link[] = [];
 
     for (const change of changes) {
-      const left = bandFor(beforeBoxes, change.rowStart, change.rowEnd);
-      const right = bandFor(afterBoxes, change.rowStart, change.rowEnd);
+      const left = bandFor(beforeLayout, beforeBoxes, rowHeight, change.rowStart, change.rowEnd);
+      const right = bandFor(afterLayout, afterBoxes, rowHeight, change.rowStart, change.rowEnd);
       const leftTop = left.top - panes[0].scrollTop;
       const leftBottom = left.bottom - panes[0].scrollTop;
       const rightTop = right.top - panes[1].scrollTop;
@@ -132,22 +162,26 @@ export function DiffineViewerLinks({
       });
     }
 
-    setLinks((current) =>
-      current.length === next.length && current.every((link, index) => link.d === next[index].d)
-        ? current
+    setLinks((held) =>
+      held.length === next.length && held.every((link, index) => link.d === next[index].d)
+        ? held
         : next
     );
   };
 
   const measure = () => {
-    geometry.current = [readRows(before.current), readRows(after.current)];
+    // Only worth doing when the answer is not arithmetic. With every line the
+    // same height there is nothing a measurement would add, and most of the
+    // lines are not on the page to be measured anyway.
+    geometry.current =
+      rowHeight > 0 ? [new Map(), new Map()] : [readRows(before.current), readRows(after.current)];
     paint();
   };
 
   const watched = [column, before, after];
 
-  useMeasure(watched, measure, deps);
-  useScrollWatch(watched, paint, true);
+  useMeasure(watched, measure, [...deps, rowHeight]);
+  useScrollWatch(watched, paint, true, deps);
 
   return (
     <div className="diffine-links" ref={column} aria-hidden="true">

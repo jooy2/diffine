@@ -16,10 +16,11 @@ import type {
 import { diffText } from '../../diff.js';
 import { fill, stringsFor } from '../../internal/i18n.js';
 import { useRowAlignment } from '../../internal/layout.js';
+import { splitLayout, unifiedLayout } from '../../internal/rows.js';
 import { useSyncedScroll } from '../../internal/scroll.js';
+import { useVirtualRows } from '../../internal/virtual.js';
 import { DiffineViewerLinks } from './DiffineViewerLinks.js';
 import { DiffineViewerPane } from './DiffineViewerPane.js';
-import { DiffineViewerUnified } from './DiffineViewerUnified.js';
 
 export interface DiffineViewerProps extends Omit<
   React.ComponentPropsWithoutRef<'div'>,
@@ -118,6 +119,24 @@ export interface DiffineViewerProps extends Omit<
   summary?: boolean;
 
   /**
+   * Whether only the lines a reader can see are drawn.
+   *
+   * A comparison of twenty thousand lines is twenty thousand rows in the page,
+   * and forty of them are on the screen. With this on the rest are height and
+   * nothing else: the scrollbar is still the length of the document, and what
+   * is drawn is what is in front of the reader.
+   *
+   * It needs every line to be the same height, which is true of a pane that is
+   * not wrapping and of nothing else — so `wrap` turns it off. It also does
+   * nothing to a short document, where the machinery would cost more than the
+   * rows it saved. Turn it off for a page where the browser's own find has to
+   * reach text that is scrolled out of view.
+   *
+   * @default true
+   */
+  virtualize?: boolean;
+
+  /**
    * How wide a tab is drawn, in characters.
    * @default 4
    */
@@ -140,7 +159,7 @@ export interface DiffineViewerProps extends Omit<
 }
 
 /** A bare string is the document; the object form names it as well. */
-function sourceOf(input: DiffineInput | undefined, label: string): DiffineSource {
+function sourceOf(input: DiffineInput | undefined, label: string): Required<DiffineSource> {
   if (typeof input === 'string') {
     return { content: input, label };
   }
@@ -159,9 +178,9 @@ function sourceOf(input: DiffineInput | undefined, label: string): DiffineSource
  * ```
  *
  * The component works the comparison out itself unless it is handed one. What
- * it draws is entirely a matter of the props above: every part of the view is
- * a boolean with a default, so it goes from a full side-by-side with
- * connectors down to a bare column of lines without a stylesheet being touched.
+ * it draws is entirely a matter of the props above: every part of the view is a
+ * boolean with a default, so it goes from a full side-by-side with connectors
+ * down to a bare column of lines without a stylesheet being touched.
  */
 export function DiffineViewer({
   before,
@@ -177,6 +196,7 @@ export function DiffineViewer({
   syncScroll = true,
   header = true,
   summary = true,
+  virtualize = true,
   tabSize = 4,
   colorScheme = 'system',
   locale = 'en',
@@ -189,9 +209,11 @@ export function DiffineViewer({
   const beforeSource = sourceOf(before, strings.before);
   const afterSource = sourceOf(after, strings.after);
 
-  const beforePane = React.useRef<HTMLDivElement>(null);
-  const afterPane = React.useRef<HTMLDivElement>(null);
-  const unifiedPane = React.useRef<HTMLDivElement>(null);
+  // The second pane in a split view; the only one in a unified view. Naming it
+  // for the side it usually holds is a small lie that keeps the refs from being
+  // three things where two will do.
+  const firstPane = React.useRef<HTMLDivElement>(null);
+  const secondPane = React.useRef<HTMLDivElement>(null);
 
   // Every option of its own rather than the object holding them. An application
   // that writes `diff={{ whitespace: 'trailing' }}` inline hands over a new
@@ -219,18 +241,42 @@ export function DiffineViewer({
   );
 
   const split = view === 'split';
-  const blanks = alignLines;
   const empty = beforeText === '' && afterText === '';
-  // Everything that moves a row. What is measured off the drawn document — the
-  // height of a wrapped row, the band between two panes — is read again when
-  // any of these has changed and left alone the rest of the time.
-  const layout = [comparison, view, wrap, alignLines, lineNumbers, markers];
 
-  useRowAlignment(beforePane, afterPane, split && wrap && alignLines, layout);
+  const beforeLayout = React.useMemo(
+    () => splitLayout(comparison.rows, 'before', alignLines),
+    [comparison, alignLines]
+  );
+  const afterLayout = React.useMemo(
+    () => splitLayout(comparison.rows, 'after', alignLines),
+    [comparison, alignLines]
+  );
+  const oneColumn = React.useMemo(
+    () => unifiedLayout(comparison.rows, comparison.changes),
+    [comparison]
+  );
+
+  const layouts = split ? [beforeLayout, afterLayout] : [oneColumn];
+  const panes = React.useMemo(() => (split ? [firstPane, secondPane] : [firstPane]), [split]);
+
+  // Everything that moves a line. What is worked out from the drawn document —
+  // the height of a wrapped row, the band between two panes, which lines are
+  // worth drawing at all — is worked out again when one of these has changed
+  // and left alone the rest of the time.
+  const layoutDeps = [comparison, view, wrap, alignLines, lineNumbers, markers];
+
+  const { windows, rowHeight } = useVirtualRows(
+    panes,
+    layouts.map((layout) => layout.lines.length),
+    virtualize && !wrap && !empty,
+    layoutDeps
+  );
+
+  useRowAlignment(firstPane, secondPane, split && wrap && alignLines, layoutDeps);
   // `empty` is on the list because it decides whether the panes are on the page
   // at all: without it, a viewer that started with nothing and was then given
   // two documents would have listeners on the elements it no longer has.
-  useSyncedScroll(beforePane, afterPane, split && syncScroll && !empty, alignLines);
+  useSyncedScroll(firstPane, secondPane, split && syncScroll && !empty, alignLines);
 
   const digits = String(Math.max(comparison.before.length, comparison.after.length, 1)).length;
 
@@ -253,11 +299,11 @@ export function DiffineViewer({
       {header ? (
         <div className="diffine-header">
           <div className="diffine-title" data-side="before">
-            {beforeSource.label}
+            <span className="diffine-label">{beforeSource.label}</span>
           </div>
           {split ? <div className="diffine-title-gap" aria-hidden="true" /> : null}
           <div className="diffine-title" data-side="after">
-            {afterSource.label}
+            <span className="diffine-label">{afterSource.label}</span>
           </div>
         </div>
       ) : null}
@@ -266,47 +312,41 @@ export function DiffineViewer({
         <p className="diffine-empty">{strings.empty}</p>
       ) : (
         <div className="diffine-body">
+          <DiffineViewerPane
+            side={split ? 'before' : 'unified'}
+            name={split ? beforeSource.label : `${beforeSource.label} → ${afterSource.label}`}
+            layout={layouts[0]}
+            window={windows[0]}
+            rowHeight={rowHeight}
+            lineNumbers={lineNumbers}
+            markers={markers}
+            strings={strings}
+            paneRef={firstPane}
+          />
+          {split && connectors ? (
+            <DiffineViewerLinks
+              changes={comparison.changes}
+              beforeLayout={beforeLayout}
+              afterLayout={afterLayout}
+              before={firstPane}
+              after={secondPane}
+              rowHeight={rowHeight}
+              deps={layoutDeps}
+            />
+          ) : null}
           {split ? (
-            <>
-              <DiffineViewerPane
-                side="before"
-                rows={comparison.rows}
-                blanks={blanks}
-                lineNumbers={lineNumbers}
-                markers={markers}
-                label={beforeSource.label ?? strings.before}
-                strings={strings}
-                paneRef={beforePane}
-              />
-              {connectors ? (
-                <DiffineViewerLinks
-                  changes={comparison.changes}
-                  before={beforePane}
-                  after={afterPane}
-                  deps={layout}
-                />
-              ) : null}
-              <DiffineViewerPane
-                side="after"
-                rows={comparison.rows}
-                blanks={blanks}
-                lineNumbers={lineNumbers}
-                markers={markers}
-                label={afterSource.label ?? strings.after}
-                strings={strings}
-                paneRef={afterPane}
-              />
-            </>
-          ) : (
-            <DiffineViewerUnified
-              result={comparison}
+            <DiffineViewerPane
+              side="after"
+              name={afterSource.label}
+              layout={afterLayout}
+              window={windows[1]}
+              rowHeight={rowHeight}
               lineNumbers={lineNumbers}
               markers={markers}
-              label={`${beforeSource.label} → ${afterSource.label}`}
               strings={strings}
-              paneRef={unifiedPane}
+              paneRef={secondPane}
             />
-          )}
+          ) : null}
         </div>
       )}
 

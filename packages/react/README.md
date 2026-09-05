@@ -51,12 +51,17 @@ Every part of the view is a prop with a default, so the component goes from a fu
 | `syncScroll`  | `true`     | Whether scrolling one pane scrolls the other.                     |
 | `header`      | `true`     | Whether each side is named above it.                              |
 | `summary`     | `true`     | Whether the counts are written under the view.                    |
+| `virtualize`  | `true`     | Whether only the lines a reader can see are drawn.                |
 | `tabSize`     | `4`        | How wide a tab is drawn.                                          |
 | `colorScheme` | `'system'` | `'light'`, `'dark'`, or the reader's own setting.                 |
 | `locale`      | `'en'`     | The language of the viewer's own words. `'ko'` is the other one.  |
 | `strings`     | —          | Words to use instead of the locale's, for any of them.            |
 
 Anything else is passed straight to the element, so `id`, `className`, `style` and the `aria-*` attributes work as they would on a `<div>`.
+
+### Long documents
+
+`virtualize` is on by default: a comparison of twenty thousand lines draws the forty that are on the screen and leaves the rest as height. It needs every line to be the same height, so `wrap` turns it off, and it leaves a short document alone.
 
 ### How the two are compared
 

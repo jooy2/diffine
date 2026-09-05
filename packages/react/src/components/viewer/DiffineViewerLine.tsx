@@ -27,8 +27,12 @@ function labelFor(strings: DiffineStrings, kind: DiffRowKind, side: DiffineSide)
 }
 
 export interface DiffineViewerLineProps {
-  /** Which row of the comparison this is, and how the two sides find each other. */
-  row: number;
+  /**
+   * Where this line sits in its pane's own list, or `null` for one that is not
+   * really there — the hidden copy of the longest line that holds the pane's
+   * width open while the rest are undrawn.
+   */
+  row: number | null;
   kind: DiffRowKind;
   side: DiffineSide;
   /** The line to draw, or `null` for the blank opposite a line with no counterpart. */
@@ -65,7 +69,12 @@ export function DiffineViewerLine({
   const label = line ? labelFor(strings, kind, side) : null;
 
   return (
-    <div className="diffine-line" data-row={row} data-kind={line ? kind : 'blank'} data-side={side}>
+    <div
+      className="diffine-line"
+      data-kind={line ? kind : 'blank'}
+      data-side={side}
+      {...(row === null ? {} : { 'data-row': row })}
+    >
       {lineNumbers || markers ? (
         // One element around the numbers and the marker so that the whole of it
         // can be held against the left edge while a long line is scrolled past

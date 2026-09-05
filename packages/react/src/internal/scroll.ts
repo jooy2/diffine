@@ -85,7 +85,8 @@ export function useSyncedScroll(
 export function useScrollWatch(
   refs: readonly React.RefObject<HTMLElement | null>[],
   onScroll: () => void,
-  enabled: boolean
+  enabled: boolean,
+  deps: React.DependencyList = []
 ): void {
   const latest = React.useRef(onScroll);
 
@@ -126,5 +127,7 @@ export function useScrollWatch(
         cancelAnimationFrame(queued);
       }
     };
-  }, [enabled]);
+    // The refs are read when the listeners go on, so anything that replaces the
+    // elements they point at has to be on this list as well as `enabled`.
+  }, [enabled, ...deps]);
 }

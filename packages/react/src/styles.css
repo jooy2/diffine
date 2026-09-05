@@ -141,8 +141,17 @@
 }
 
 .diffine-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
   overflow: hidden;
-  padding: 0.375rem 0.75rem;
+  min-height: 2rem;
+  padding: 0.25rem 0.75rem;
+}
+
+.diffine-label {
+  overflow: hidden;
   font-weight: 600;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -339,4 +348,29 @@
 .diffine-link[data-kind='replace'] {
   fill: var(--diffine-delete-line);
   stroke: var(--diffine-insert-piece);
+}
+
+/* ---- The lines that are not drawn ---------------------------------------- */
+
+/*
+ * Height standing in for the rows above and below the window. The pane keeps
+ * the size it would have had with all of them in it, so the scrollbar is the
+ * length of the document rather than the length of what is on the page.
+ */
+.diffine-spacer {
+  flex: 0 0 auto;
+}
+
+/*
+ * The longest line of the document, drawn where nobody can see it.
+ *
+ * `height: 0` keeps it out of the vertical flow while it still counts towards
+ * how wide the content is — which is the whole of what it is for. Without it,
+ * the width to scroll sideways would be the width of whatever lines happened to
+ * be drawn, and it would change under a reader who was scrolling down.
+ */
+.diffine-measure {
+  height: 0;
+  overflow: hidden;
+  visibility: hidden;
 }

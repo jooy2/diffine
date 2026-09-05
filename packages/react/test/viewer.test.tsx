@@ -15,15 +15,21 @@ import type { DiffineViewerProps } from 'diffine-react';
  */
 const render = (props: DiffineViewerProps) => renderToStaticMarkup(<DiffineViewer {...props} />);
 
-/** Every line of one side, in order, with its kind. */
+/** Every line of one side, in order, as `kind` and the words in it. */
 function linesOf(markup: string, side: string): string[] {
-  return [
-    ...markup.matchAll(
-      /<div class="diffine-line" data-row="\d+" data-kind="([^"]+)" data-side="([^"]+)">([\s\S]*?)(?=<div class="diffine-line"|<\/div><\/div>)/g
-    )
-  ]
-    .filter((match) => match[2] === side)
-    .map((match) => `${match[1]} ${match[3].replace(/<[^>]*>/g, '')}`);
+  const END = '</span></div>';
+
+  return markup
+    .split('<div class="diffine-line"')
+    .slice(1)
+    .map((piece) => piece.slice(0, piece.indexOf(END) + END.length))
+    .filter((piece) => piece.includes(`data-side="${side}"`))
+    .map((piece) => {
+      const kind = /data-kind="([^"]+)"/.exec(piece);
+      const text = piece.slice(piece.indexOf('>') + 1).replace(/<[^>]*>/g, '');
+
+      return `${kind?.[1] ?? '?'} ${text}`;
+    });
 }
 
 const BEFORE = 'one\ntwo\nthree';
@@ -48,9 +54,9 @@ describe('DiffineViewer', () => {
   });
 
   it('says what each side is called, and falls back to the word for it', () => {
-    expect(render({ before: BEFORE, after: AFTER })).toContain('>Before</div>');
+    expect(render({ before: BEFORE, after: AFTER })).toContain('>Before</span>');
     expect(render({ before: { content: BEFORE, label: 'v1.2' }, after: AFTER })).toContain(
-      '>v1.2</div>'
+      '>v1.2</span>'
     );
   });
 
@@ -125,15 +131,15 @@ describe('DiffineViewer', () => {
   it('speaks the language it was asked to', () => {
     const markup = render({ before: BEFORE, after: AFTER, locale: 'ko' });
 
-    expect(markup).toContain('>이전</div>');
+    expect(markup).toContain('>이전</span>');
     expect(markup).toContain('변경 2건, 2줄 추가, 1줄 삭제');
   });
 
   it('takes a word of its own over the locale it was given', () => {
     const markup = render({ before: BEFORE, after: AFTER, strings: { before: 'Draft' } });
 
-    expect(markup).toContain('>Draft</div>');
-    expect(markup).toContain('>After</div>');
+    expect(markup).toContain('>Draft</span>');
+    expect(markup).toContain('>After</span>');
   });
 
   it('writes what the view is set to onto the element, for the stylesheet to read', () => {
@@ -162,5 +168,33 @@ describe('DiffineViewer', () => {
     expect(markup).toContain('class="diffine mine"');
     expect(markup).toContain('id="review"');
     expect(markup).toContain('aria-describedby="notes"');
+  });
+});
+
+describe('drawing only what is in view', () => {
+  const LONG = Array.from({ length: 400 }, (_, index) => `line ${index}`).join('\n');
+  const EDITED = LONG.replace('line 200', 'line two hundred');
+
+  it('draws a slice of a long document rather than all of it', () => {
+    const drawn = render({ before: LONG, after: EDITED }).split('diffine-line"').length - 1;
+
+    expect(drawn).toBeGreaterThan(0);
+    expect(drawn).toBeLessThan(400);
+  });
+
+  it('draws every line when it is told not to cut', () => {
+    const markup = render({ before: LONG, after: EDITED, virtualize: false });
+
+    expect(linesOf(markup, 'before')).toHaveLength(400);
+  });
+
+  it('draws every line of a document short enough not to need cutting', () => {
+    expect(linesOf(render({ before: BEFORE, after: AFTER }), 'before')).toHaveLength(4);
+  });
+
+  it('draws every line when the lines wrap, because their heights are not known', () => {
+    const markup = render({ before: LONG, after: EDITED, wrap: true });
+
+    expect(linesOf(markup, 'before')).toHaveLength(400);
   });
 });
