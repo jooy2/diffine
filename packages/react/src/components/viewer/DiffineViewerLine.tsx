@@ -1,7 +1,14 @@
 'use client';
 
 import * as React from 'react';
-import type { DiffLine, DiffRowKind, DiffineSide, DiffineStrings } from '../../types.js';
+import type {
+  DiffLine,
+  DiffRowKind,
+  DiffineHighlight,
+  DiffineSide,
+  DiffineStrings
+} from '../../types.js';
+import { splitLine } from '../../internal/pieces.js';
 
 /** What is drawn in the marker column, per side. */
 const MARKERS: Record<DiffineSide, Partial<Record<DiffRowKind, string>>> = {
@@ -50,6 +57,7 @@ export interface DiffineViewerLineProps {
   lineNumbers: boolean;
   markers: boolean;
   strings: DiffineStrings;
+  highlight?: DiffineHighlight;
 }
 
 /**
@@ -70,7 +78,8 @@ export function DiffineViewerLine({
   current,
   lineNumbers,
   markers,
-  strings
+  strings,
+  highlight
 }: DiffineViewerLineProps): React.JSX.Element {
   const label = line ? labelFor(strings, kind, side) : null;
 
@@ -102,29 +111,52 @@ export function DiffineViewerLine({
       ) : null}
       <span className="diffine-text">
         {label ? <span className="diffine-said">{`${label}: `}</span> : null}
-        {line ? <DiffineViewerText line={line} /> : null}
+        {line ? <DiffineViewerText line={line} side={side} highlight={highlight} /> : null}
       </span>
     </div>
   );
 }
 
-/** The line itself, with whatever moved inside it picked out. */
-function DiffineViewerText({ line }: { line: DiffLine }): React.JSX.Element {
-  if (line.segments.length === 0) {
+/** The line itself, with whatever moved inside it — and whatever colours it. */
+function DiffineViewerText({
+  line,
+  side,
+  highlight
+}: {
+  line: DiffLine;
+  side: DiffineSide;
+  highlight?: DiffineHighlight;
+}): React.JSX.Element {
+  const pieces = splitLine(line, highlight?.(line, side));
+
+  if (!pieces) {
     return <>{line.text}</>;
   }
 
   return (
     <>
-      {line.segments.map((piece, index) =>
-        piece.kind === 'equal' ? (
-          <React.Fragment key={index}>{piece.text}</React.Fragment>
-        ) : (
-          <mark key={index} className="diffine-piece" data-kind={piece.kind}>
+      {pieces.map((piece, index) => {
+        if (piece.kind === 'equal') {
+          return piece.className || piece.style ? (
+            <span key={index} className={piece.className} style={piece.style}>
+              {piece.text}
+            </span>
+          ) : (
+            <React.Fragment key={index}>{piece.text}</React.Fragment>
+          );
+        }
+
+        return (
+          <mark
+            key={index}
+            className={piece.className ? `diffine-piece ${piece.className}` : 'diffine-piece'}
+            data-kind={piece.kind}
+            style={piece.style}
+          >
             {piece.text}
           </mark>
-        )
-      )}
+        );
+      })}
     </>
   );
 }

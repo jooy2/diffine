@@ -1,3 +1,5 @@
+import type * as React from 'react';
+
 /**
  * The vocabulary every part of Diffine is written in.
  *
@@ -309,3 +311,46 @@ export interface DiffineStrings {
   /** Which change is being looked at: `{position}` of `{total}`. */
   changePosition: string;
 }
+
+/**
+ * A run of one line, as the application wants it coloured.
+ *
+ * This is how a syntax highlighter reaches the viewer. The application is given
+ * the whole line and hands back the runs it wants drawn differently, which is
+ * the only order that works: a grammar cannot be applied to a fragment of a
+ * line and come out right, and the fragments are what the comparison produces.
+ * The viewer cuts the line at the boundaries of both and draws each piece with
+ * whatever the two say about it.
+ *
+ * `length` counts the same units `String.prototype.slice` does, so the runs a
+ * tokeniser already returns can be used as they are.
+ */
+export interface DiffineToken {
+  /** How many characters of the line this run covers. */
+  length: number;
+  className?: string;
+  style?: React.CSSProperties;
+}
+
+/**
+ * How a line is coloured beyond what the comparison says about it.
+ *
+ * Called for each line the viewer draws, so with the rows virtualised it is
+ * called for what is on the screen rather than for the whole document. Return
+ * `null` to leave a line as it is.
+ *
+ * ```tsx
+ * <DiffineViewer
+ *   before={saved}
+ *   after={draft}
+ *   highlight={(line) => tokenize(line.text).map((token) => ({
+ *     length: token.content.length,
+ *     className: `token ${token.type}`
+ *   }))}
+ * />
+ * ```
+ */
+export type DiffineHighlight = (
+  line: DiffLine,
+  side: DiffineSide
+) => readonly DiffineToken[] | null | undefined;

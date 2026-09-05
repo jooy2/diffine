@@ -8,6 +8,7 @@ import type {
   DiffResult,
   DiffWhitespace,
   DiffineColorScheme,
+  DiffineHighlight,
   DiffineInput,
   DiffineLocale,
   DiffineSource,
@@ -182,6 +183,12 @@ export interface DiffineViewerProps extends Omit<
 
   /** Words to use instead of the locale's, for any of them. */
   strings?: Partial<DiffineStrings>;
+
+  /**
+   * How a line is coloured beyond what the comparison says about it, which is
+   * where a syntax highlighter goes. See {@link DiffineHighlight}.
+   */
+  highlight?: DiffineHighlight;
 }
 
 /** A bare string is the document; the object form names it as well. */
@@ -250,6 +257,7 @@ export function DiffineViewer({
   colorScheme = 'system',
   locale = 'en',
   strings: overrides,
+  highlight,
   className,
   style,
   ...rest
@@ -478,6 +486,7 @@ export function DiffineViewer({
             lineNumbers={lineNumbers}
             markers={markers}
             strings={strings}
+            highlight={highlight}
             paneRef={firstPane}
           />
           {split && connectors ? (
@@ -503,6 +512,7 @@ export function DiffineViewer({
               lineNumbers={lineNumbers}
               markers={markers}
               strings={strings}
+              highlight={highlight}
               paneRef={secondPane}
             />
           ) : null}

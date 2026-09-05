@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import type { DiffineStrings } from '../../types.js';
+import type { DiffineHighlight, DiffineStrings } from '../../types.js';
 import type { PaneLayout } from '../../internal/rows.js';
 import type { VirtualWindow } from '../../internal/virtual.js';
 import { DiffineViewerLine } from './DiffineViewerLine.js';
@@ -19,6 +19,7 @@ export interface DiffineViewerPaneProps {
   lineNumbers: boolean;
   markers: boolean;
   strings: DiffineStrings;
+  highlight?: DiffineHighlight;
   paneRef: React.RefObject<HTMLDivElement | null>;
   side: string;
 }
@@ -33,6 +34,7 @@ export function DiffineViewerPane({
   lineNumbers,
   markers,
   strings,
+  highlight,
   paneRef,
   side
 }: DiffineViewerPaneProps): React.JSX.Element {
@@ -72,6 +74,7 @@ export function DiffineViewerPane({
               lineNumbers={lineNumbers}
               markers={markers}
               strings={strings}
+              highlight={highlight}
             />
           );
         })}

@@ -79,6 +79,23 @@ Setting `selected` scrolls the view, so an application with its own list of chan
 
 `virtualize` is on by default: a comparison of twenty thousand lines draws the forty that are on the screen and leaves the rest as height. It needs every line to be the same height, so `wrap` turns it off, and it leaves a short document alone.
 
+### Colouring the text
+
+`highlight` is handed a whole line and returns the runs it wants drawn differently. The line is cut at the boundaries of both that and the comparison, so a changed word that is half a string literal is drawn as exactly that.
+
+```tsx
+<DiffineViewer
+  before={saved}
+  after={draft}
+  highlight={(line) =>
+    tokenize(line.text).map((token) => ({
+      length: token.content.length,
+      className: `token ${token.type}`
+    }))
+  }
+/>
+```
+
 ### How the two are compared
 
 ```tsx

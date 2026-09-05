@@ -253,3 +253,35 @@ describe('drawing only what is in view', () => {
     expect(linesOf(markup, 'before')).toHaveLength(400);
   });
 });
+
+describe('colouring a line', () => {
+  it('gives a run of the line the class the application asked for', () => {
+    const markup = render({
+      before: 'const total = 1;',
+      after: 'const total = 2;',
+      highlight: (line) => [{ length: 5, className: 'keyword' }, { length: line.text.length - 5 }]
+    });
+
+    expect(markup).toContain('<span class="keyword">const</span>');
+  });
+
+  it('cuts the line where the comparison and the colouring disagree', () => {
+    const markup = render({
+      before: 'aaabbb',
+      after: 'aaaccc',
+      diff: { inline: 'character', inlineThreshold: 0 },
+      // One run across the whole line, which the changed half cuts in two.
+      highlight: () => [{ length: 6, className: 'all' }]
+    });
+
+    expect(markup).toContain('<span class="all">aaa</span>');
+    expect(markup).toContain('<mark class="diffine-piece all" data-kind="delete">bbb</mark>');
+    expect(markup).toContain('<mark class="diffine-piece all" data-kind="insert">ccc</mark>');
+  });
+
+  it('leaves the line alone when the application has nothing to say about it', () => {
+    const markup = render({ before: 'one', after: 'one', highlight: () => null });
+
+    expect(markup).toContain('<span class="diffine-text">one</span>');
+  });
+});
