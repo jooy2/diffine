@@ -220,16 +220,19 @@ export function DiffineViewer({
 
   const split = view === 'split';
   const blanks = alignLines;
+  const empty = beforeText === '' && afterText === '';
   // Everything that moves a row. What is measured off the drawn document — the
   // height of a wrapped row, the band between two panes — is read again when
   // any of these has changed and left alone the rest of the time.
   const layout = [comparison, view, wrap, alignLines, lineNumbers, markers];
 
   useRowAlignment(beforePane, afterPane, split && wrap && alignLines, layout);
-  useSyncedScroll(beforePane, afterPane, split && syncScroll, alignLines);
+  // `empty` is on the list because it decides whether the panes are on the page
+  // at all: without it, a viewer that started with nothing and was then given
+  // two documents would have listeners on the elements it no longer has.
+  useSyncedScroll(beforePane, afterPane, split && syncScroll && !empty, alignLines);
 
   const digits = String(Math.max(comparison.before.length, comparison.after.length, 1)).length;
-  const empty = beforeText === '' && afterText === '';
 
   return (
     <div

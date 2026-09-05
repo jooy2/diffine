@@ -151,7 +151,7 @@ export function DiffineViewerLinks({
 
   return (
     <div className="diffine-links" ref={column} aria-hidden="true">
-      <svg className="diffine-links-canvas" focusable="false" preserveAspectRatio="none">
+      <svg className="diffine-links-canvas" focusable="false">
         {links.map((link, index) => (
           <path key={index} className="diffine-link" data-kind={link.kind} d={link.d} />
         ))}
