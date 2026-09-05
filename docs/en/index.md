@@ -55,6 +55,6 @@ The names are not settled yet. Treat every export as something that can still ch
 
 The packages sit in a folder of their own because more languages are the plan. Each one will version independently and keep its own changelog beside its own manifest, so a release on one side is not a release on another.
 
-<DiffineDemo sample="code" controls height="24rem" />
+<DiffineDemo sample="code" controls colour height="24rem" />
 
 [Getting started](./guide/getting-started) has what exists today.

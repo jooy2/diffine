@@ -55,20 +55,53 @@ Every export of `diffine-react`, in one place. The [guide](../guide/getting-star
 
 Anything else the component is given goes straight to the element, so `id`, `className`, `style` and the `aria-*` attributes behave as they would on a `<div>`.
 
+### Which change a reader is on
+
+| Prop | Type | Default | What it is |
+| --- | --- | --- | --- |
+| `selected` | `number` | — | The change being looked at, or -1. |
+| `defaultSelected` | `number` | `-1` | The one to start on. |
+| `onSelectedChange` | `(selected: number, change: DiffChange \| null) => void` | — | A change was moved to. |
+
+`selected` is an index into `changes`. Passing it makes it the application's, in the usual React pair, and setting it scrolls the view exactly as pressing a button does. `onSelectedChange` is called whichever of the two is holding it.
+
 ### `DiffineStrings`
 
-| Key         | English default                                                      |
-| ----------- | -------------------------------------------------------------------- |
-| `before`    | `Before`                                                             |
-| `after`     | `After`                                                              |
-| `empty`     | `Nothing to compare yet.`                                            |
-| `identical` | `The two are the same.`                                              |
-| `added`     | `Added`                                                              |
-| `removed`   | `Removed`                                                            |
-| `changed`   | `Changed`                                                            |
-| `summary`   | `{changes} changes, {inserted} lines added, {deleted} lines removed` |
+| Key              | English default                                                      |
+| ---------------- | -------------------------------------------------------------------- |
+| `before`         | `Before`                                                             |
+| `after`          | `After`                                                              |
+| `empty`          | `Nothing to compare yet.`                                            |
+| `identical`      | `The two are the same.`                                              |
+| `added`          | `Added`                                                              |
+| `removed`        | `Removed`                                                            |
+| `changed`        | `Changed`                                                            |
+| `summary`        | `{changes} changes, {inserted} lines added, {deleted} lines removed` |
+| `previousChange` | `Previous change`                                                    |
+| `nextChange`     | `Next change`                                                        |
+| `changePosition` | `Change {position} of {total}`                                       |
 
-`added`, `removed` and `changed` are read by a screen reader rather than shown. `summary` fills `{changes}`, `{inserted}` and `{deleted}` with the counts.
+`added`, `removed`, `changed` and `changePosition` are read by a screen reader rather than shown. `summary` fills `{changes}`, `{inserted}` and `{deleted}` with the counts.
+
+### `DiffineHighlight`
+
+```ts
+type DiffineHighlight = (
+  line: DiffLine,
+  side: 'before' | 'after'
+) => readonly DiffineToken[] | null | undefined;
+
+interface DiffineToken {
+  /** How many characters of the line this run covers. */
+  length: number;
+  className?: string;
+  style?: React.CSSProperties;
+}
+```
+
+Called for each line the viewer draws, with the whole line. The runs come back in order; a gap between two of them is drawn plain, and `null` leaves the line alone. `length` counts the same units `String.prototype.slice` does.
+
+The line is cut at the boundaries of both these runs and the comparison's, so a changed word that is half a string literal is drawn as exactly that.
 
 ## `diffText`
 

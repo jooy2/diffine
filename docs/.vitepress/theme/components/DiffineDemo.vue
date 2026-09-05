@@ -19,6 +19,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { DiffineViewer } from 'diffine-react';
 import type { DiffInlineMode, DiffWhitespace, DiffineView } from 'diffine-react';
 import 'diffine-react/styles.css';
+import { highlight } from '../highlight';
 import { SAMPLES, type SampleName } from '../samples';
 
 const props = withDefaults(
@@ -35,6 +36,12 @@ const props = withDefaults(
     inline?: DiffInlineMode;
     whitespace?: DiffWhitespace;
     ignoreCase?: boolean;
+    navigation?: boolean;
+    virtualize?: boolean;
+    /** Whether the sample is drawn through the little highlighter beside this. */
+    colour?: boolean;
+    /** How many lines to pad the sample out to, for showing a long document. */
+    lines?: number;
     height?: string;
     /** Whether the reader gets the switches as well as the view. */
     controls?: boolean;
@@ -52,6 +59,10 @@ const props = withDefaults(
     inline: 'word',
     whitespace: 'exact',
     ignoreCase: false,
+    navigation: true,
+    virtualize: true,
+    colour: false,
+    lines: 0,
     height: '20rem',
     controls: false
   }
@@ -78,17 +89,29 @@ const labels = computed(() =>
     : { view: 'Unified', wrap: 'Wrap', align: 'Align', numbers: 'Numbers' }
 );
 
+/** The sample with enough filler under it to be worth not drawing whole. */
+function padded(source: string, lines: number): string {
+  const filler = Array.from(
+    { length: lines },
+    (_, index) => `const filler${index} = 'line ${index}';`
+  );
+
+  return `${source}${filler.join('\n')}\n`;
+}
+
 function draw() {
   if (!root) {
     return;
   }
 
   const sample = SAMPLES[props.sample] ?? SAMPLES.code;
+  const before = props.lines ? padded(sample.before, props.lines) : sample.before;
+  const after = props.lines ? padded(sample.after, props.lines) : sample.after;
 
   root.render(
     createElement(DiffineViewer, {
-      before: { content: sample.before, label: sample.beforeLabel },
-      after: { content: sample.after, label: sample.afterLabel },
+      before: { content: before, label: sample.beforeLabel },
+      after: { content: after, label: sample.afterLabel },
       view: chosen.value.view,
       wrap: chosen.value.wrap,
       alignLines: chosen.value.alignLines,
@@ -96,7 +119,10 @@ function draw() {
       markers: props.markers,
       connectors: props.connectors,
       header: props.header,
+      navigation: props.navigation,
       summary: props.summary,
+      virtualize: props.virtualize,
+      highlight: props.colour ? highlight : undefined,
       diff: {
         inline: props.inline,
         whitespace: props.whitespace,
@@ -164,6 +190,26 @@ onBeforeUnmount(() => {
 <style scoped>
 .diffine-demo {
   margin: 1.25rem 0;
+}
+
+/*
+ * The classes the little highlighter beside this hands back. Not scoped to the
+ * component, because the elements carrying them are drawn by React inside a
+ * root this file only owns the container of — Vue's scoping attribute never
+ * reaches them.
+ */
+.diffine-demo :deep(.dx-keyword) {
+  color: var(--vp-c-purple-1);
+  font-weight: 600;
+}
+
+.diffine-demo :deep(.dx-string) {
+  color: var(--vp-c-green-1);
+}
+
+.diffine-demo :deep(.dx-comment) {
+  color: var(--vp-c-text-3);
+  font-style: italic;
 }
 
 .diffine-demo-controls {

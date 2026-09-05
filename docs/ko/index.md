@@ -55,6 +55,6 @@ Diffine은 `0.0.1`입니다. 비교 엔진과 뷰어를 만들고 테스트해 [
 
 패키지를 따로 폴더에 둔 이유는 다른 언어로도 낼 계획이기 때문입니다. 각 패키지는 자기 매니페스트 옆에 자기 변경 기록을 두고 따로 버전을 매기므로, 한쪽의 릴리스가 다른 쪽의 릴리스는 아닙니다.
 
-<DiffineDemo sample="code" controls height="24rem" />
+<DiffineDemo sample="code" controls colour height="24rem" />
 
 [시작하기](./guide/getting-started)에 지금 있는 기능이 다 정리돼 있습니다.

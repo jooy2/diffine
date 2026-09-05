@@ -55,20 +55,53 @@ order: 1
 
 그 밖에 넘긴 것은 전부 엘리먼트로 그대로 갑니다. `id`, `className`, `style`, `aria-*`는 `<div>`에서와 똑같이 동작합니다.
 
+### 지금 보고 있는 변경
+
+| prop | 타입 | 기본값 | 무엇인지 |
+| --- | --- | --- | --- |
+| `selected` | `number` | — | 보고 있는 변경, 없으면 -1. |
+| `defaultSelected` | `number` | `-1` | 처음에 선택할 변경. |
+| `onSelectedChange` | `(selected: number, change: DiffChange \| null) => void` | — | 다른 변경으로 이동했을 때. |
+
+`selected`는 `changes`의 인덱스입니다. 값을 주면 애플리케이션이 들고 있는 것이 되고, 값을 바꾸면 버튼을 눌렀을 때와 똑같이 화면이 이동합니다. `onSelectedChange`는 둘 중 어느 쪽이 들고 있든 호출됩니다.
+
 ### `DiffineStrings`
 
-| 키          | 한국어 기본값                                           |
-| ----------- | ------------------------------------------------------- |
-| `before`    | `이전`                                                  |
-| `after`     | `이후`                                                  |
-| `empty`     | `아직 비교할 내용이 없습니다.`                          |
-| `identical` | `두 문서가 같습니다.`                                   |
-| `added`     | `추가됨`                                                |
-| `removed`   | `삭제됨`                                                |
-| `changed`   | `변경됨`                                                |
-| `summary`   | `변경 {changes}건, {inserted}줄 추가, {deleted}줄 삭제` |
+| 키               | 한국어 기본값                                           |
+| ---------------- | ------------------------------------------------------- |
+| `before`         | `이전`                                                  |
+| `after`          | `이후`                                                  |
+| `empty`          | `아직 비교할 내용이 없습니다.`                          |
+| `identical`      | `두 문서가 같습니다.`                                   |
+| `added`          | `추가됨`                                                |
+| `removed`        | `삭제됨`                                                |
+| `changed`        | `변경됨`                                                |
+| `summary`        | `변경 {changes}건, {inserted}줄 추가, {deleted}줄 삭제` |
+| `previousChange` | `이전 변경`                                             |
+| `nextChange`     | `다음 변경`                                             |
+| `changePosition` | `변경 {total}건 중 {position}번째`                      |
 
-`added`, `removed`, `changed`는 화면에 나오지 않고 스크린 리더가 읽습니다. `summary`의 `{changes}`, `{inserted}`, `{deleted}` 자리에 집계가 들어갑니다.
+`added`, `removed`, `changed`, `changePosition`은 화면에 나오지 않고 스크린 리더가 읽습니다. `summary`의 `{changes}`, `{inserted}`, `{deleted}` 자리에 집계가 들어갑니다.
+
+### `DiffineHighlight`
+
+```ts
+type DiffineHighlight = (
+  line: DiffLine,
+  side: 'before' | 'after'
+) => readonly DiffineToken[] | null | undefined;
+
+interface DiffineToken {
+  /** 이 구간이 줄에서 차지하는 글자 수. */
+  length: number;
+  className?: string;
+  style?: React.CSSProperties;
+}
+```
+
+뷰어가 그리는 줄마다, 줄 전체를 넘겨 호출합니다. 구간은 순서대로 읽고 사이의 빈 곳은 그냥 그리며, `null`이면 그 줄은 손대지 않습니다. `length`는 `String.prototype.slice`와 같은 단위로 셉니다.
+
+줄은 이 구간과 비교 결과의 경계를 모두 반영해 잘립니다. 문자열의 절반인 바뀐 단어는 문자열의 절반인 바뀐 단어로 그려집니다.
 
 ## `diffText`
 

@@ -67,6 +67,45 @@ The geometry is read once per layout and kept, so scrolling moves shapes that we
 
 `syncScroll` is what keeps the two panes looking at the same part of the two documents. With the rows level they share one scroll position; without, the position becomes a fraction of the way down, because the same number would put a reader at the end of one document and the middle of the other.
 
+## Moving between changes
+
+The two buttons in the bar above the panes step through the changes one at a time, and the count between them says where a reader is. They wrap: a reader working down a file wants the next change rather than a button that stops at the bottom, and going from `4 / 4` to `1 / 4` says what happened.
+
+The change they land on is marked down its left edge, and its band between the panes is drawn in the accent colour — so where a reader is stays visible after the scrolling has stopped.
+
+<DiffineDemo sample="code" height="18rem" />
+
+Which change that is can be the application's instead:
+
+```tsx
+const [index, setIndex] = useState(-1);
+
+<DiffineViewer
+  before={saved}
+  after={draft}
+  selected={index}
+  onSelectedChange={(next, change) => setIndex(next)}
+/>;
+```
+
+Setting `selected` scrolls the view, exactly as pressing a button does, so an application with its own list of changes beside the viewer can drive it from there. `-1` is none of them. `onSelectedChange` is called either way, which is what lets an application follow a selection it is not holding.
+
+`navigation` turns the buttons off. The bar they sit in is drawn for them even when `header` is off, so a viewer can have the buttons without the names.
+
+## Long documents
+
+`virtualize` is on by default, and it is why a comparison of twenty thousand lines opens at all. Twenty thousand lines is twenty thousand rows in the page; forty of them are on the screen. The rest are height and nothing else.
+
+Nothing about the view changes: the scrollbar is the length of the document, the sideways scroll is the width of its longest line, and the bands between the panes are in the right places — those are worked out by arithmetic rather than read off elements that are not there.
+
+<DiffineDemo sample="code" :lines="3000" height="18rem" />
+
+That demo is three thousand lines. Scroll it, or press the buttons above it, and count the rows in your inspector.
+
+It needs every line to be the same height, which is true of a pane that is not wrapping and of nothing else — a line that wraps three times is three lines tall and there is no knowing that without drawing it. So `wrap` turns this off and the whole document is drawn. It also leaves a short document alone, where the machinery would cost more than the rows it saved.
+
+Turn it off with `virtualize={false}` for a page where the browser's own find has to reach text that is scrolled out of view. Nothing that is not drawn can be found.
+
 ## The frame around it
 
 `header` names each side above it, and `summary` writes the counts underneath. Both are on by default, and both come off for a viewer that is a piece of a page rather than the page.
@@ -92,6 +131,33 @@ When the two documents turn out to be the same, the summary says so rather than 
   strings={{ before: 'Vorher', after: 'Nachher', identical: 'Beide sind gleich.' }}
 />
 ```
+
+## Colouring the text
+
+`highlight` is where a syntax highlighter goes. It is handed a whole line and returns the runs it wants drawn differently:
+
+```tsx
+<DiffineViewer
+  before={saved}
+  after={draft}
+  highlight={(line) =>
+    tokenize(line.text).map((token) => ({
+      length: token.content.length,
+      className: `token ${token.type}`
+    }))
+  }
+/>
+```
+
+<DiffineDemo sample="code" colour height="18rem" />
+
+A whole line rather than a fragment, because that is the only order that works: a grammar applied to half a string literal does not come out right, and half a string literal is exactly what a comparison produces. So the application gets the line, and the viewer cuts it at the boundaries of both — a changed word that is half a string is drawn as a changed word that is half a string.
+
+`length` counts the same units `String.prototype.slice` does, so the runs a tokeniser already returns can be used as they are. Runs are taken in order and a gap between two of them is drawn plain, so a highlighter that only marks keywords can return only keywords with plain runs between. Return `null` for a line you have nothing to say about.
+
+`style` is there beside `className` for a highlighter that hands back colours rather than classes.
+
+The function is called for each line the viewer draws — which, with the rows virtualised, is what is on the screen rather than what is in the document.
 
 ## Styling
 
