@@ -1,0 +1,125 @@
+{
+  "name": "diffine-react",
+  "version": "0.0.1",
+  "description": "Compare two versions and show what changed — a diff engine and a side-by-side viewer in one package, with no dependencies underneath either.",
+  "type": "module",
+  "types": "dist/index.d.ts",
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "author": "CDGet <jooy2.contact@gmail.com>",
+  "license": "MIT",
+  "homepage": "https://diffine.cdget.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jooy2/diffine",
+    "directory": "packages/react"
+  },
+  "bugs": {
+    "url": "https://github.com/jooy2/diffine/issues"
+  },
+  "scripts": {
+    "build": "node scripts/clean.mjs && tsc --project tsconfig.prod.json && node scripts/build-styles.mjs",
+    "format": "prettier .",
+    "format:fix": "prettier . --write",
+    "lint": "eslint . --report-unused-disable-directives",
+    "lint:fix": "eslint . --report-unused-disable-directives --fix",
+    "prepare": "npm run build",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --project tsconfig.prod.json --noEmit && tsc --project test/tsconfig.json"
+  },
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "main": "dist/index.js",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "module": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./diff": {
+      "types": "./dist/diff.d.ts",
+      "module": "./dist/diff.js",
+      "default": "./dist/diff.js"
+    },
+    "./types": {
+      "types": "./dist/types.d.ts",
+      "module": "./dist/types.js",
+      "default": "./dist/types.js"
+    },
+    "./styles.css": "./dist/styles.css",
+    "./package.json": "./package.json"
+  },
+  "typesVersions": {
+    "*": {
+      "diff": [
+        "dist/diff.d.ts"
+      ],
+      "types": [
+        "dist/types.d.ts"
+      ]
+    }
+  },
+  "keywords": [
+    "diffine",
+    "diffine-react",
+    "diff",
+    "diff-viewer",
+    "text-diff",
+    "line-diff",
+    "word-diff",
+    "character-diff",
+    "myers",
+    "compare",
+    "comparison",
+    "side-by-side",
+    "split-view",
+    "unified-diff",
+    "merge",
+    "patch",
+    "code-review",
+    "react",
+    "reactjs",
+    "react-component",
+    "typescript",
+    "tsx",
+    "esm",
+    "zero-dependency",
+    "accessible",
+    "accessibility",
+    "a11y",
+    "dark-mode"
+  ],
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^26.4.0",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.5",
+    "@typescript-eslint/parser": "^8.68.0",
+    "esbuild": "^0.28.2",
+    "eslint": "^10.9.1",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-n": "^18.3.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.11.0",
+    "jiti": "^2.7.0",
+    "prettier": "^3.9.6",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.68.0",
+    "vitest": "^4.1.11"
+  },
+  "peerDependencies": {
+    "@types/react": "^18.0.0 || ^19.0.0",
+    "react": "^18.0.0 || ^19.0.0",
+    "react-dom": "^18.0.0 || ^19.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@types/react": {
+      "optional": true
+    }
+  }
+}

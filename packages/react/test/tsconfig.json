@@ -1,0 +1,14 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": ["node"],
+    "paths": {
+      "diffine-react": ["../src/index.ts"],
+      "diffine-react/diff": ["../src/diff.ts"],
+      "diffine-react/types": ["../src/types.ts"]
+    }
+  },
+  "include": ["**/*.ts", "**/*.tsx"],
+  "exclude": []
+}
