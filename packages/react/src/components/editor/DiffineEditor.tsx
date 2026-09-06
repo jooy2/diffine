@@ -8,6 +8,7 @@ import type {
   DiffResult,
   DiffWhitespace,
   DiffineColorScheme,
+  DiffineFont,
   DiffineHighlight,
   DiffineInput,
   DiffineLocale,
@@ -16,6 +17,7 @@ import type {
 } from '../../types.js';
 import { diffText } from '../../diff.js';
 import { useControlled } from '../../internal/controlled.js';
+import { fontVariables } from '../../internal/font.js';
 import { stringsFor } from '../../internal/i18n.js';
 import { useIsomorphicLayoutEffect } from '../../internal/layout.js';
 import { useChangeNavigation } from '../../internal/navigate.js';
@@ -193,6 +195,16 @@ export interface DiffineEditorProps extends Omit<
   colorScheme?: DiffineColorScheme;
 
   /**
+   * The typeface the two documents are drawn in.
+   *
+   * Anything left out keeps the stylesheet's own value, so `{ size: 15 }` is a
+   * whole answer. The same four values can be set as custom properties on the
+   * element instead; this is the way in for an application that holds them in
+   * its own state rather than in its own CSS.
+   */
+  font?: DiffineFont;
+
+  /**
    * The language of the editor's own words — not of the documents.
    * @default 'en'
    */
@@ -297,6 +309,7 @@ export function DiffineEditor({
   indentWithTab = false,
   spellCheck = false,
   colorScheme = 'system',
+  font,
   locale = 'en',
   strings: overrides,
   language: languageProp,
@@ -383,7 +396,18 @@ export function DiffineEditor({
   // Everything that moves a line. What is worked out from the drawn document —
   // the band between two panes, which lines are worth drawing at all — is
   // worked out again when one of these has changed and left alone otherwise.
-  const layoutDeps = [comparison, wrap, lineNumbers, markers];
+  const layoutDeps = [
+    comparison,
+    wrap,
+    lineNumbers,
+    markers,
+    // A row's height and a character's width both follow the typeface, and
+    // everything measured from either is worked out again when it changes.
+    font?.family,
+    font?.size,
+    font?.lineHeight,
+    font?.letterSpacing
+  ];
 
   const { windows, rowHeight, remeasure } = useVirtualRows(
     panes,
@@ -434,6 +458,7 @@ export function DiffineEditor({
         {
           '--diffine-digits': digits,
           '--diffine-tab-size': tabSize,
+          ...fontVariables(font),
           ...style
         } as React.CSSProperties
       }

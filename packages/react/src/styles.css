@@ -60,6 +60,7 @@
     ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
   --diffine-font-size: 0.8125rem;
   --diffine-line-height: 1.5rem;
+  --diffine-letter-spacing: normal;
   --diffine-links-width: 3rem;
   --diffine-tab-size: 4;
 
@@ -90,6 +91,7 @@
   color: var(--diffine-text);
   font-family: var(--diffine-font);
   font-size: var(--diffine-font-size);
+  letter-spacing: var(--diffine-letter-spacing);
   line-height: var(--diffine-line-height);
 }
 

@@ -8,6 +8,7 @@ import type {
   DiffResult,
   DiffWhitespace,
   DiffineColorScheme,
+  DiffineFont,
   DiffineHighlight,
   DiffineInput,
   DiffineLocale,
@@ -15,12 +16,13 @@ import type {
   DiffineView
 } from '../../types.js';
 import { diffText } from '../../diff.js';
+import { fontVariables } from '../../internal/font.js';
+import { useSyntaxHighlight } from '../../internal/highlight/useSyntax.js';
 import { stringsFor } from '../../internal/i18n.js';
 import { useRowAlignment } from '../../internal/layout.js';
 import { useChangeNavigation } from '../../internal/navigate.js';
 import { changeOfRow, splitLayout, unifiedLayout } from '../../internal/rows.js';
 import { useSyncedScroll } from '../../internal/scroll.js';
-import { useSyntaxHighlight } from '../../internal/highlight/useSyntax.js';
 import { sourceOf } from '../../internal/source.js';
 import { useVirtualRows } from '../../internal/virtual.js';
 import { DiffineLanguageName } from '../shared/DiffineLanguage.js';
@@ -180,6 +182,16 @@ export interface DiffineViewerProps extends Omit<
   colorScheme?: DiffineColorScheme;
 
   /**
+   * The typeface the two documents are drawn in.
+   *
+   * Anything left out keeps the stylesheet's own value, so `{ size: 15 }` is a
+   * whole answer. The same four values can be set as custom properties on the
+   * element instead; this is the way in for an application that holds them in
+   * its own state rather than in its own CSS.
+   */
+  font?: DiffineFont;
+
+  /**
    * The language of the viewer's own words — not of the documents.
    * @default 'en'
    */
@@ -255,6 +267,7 @@ export function DiffineViewer({
   onSelectedChange,
   tabSize = 4,
   colorScheme = 'system',
+  font,
   locale = 'en',
   strings: overrides,
   language = 'plain',
@@ -344,7 +357,20 @@ export function DiffineViewer({
   // the height of a wrapped row, the band between two panes, which lines are
   // worth drawing at all — is worked out again when one of these has changed
   // and left alone the rest of the time.
-  const layoutDeps = [comparison, view, wrap, alignLines, lineNumbers, markers];
+  const layoutDeps = [
+    comparison,
+    view,
+    wrap,
+    alignLines,
+    lineNumbers,
+    markers,
+    // A row's height and a character's width both follow the typeface, and
+    // everything measured from either is worked out again when it changes.
+    font?.family,
+    font?.size,
+    font?.lineHeight,
+    font?.letterSpacing
+  ];
 
   const { windows, rowHeight, remeasure } = useVirtualRows(
     panes,
@@ -397,6 +423,7 @@ export function DiffineViewer({
         {
           '--diffine-digits': digits,
           '--diffine-tab-size': tabSize,
+          ...fontVariables(font),
           ...style
         } as React.CSSProperties
       }

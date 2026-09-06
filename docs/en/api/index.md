@@ -50,6 +50,7 @@ Every export of `diffine-react`, in one place. The [guide](../guide/getting-star
 | `languageLabel` | `boolean` | `true` | Whether that language is named at the right end of the bar. |
 | `tabSize` | `number` | `4` | How wide a tab is drawn, in characters. |
 | `colorScheme` | `'system' \| 'light' \| 'dark'` | `'system'` | Which palette to draw in. |
+| `font` | `DiffineFont` | — | The typeface the documents are drawn in. |
 | `locale` | `'en' \| 'ko'` | `'en'` | The language of the viewer's own words. |
 | `strings` | `Partial<DiffineStrings>` | — | Words to use instead of the locale's. |
 
@@ -86,6 +87,21 @@ Anything else the component is given goes straight to the element, so `id`, `cla
 | `changePosition` | `Change {position} of {total}`                                       |
 
 `added`, `removed`, `changed`, `summary`, `documentSize` and `changePosition` are read by a screen reader rather than shown. `summary` fills `{changes}`, `{inserted}` and `{deleted}` with the counts, and `documentSize` fills `{label}` with the name of a side and `{characters}` and `{size}` with numbers already written in the reader's own language. `placeholder` is what an empty field in the editor says.
+
+### `DiffineFont`
+
+```ts
+interface DiffineFont {
+  family?: string;
+  size?: string | number;
+  lineHeight?: string | number;
+  letterSpacing?: string | number;
+}
+```
+
+The same four values as `--diffine-font`, `--diffine-font-size`, `--diffine-line-height` and `--diffine-letter-spacing`, for an application that holds the typeface in its own state rather than in its own CSS. Anything left out keeps the stylesheet's value. A number is pixels and a string is whatever CSS makes of it.
+
+`family` has to be a monospace stack, and `lineHeight` has to be a length rather than a bare multiplier: a row is that tall whether or not it has a line in it, the editor's field is laid over rows that are, and the rows a long comparison does not draw are stood in for by exactly that much height.
 
 ### `DIFFINE_LANGUAGES`
 
@@ -169,6 +185,7 @@ Passing `before` or `after` makes that document the application's, in the usual 
 | `virtualize` | `boolean` | `true` | Whether only the lines a reader can see are drawn. |
 | `tabSize` | `number` | `4` | How wide a tab is drawn, in characters. |
 | `colorScheme` | `'system' \| 'light' \| 'dark'` | `'system'` | Which palette to draw in. |
+| `font` | `DiffineFont` | — | The typeface the documents are drawn in. |
 | `locale` | `'en' \| 'ko'` | `'en'` | The language of the editor's own words. |
 | `strings` | `Partial<DiffineStrings>` | — | Words to use instead of the locale's. |
 | `highlight` | `DiffineHighlight` | — | How a line is coloured beyond the comparison. |
@@ -327,14 +344,15 @@ The `-line` pair tints a whole row; the `-piece` pair picks out what moved insid
 
 ### Measurements
 
-| Property                 | Default           | What it is                                    |
-| ------------------------ | ----------------- | --------------------------------------------- |
-| `--diffine-height`       | `24rem`           | How tall the viewer is. `auto` grows with it. |
-| `--diffine-radius`       | `0.5rem`          | The corner radius of the frame.               |
-| `--diffine-font`         | A monospace stack | The typeface the documents are drawn in.      |
-| `--diffine-font-size`    | `0.8125rem`       | Its size.                                     |
-| `--diffine-line-height`  | `1.5rem`          | The height of one unwrapped line.             |
-| `--diffine-links-width`  | `3rem`            | The width of the column between the panes.    |
-| `--diffine-marker-width` | `1.25rem`         | The width of the `+`, `−` and `~` column.     |
+| Property                   | Default           | What it is                                    |
+| -------------------------- | ----------------- | --------------------------------------------- |
+| `--diffine-height`         | `24rem`           | How tall the viewer is. `auto` grows with it. |
+| `--diffine-radius`         | `0.5rem`          | The corner radius of the frame.               |
+| `--diffine-font`           | A monospace stack | The typeface the documents are drawn in.      |
+| `--diffine-font-size`      | `0.8125rem`       | Its size.                                     |
+| `--diffine-line-height`    | `1.5rem`          | The height of one unwrapped line.             |
+| `--diffine-letter-spacing` | `normal`          | How far apart the letters are.                |
+| `--diffine-links-width`    | `3rem`            | The width of the column between the panes.    |
+| `--diffine-marker-width`   | `1.25rem`         | The width of the `+`, `−` and `~` column.     |
 
 `--diffine-digits` and `--diffine-tab-size` are written onto the element by the component, from the longest document and from `tabSize`. Setting them by hand is overridden on the next render. `--diffine-gutter-width`, `--diffine-gutter-numbers`, `--diffine-gutter-markers` and `--diffine-gutter-rule` are worked out from the two above and from which columns were asked for; they are what the gutter, the stripe that carries it past the last line, and the editor's field indent are all measured with.

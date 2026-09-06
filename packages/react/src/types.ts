@@ -255,6 +255,29 @@ export type DiffineSide = 'before' | 'after';
 export type DiffineView = 'split' | 'unified';
 
 /**
+ * The typeface the two documents are drawn in.
+ *
+ * Anything left out keeps the stylesheet's own value, so `{ size: 15 }` is a
+ * whole answer. A number is pixels and a string is whatever CSS makes of it,
+ * which is how `1rem`, `0.05em` and a `clamp()` get in.
+ *
+ * `lineHeight` has to be a length rather than a bare multiplier. A row is that
+ * tall whether or not it has a line in it, the editor's field is laid over rows
+ * that are, and the rows a long comparison does not draw are stood in for by
+ * exactly that much height — none of which a number with no unit can answer.
+ */
+export interface DiffineFont {
+  /** The family, as a CSS font stack. Monospace, or the columns will not line up. */
+  family?: string;
+  /** How big it is. */
+  size?: string | number;
+  /** How tall one unwrapped line is. A length, not a multiplier. */
+  lineHeight?: string | number;
+  /** How far apart the letters are. */
+  letterSpacing?: string | number;
+}
+
+/**
  * Which palette the viewer draws in.
  *
  * `system` follows the reader's own setting, which is what a component dropped

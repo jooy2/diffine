@@ -50,6 +50,7 @@ order: 1
 | `languageLabel` | `boolean` | `true` | 그 언어 이름을 위쪽 줄 오른쪽 끝에 쓸지. |
 | `tabSize` | `number` | `4` | 탭을 몇 칸으로 그릴지. |
 | `colorScheme` | `'system' \| 'light' \| 'dark'` | `'system'` | 어떤 팔레트로 그릴지. |
+| `font` | `DiffineFont` | — | 문서를 그리는 글꼴. |
 | `locale` | `'en' \| 'ko'` | `'en'` | 뷰어 자신이 쓰는 말의 언어. |
 | `strings` | `Partial<DiffineStrings>` | — | 로케일 대신 쓸 단어. |
 
@@ -86,6 +87,21 @@ order: 1
 | `changePosition` | `변경 {total}건 중 {position}번째`                      |
 
 `added`, `removed`, `changed`, `summary`, `documentSize`, `changePosition`은 화면에 나오지 않고 스크린 리더가 읽습니다. `summary`의 `{changes}`, `{inserted}`, `{deleted}` 자리에 집계가 들어갑니다. `documentSize`의 `{label}` 자리에는 한쪽의 이름이, `{characters}`와 `{size}` 자리에는 읽는 사람의 언어로 이미 써 둔 수가 들어갑니다. `placeholder`는 에디터의 빈 입력란에 나오는 문구입니다.
+
+### `DiffineFont`
+
+```ts
+interface DiffineFont {
+  family?: string;
+  size?: string | number;
+  lineHeight?: string | number;
+  letterSpacing?: string | number;
+}
+```
+
+`--diffine-font`, `--diffine-font-size`, `--diffine-line-height`, `--diffine-letter-spacing`와 같은 값 네 개입니다. 글꼴을 CSS가 아니라 자기 상태로 들고 있는 애플리케이션을 위한 것입니다. 빠뜨린 값은 스타일시트의 값을 그대로 씁니다. 수는 픽셀이고, 문자열은 CSS가 읽는 대로입니다.
+
+`family`는 고정폭 스택이어야 하고, `lineHeight`는 배수가 아니라 길이여야 합니다. 줄에 글자가 있든 없든 행의 높이가 그만큼이고, 에디터의 입력란이 그 행 위에 겹쳐지며, 긴 비교에서 그리지 않는 줄도 정확히 그만큼의 높이로 대신하기 때문입니다.
 
 ### `DIFFINE_LANGUAGES`
 
@@ -169,6 +185,7 @@ interface DiffineToken {
 | `virtualize` | `boolean` | `true` | 보이는 줄만 그릴지. |
 | `tabSize` | `number` | `4` | 탭을 몇 글자 너비로 그릴지. |
 | `colorScheme` | `'system' \| 'light' \| 'dark'` | `'system'` | 어떤 색으로 그릴지. |
+| `font` | `DiffineFont` | — | 문서를 그리는 글꼴. |
 | `locale` | `'en' \| 'ko'` | `'en'` | 에디터가 쓰는 말의 언어. |
 | `strings` | `Partial<DiffineStrings>` | — | 로케일 문구 대신 쓸 문구. |
 | `highlight` | `DiffineHighlight` | — | 비교 결과와 별개로 줄에 색을 입히는 방법. |
@@ -327,14 +344,15 @@ interface DiffEdit {
 
 ### 치수
 
-| 속성                     | 기본값      | 무엇인지                                   |
-| ------------------------ | ----------- | ------------------------------------------ |
-| `--diffine-height`       | `24rem`     | 뷰어의 높이. `auto`면 내용만큼 늘어납니다. |
-| `--diffine-radius`       | `0.5rem`    | 테두리의 모서리 반지름.                    |
-| `--diffine-font`         | 고정폭 스택 | 문서를 그리는 서체.                        |
-| `--diffine-font-size`    | `0.8125rem` | 그 크기.                                   |
-| `--diffine-line-height`  | `1.5rem`    | 접히지 않은 줄 하나의 높이.                |
-| `--diffine-links-width`  | `3rem`      | 두 창 사이 열의 너비.                      |
-| `--diffine-marker-width` | `1.25rem`   | `+`, `−`, `~` 열의 너비.                   |
+| 속성                       | 기본값      | 무엇인지                                   |
+| -------------------------- | ----------- | ------------------------------------------ |
+| `--diffine-height`         | `24rem`     | 뷰어의 높이. `auto`면 내용만큼 늘어납니다. |
+| `--diffine-radius`         | `0.5rem`    | 테두리의 모서리 반지름.                    |
+| `--diffine-font`           | 고정폭 스택 | 문서를 그리는 서체.                        |
+| `--diffine-font-size`      | `0.8125rem` | 그 크기.                                   |
+| `--diffine-line-height`    | `1.5rem`    | 접히지 않은 줄 하나의 높이.                |
+| `--diffine-letter-spacing` | `normal`    | 자간.                                      |
+| `--diffine-links-width`    | `3rem`      | 두 창 사이 열의 너비.                      |
+| `--diffine-marker-width`   | `1.25rem`   | `+`, `−`, `~` 열의 너비.                   |
 
 `--diffine-digits`와 `--diffine-tab-size`는 컴포넌트가 가장 긴 문서와 `tabSize`를 보고 엘리먼트에 직접 씁니다. 손으로 지정해도 다음 렌더에서 덮어씁니다. `--diffine-gutter-width`, `--diffine-gutter-numbers`, `--diffine-gutter-markers`, `--diffine-gutter-rule`은 위의 두 값과 어떤 열을 켰는지를 보고 계산합니다. 왼쪽 열과, 마지막 줄 아래로 그 열을 이어 그리는 띠와, 에디터 입력란의 들여쓰기가 모두 이 값으로 재어집니다.

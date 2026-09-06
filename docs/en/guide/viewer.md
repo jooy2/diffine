@@ -190,6 +190,23 @@ Every colour and measurement is a custom property on the `.diffine` element. An 
 
 The full list is in the [API](../api/#custom-properties). Anything the component is given beyond its own props goes straight to the element, so `id`, `className`, `style` and the `aria-*` attributes behave as they would on a `<div>`.
 
+`font` is the way in for an application that holds the typeface in its own state rather than in its own CSS. It writes the same four properties:
+
+```tsx
+<DiffineViewer
+  before={saved}
+  after={draft}
+  font={{
+    family: "'Iosevka', monospace",
+    size: 15,
+    lineHeight: '1.65rem',
+    letterSpacing: '0.01em'
+  }}
+/>
+```
+
+Anything left out keeps the stylesheet's value, so `{ size: 15 }` is a whole answer. A number is pixels and a string is whatever CSS makes of it. Two rules about what goes in it: the family has to be monospace, or the gutter and the columns stop lining up, and `lineHeight` has to be a length rather than a bare multiplier — a row is that tall whether or not it has a line in it, and the rows a long comparison does not draw are stood in for by exactly that much height.
+
 ## A comparison worked out elsewhere
 
 `result` takes a comparison instead of two documents, for an application that worked one out in a worker, on a server, or once for a list of viewers:

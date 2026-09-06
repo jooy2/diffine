@@ -149,6 +149,27 @@ describe('DiffineViewer', () => {
     expect(markup).toContain('1,536 characters, 1.5 KB');
   });
 
+  it('draws the documents in the typeface it was given', () => {
+    const markup = render({
+      before: BEFORE,
+      after: AFTER,
+      font: { family: "'Iosevka', monospace", size: 15, lineHeight: '1.6rem', letterSpacing: 0.5 }
+    });
+
+    // A number is pixels and a string is left as it was written.
+    expect(markup).toContain('--diffine-font:&#x27;Iosevka&#x27;, monospace');
+    expect(markup).toContain('--diffine-font-size:15px');
+    expect(markup).toContain('--diffine-line-height:1.6rem');
+    expect(markup).toContain('--diffine-letter-spacing:0.5px');
+
+    // What is left out keeps the stylesheet's own value rather than being
+    // written as `undefined`.
+    const partial = render({ before: BEFORE, after: AFTER, font: { size: 15 } });
+
+    expect(partial).toContain('--diffine-font-size:15px');
+    expect(partial).not.toContain('--diffine-line-height');
+  });
+
   it('names what the documents are being coloured as, and calls nothing Plain', () => {
     expect(render({ before: BEFORE, after: AFTER })).toContain('>Plain</span>');
     expect(render({ before: BEFORE, after: AFTER, language: 'typescript' })).toContain(
