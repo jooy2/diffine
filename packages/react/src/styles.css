@@ -350,7 +350,10 @@
   background: var(--diffine-surface);
   box-shadow: 0 0.5rem 1.5rem -0.5rem rgb(0 0 0 / 0.25);
   overscroll-behavior: contain;
-  text-align: right;
+  /* The menu hangs from the right edge; the names inside it start at the left.
+     Thirty-five of them are a list to read down, and a column of text with a
+     ragged left edge is a column that has to be found again on every row. */
+  text-align: left;
 }
 
 .diffine-syntax-option {
