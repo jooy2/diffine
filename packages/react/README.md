@@ -8,8 +8,6 @@
 
 📘 **[diffine.cdget.com](https://diffine.cdget.com)** — guides and the full API, in English and Korean.
 
-> **`0.0.1`.** The comparisons and every mode of the view are written and they run. The names are not settled yet, so treat every export as something that can still change shape until `1.0.0`.
-
 ## Install
 
 ```bash

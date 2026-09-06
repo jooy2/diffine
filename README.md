@@ -12,9 +12,6 @@ Guides and the full API, in English and Korean. This README is the map; each pac
 
 > **Diffine works out what changed between two versions and puts it on the screen.** Two panes side by side, the matching lines held level with each other, and the words that actually moved marked inside the lines that carry them — to read in the viewer, or to type into in the editor. Two pictures get the same treatment a pixel at a time: what changed tinted over both, boxed where it is worth stepping to, under one zoom that moves the pair. The comparison and the view are one package: what the engine found is what both of them draw.
 
-> [!NOTE]
-> **`0.0.1`.** The comparisons and every mode of the view are written and they run. The names are not settled yet, so treat every export as something that can still change shape until `1.0.0`.
-
 ## Why Diffine
 
 - **The comparison is a value, not a rendering.** `diffText` hands back rows, blocks and counts, and `diffImage` hands back a byte a pixel, the changes as rectangles, and the counts — plain objects with no React and no DOM in them. Draw one with the viewer, print it in a terminal, or work it out in a worker; the viewer is one consumer of that value rather than the only way to reach it.

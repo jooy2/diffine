@@ -7,12 +7,6 @@ order: 1
 
 Diffine ships as one package per framework. Today that is React, and this page is the whole of what it takes to put a comparison on a page.
 
-::: tip `0.0.1`
-
-Everything here is real and runs — the demos on this site draw from the same source you install. The version number is what it says, though: the names are not settled, and an export can still change shape before `1.0.0`.
-
-:::
-
 ## Requirements
 
 - **React 18 or 19**, as a peer dependency, along with `react-dom`.

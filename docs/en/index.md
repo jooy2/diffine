@@ -49,9 +49,7 @@ features:
 
 ## Where it stands
 
-Diffine is at `0.0.1`. The comparison and the viewer are written, tested and published as [`diffine-react`](https://www.npmjs.com/package/diffine-react) on npm. Every demo on this site is that package running, drawn from the same source you would install.
-
-The names are not settled yet. Treat every export as something that can still change shape until `1.0.0`, and read the [changelog](./changelog) for what moved.
+The comparison, the viewer and the picture diff are written, tested and published as [`diffine-react`](https://www.npmjs.com/package/diffine-react) on npm. Every demo on this site is that package running, drawn from the same source you would install, and the [changelog](./changelog) has what moved between releases.
 
 The packages sit in a folder of their own because more languages are the plan. Each one will version independently and keep its own changelog beside its own manifest, so a release on one side is not a release on another.
 
