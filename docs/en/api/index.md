@@ -11,10 +11,10 @@ Every export of `diffine-react`, in one place. The [guide](../guide/getting-star
 
 | Import                     | What it holds                                                    |
 | -------------------------- | ---------------------------------------------------------------- |
-| `diffine-react`            | Everything: the viewer, the engine and the types.                |
+| `diffine-react`            | Everything: the components, the engine and the types.            |
 | `diffine-react/diff`       | The comparison, with no component reaching the bundle.           |
 | `diffine-react/types`      | The types on their own, for an application naming one in a prop. |
-| `diffine-react/styles.css` | The viewer's stylesheet.                                         |
+| `diffine-react/styles.css` | The stylesheet, for both components.                             |
 
 ## `DiffineViewer`
 
@@ -72,6 +72,7 @@ Anything else the component is given goes straight to the element, so `id`, `cla
 | `before`         | `Before`                                                             |
 | `after`          | `After`                                                              |
 | `empty`          | `Nothing to compare yet.`                                            |
+| `placeholder`    | `Type or paste a document here.`                                     |
 | `identical`      | `The two are the same.`                                              |
 | `added`          | `Added`                                                              |
 | `removed`        | `Removed`                                                            |
@@ -81,7 +82,7 @@ Anything else the component is given goes straight to the element, so `id`, `cla
 | `nextChange`     | `Next change`                                                        |
 | `changePosition` | `Change {position} of {total}`                                       |
 
-`added`, `removed`, `changed` and `changePosition` are read by a screen reader rather than shown. `summary` fills `{changes}`, `{inserted}` and `{deleted}` with the counts.
+`added`, `removed`, `changed` and `changePosition` are read by a screen reader rather than shown. `summary` fills `{changes}`, `{inserted}` and `{deleted}` with the counts. `placeholder` is what an empty field in the editor says.
 
 ### `DiffineHighlight`
 
@@ -99,9 +100,63 @@ interface DiffineToken {
 }
 ```
 
-Called for each line the viewer draws, with the whole line. The runs come back in order; a gap between two of them is drawn plain, and `null` leaves the line alone. `length` counts the same units `String.prototype.slice` does.
+Called for each line either component draws, with the whole line. The runs come back in order; a gap between two of them is drawn plain, and `null` leaves the line alone. `length` counts the same units `String.prototype.slice` does.
 
 The line is cut at the boundaries of both these runs and the comparison's, so a changed word that is half a string literal is drawn as exactly that.
+
+## `DiffineEditor`
+
+```tsx
+<DiffineEditor defaultBefore={saved} defaultAfter={draft} />
+```
+
+The viewer with the two panes made editable. Every prop below that the viewer also takes means the same thing there; the differences are that the sides are never held level, and that there is no unified view.
+
+### The documents
+
+| Prop | Type | Default | What it is |
+| --- | --- | --- | --- |
+| `before` | `string \| DiffineSource` | — | The left document, held by the application. |
+| `after` | `string \| DiffineSource` | — | The right document, held by the application. |
+| `defaultBefore` | `string \| DiffineSource` | `''` | What the left field starts with. |
+| `defaultAfter` | `string \| DiffineSource` | `''` | What the right field starts with. |
+| `onBeforeChange` | `(value: string) => void` | — | The left document was typed into. |
+| `onAfterChange` | `(value: string) => void` | — | The right document was typed into. |
+| `onDiff` | `(result: DiffResult) => void` | — | The comparison, every time it is worked out again. |
+| `readOnly` | `boolean \| 'before' \| 'after'` | `false` | Which side cannot be typed into. |
+| `diff` | `DiffOptions` | — | How the two are compared. Run again on every keystroke. |
+
+Passing `before` or `after` makes that document the application's, in the usual React pair. Which of the two it is, is decided on the first render. `onBeforeChange` and `onAfterChange` are called whichever of the two is holding it.
+
+### The view
+
+| Prop | Type | Default | What it decides |
+| --- | --- | --- | --- |
+| `lineNumbers` | `boolean` | `true` | Whether each line carries its number. |
+| `markers` | `boolean` | `true` | Whether a changed line carries a `+`, `−` or `~`. |
+| `wrap` | `boolean` | `false` | Whether a long line wraps or runs off the side. |
+| `connectors` | `boolean` | `true` | Whether each change is drawn as a band between the panes. |
+| `syncScroll` | `boolean` | `true` | Whether scrolling one pane scrolls the other. |
+| `header` | `boolean` | `true` | Whether each side is named above it. |
+| `navigation` | `boolean` | `true` | Whether the buttons for moving between changes are drawn. |
+| `summary` | `boolean` | `true` | Whether the counts are written under the fields. |
+| `virtualize` | `boolean` | `true` | Whether only the lines a reader can see are drawn. |
+| `tabSize` | `number` | `4` | How wide a tab is drawn, in characters. |
+| `colorScheme` | `'system' \| 'light' \| 'dark'` | `'system'` | Which palette to draw in. |
+| `locale` | `'en' \| 'ko'` | `'en'` | The language of the editor's own words. |
+| `strings` | `Partial<DiffineStrings>` | — | Words to use instead of the locale's. |
+| `highlight` | `DiffineHighlight` | — | How a line is coloured beyond the comparison. |
+
+### Typing
+
+| Prop | Type | Default | What it decides |
+| --- | --- | --- | --- |
+| `indentWithTab` | `boolean` | `false` | Whether Tab types a tab instead of moving to the next control. |
+| `spellCheck` | `boolean` | `false` | Whether the browser marks its own spelling mistakes. |
+
+With `indentWithTab` on, **Shift+Tab** moves back a control and **Escape** hands the next Tab to the browser, so the field is never one a keyboard cannot leave.
+
+`selected`, `defaultSelected` and `onSelectedChange` are the viewer's, unchanged. Anything else the component is given goes straight to the element.
 
 ## `diffText`
 
@@ -225,21 +280,22 @@ Declared on `.diffine`, and overridden the same way.
 
 ### Colours
 
-| Property                 | Light     | Dark      |
-| ------------------------ | --------- | --------- |
-| `--diffine-surface`      | `#ffffff` | `#1b222c` |
-| `--diffine-text`         | `#1f2733` | `#e4e9f0` |
-| `--diffine-muted`        | `#6e798c` | `#8d99ad` |
-| `--diffine-border`       | `#d6dee9` | `#2f3945` |
-| `--diffine-gutter`       | `#f4f7fb` | `#232b36` |
-| `--diffine-accent`       | `#0e7ffc` | `#4c9dff` |
-| `--diffine-insert-line`  | `#e7f8ee` | `#12301f` |
-| `--diffine-insert-piece` | `#a5e9c1` | `#206c42` |
-| `--diffine-delete-line`  | `#fdecee` | `#351c20` |
-| `--diffine-delete-piece` | `#ffc3c8` | `#7f303a` |
-| `--diffine-blank`        | `#f0f3f7` | `#151b23` |
+| Property                 | Light       | Dark        |
+| ------------------------ | ----------- | ----------- |
+| `--diffine-surface`      | `#ffffff`   | `#1b222c`   |
+| `--diffine-text`         | `#1f2733`   | `#e4e9f0`   |
+| `--diffine-muted`        | `#6e798c`   | `#8d99ad`   |
+| `--diffine-border`       | `#d6dee9`   | `#2f3945`   |
+| `--diffine-gutter`       | `#f4f7fb`   | `#232b36`   |
+| `--diffine-accent`       | `#0e7ffc`   | `#4c9dff`   |
+| `--diffine-insert-line`  | `#e7f8ee`   | `#12301f`   |
+| `--diffine-insert-piece` | `#a5e9c1`   | `#206c42`   |
+| `--diffine-delete-line`  | `#fdecee`   | `#351c20`   |
+| `--diffine-delete-piece` | `#ffc3c8`   | `#7f303a`   |
+| `--diffine-blank`        | `#f0f3f7`   | `#151b23`   |
+| `--diffine-selection`    | `#0e7ffc33` | `#4c9dff40` |
 
-The `-line` pair tints a whole row; the `-piece` pair picks out what moved inside it, and only ever sits on top of the paler one.
+The `-line` pair tints a whole row; the `-piece` pair picks out what moved inside it, and only ever sits on top of the paler one. `--diffine-selection` is the editor's alone, and has to stay see-through: the words under a selection are drawn behind the field.
 
 ### Measurements
 

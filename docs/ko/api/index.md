@@ -11,10 +11,10 @@ order: 1
 
 | import                     | 무엇이 들어 있는지                                        |
 | -------------------------- | --------------------------------------------------------- |
-| `diffine-react`            | 전부. 뷰어와 엔진과 타입.                                 |
+| `diffine-react`            | 전부. 컴포넌트와 엔진과 타입.                             |
 | `diffine-react/diff`       | 비교 엔진만. 컴포넌트는 번들에 들어가지 않습니다.         |
 | `diffine-react/types`      | 타입만. prop에 타입 이름을 쓰려는 애플리케이션을 위한 것. |
-| `diffine-react/styles.css` | 뷰어의 스타일시트.                                        |
+| `diffine-react/styles.css` | 두 컴포넌트가 함께 쓰는 스타일시트.                       |
 
 ## `DiffineViewer`
 
@@ -72,6 +72,7 @@ order: 1
 | `before`         | `이전`                                                  |
 | `after`          | `이후`                                                  |
 | `empty`          | `아직 비교할 내용이 없습니다.`                          |
+| `placeholder`    | `여기에 문서를 입력하거나 붙여 넣으세요.`               |
 | `identical`      | `두 문서가 같습니다.`                                   |
 | `added`          | `추가됨`                                                |
 | `removed`        | `삭제됨`                                                |
@@ -81,7 +82,7 @@ order: 1
 | `nextChange`     | `다음 변경`                                             |
 | `changePosition` | `변경 {total}건 중 {position}번째`                      |
 
-`added`, `removed`, `changed`, `changePosition`은 화면에 나오지 않고 스크린 리더가 읽습니다. `summary`의 `{changes}`, `{inserted}`, `{deleted}` 자리에 집계가 들어갑니다.
+`added`, `removed`, `changed`, `changePosition`은 화면에 나오지 않고 스크린 리더가 읽습니다. `summary`의 `{changes}`, `{inserted}`, `{deleted}` 자리에 집계가 들어갑니다. `placeholder`는 에디터의 빈 입력란에 나오는 문구입니다.
 
 ### `DiffineHighlight`
 
@@ -99,9 +100,63 @@ interface DiffineToken {
 }
 ```
 
-뷰어가 그리는 줄마다, 줄 전체를 넘겨 호출합니다. 구간은 순서대로 읽고 사이의 빈 곳은 그냥 그리며, `null`이면 그 줄은 손대지 않습니다. `length`는 `String.prototype.slice`와 같은 단위로 셉니다.
+두 컴포넌트가 그리는 줄마다, 줄 전체를 넘겨 호출합니다. 구간은 순서대로 읽고 사이의 빈 곳은 그냥 그리며, `null`이면 그 줄은 손대지 않습니다. `length`는 `String.prototype.slice`와 같은 단위로 셉니다.
 
 줄은 이 구간과 비교 결과의 경계를 모두 반영해 잘립니다. 문자열의 절반인 바뀐 단어는 문자열의 절반인 바뀐 단어로 그려집니다.
+
+## `DiffineEditor`
+
+```tsx
+<DiffineEditor defaultBefore={saved} defaultAfter={draft} />
+```
+
+두 창을 고칠 수 있게 만든 뷰어입니다. 아래 prop 중 뷰어에도 있는 것은 뜻이 같습니다. 다른 점은 양쪽 높이를 맞추지 않는다는 것과 한 줄로 보기가 없다는 것입니다.
+
+### 문서
+
+| prop | 타입 | 기본값 | 무엇인지 |
+| --- | --- | --- | --- |
+| `before` | `string \| DiffineSource` | — | 왼쪽 문서. 애플리케이션이 들고 있습니다. |
+| `after` | `string \| DiffineSource` | — | 오른쪽 문서. 애플리케이션이 들고 있습니다. |
+| `defaultBefore` | `string \| DiffineSource` | `''` | 왼쪽 입력란이 처음 담을 내용. |
+| `defaultAfter` | `string \| DiffineSource` | `''` | 오른쪽 입력란이 처음 담을 내용. |
+| `onBeforeChange` | `(value: string) => void` | — | 왼쪽 문서가 바뀌었을 때. |
+| `onAfterChange` | `(value: string) => void` | — | 오른쪽 문서가 바뀌었을 때. |
+| `onDiff` | `(result: DiffResult) => void` | — | 비교를 다시 계산할 때마다의 결과. |
+| `readOnly` | `boolean \| 'before' \| 'after'` | `false` | 고칠 수 없는 쪽. |
+| `diff` | `DiffOptions` | — | 두 문서를 비교하는 방식. 글자를 칠 때마다 다시 돌립니다. |
+
+`before`나 `after`를 주면 그 문서는 애플리케이션의 것이 됩니다. 둘 중 어느 쪽인지는 첫 렌더에서 정해집니다. `onBeforeChange`와 `onAfterChange`는 어느 쪽이 들고 있든 호출됩니다.
+
+### 화면
+
+| prop | 타입 | 기본값 | 무엇을 정하는지 |
+| --- | --- | --- | --- |
+| `lineNumbers` | `boolean` | `true` | 줄마다 번호를 붙일지. |
+| `markers` | `boolean` | `true` | 바뀐 줄에 `+`, `−`, `~`를 붙일지. |
+| `wrap` | `boolean` | `false` | 긴 줄을 접을지 옆으로 흘릴지. |
+| `connectors` | `boolean` | `true` | 변경마다 두 창 사이에 띠를 그릴지. |
+| `syncScroll` | `boolean` | `true` | 한쪽을 스크롤하면 다른 쪽도 따라갈지. |
+| `header` | `boolean` | `true` | 각 쪽 위에 이름을 쓸지. |
+| `navigation` | `boolean` | `true` | 변경 사이를 오가는 버튼을 그릴지. |
+| `summary` | `boolean` | `true` | 아래에 집계를 쓸지. |
+| `virtualize` | `boolean` | `true` | 보이는 줄만 그릴지. |
+| `tabSize` | `number` | `4` | 탭을 몇 글자 너비로 그릴지. |
+| `colorScheme` | `'system' \| 'light' \| 'dark'` | `'system'` | 어떤 색으로 그릴지. |
+| `locale` | `'en' \| 'ko'` | `'en'` | 에디터가 쓰는 말의 언어. |
+| `strings` | `Partial<DiffineStrings>` | — | 로케일 문구 대신 쓸 문구. |
+| `highlight` | `DiffineHighlight` | — | 비교 결과와 별개로 줄에 색을 입히는 방법. |
+
+### 입력
+
+| prop            | 타입      | 기본값  | 무엇을 정하는지                             |
+| --------------- | --------- | ------- | ------------------------------------------- |
+| `indentWithTab` | `boolean` | `false` | Tab이 탭 문자를 넣을지, 다음 컨트롤로 갈지. |
+| `spellCheck`    | `boolean` | `false` | 브라우저가 맞춤법 표시를 할지.              |
+
+`indentWithTab`을 켜도 **Shift+Tab**은 이전 컨트롤로 가고 **Escape**는 다음 Tab을 브라우저에 넘깁니다. 키보드로 빠져나올 수 없는 입력란은 되지 않습니다.
+
+`selected`, `defaultSelected`, `onSelectedChange`는 뷰어와 같습니다. 그 밖에 넘긴 것은 그대로 요소로 갑니다.
 
 ## `diffText`
 
@@ -225,21 +280,22 @@ interface DiffEdit {
 
 ### 색
 
-| 속성                     | 밝은 테마 | 어두운 테마 |
-| ------------------------ | --------- | ----------- |
-| `--diffine-surface`      | `#ffffff` | `#1b222c`   |
-| `--diffine-text`         | `#1f2733` | `#e4e9f0`   |
-| `--diffine-muted`        | `#6e798c` | `#8d99ad`   |
-| `--diffine-border`       | `#d6dee9` | `#2f3945`   |
-| `--diffine-gutter`       | `#f4f7fb` | `#232b36`   |
-| `--diffine-accent`       | `#0e7ffc` | `#4c9dff`   |
-| `--diffine-insert-line`  | `#e7f8ee` | `#12301f`   |
-| `--diffine-insert-piece` | `#a5e9c1` | `#206c42`   |
-| `--diffine-delete-line`  | `#fdecee` | `#351c20`   |
-| `--diffine-delete-piece` | `#ffc3c8` | `#7f303a`   |
-| `--diffine-blank`        | `#f0f3f7` | `#151b23`   |
+| 속성                     | 밝은 테마   | 어두운 테마 |
+| ------------------------ | ----------- | ----------- |
+| `--diffine-surface`      | `#ffffff`   | `#1b222c`   |
+| `--diffine-text`         | `#1f2733`   | `#e4e9f0`   |
+| `--diffine-muted`        | `#6e798c`   | `#8d99ad`   |
+| `--diffine-border`       | `#d6dee9`   | `#2f3945`   |
+| `--diffine-gutter`       | `#f4f7fb`   | `#232b36`   |
+| `--diffine-accent`       | `#0e7ffc`   | `#4c9dff`   |
+| `--diffine-insert-line`  | `#e7f8ee`   | `#12301f`   |
+| `--diffine-insert-piece` | `#a5e9c1`   | `#206c42`   |
+| `--diffine-delete-line`  | `#fdecee`   | `#351c20`   |
+| `--diffine-delete-piece` | `#ffc3c8`   | `#7f303a`   |
+| `--diffine-blank`        | `#f0f3f7`   | `#151b23`   |
+| `--diffine-selection`    | `#0e7ffc33` | `#4c9dff40` |
 
-`-line` 쪽이 줄 전체에 옅게 깔리는 색이고, `-piece` 쪽이 그 위에서 바뀐 부분을 짚는 색입니다.
+`-line` 쪽이 줄 전체에 옅게 깔리는 색이고, `-piece` 쪽이 그 위에서 바뀐 부분을 짚는 색입니다. `--diffine-selection`은 에디터만 쓰고, 반투명해야 합니다. 선택 영역 아래의 글자는 입력란 뒤에서 그리기 때문입니다.
 
 ### 치수
 
