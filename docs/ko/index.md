@@ -7,20 +7,20 @@ description: 두 버전을 비교해 무엇이 달라졌는지 보여줍니다. 
 
 hero:
   name: Diffine
-  text: 무엇이, 어디서 달라졌는지
-  tagline: Diffine은 두 버전 사이에서 무엇이 달라졌는지 계산해 화면에 그립니다. 양쪽을 나란히 놓고, 짝이 맞는 줄끼리 높이를 맞추고, 실제로 바뀐 단어를 그 줄 안에서 짚어 줍니다.
+  text: 무엇이 달라졌는지 보여줍니다
+  tagline: 비교 엔진과 나란히 보는 뷰어를 한 패키지에 담은 React 라이브러리입니다. 텍스트와 이미지를, 읽기와 고쳐 쓰기를 모두 지원합니다.
   image:
-    src: /256x256.png
+    src: /hero.png
     alt: Diffine
-    width: 200
-    height: 200
+    width: 300
+    height: 300
   actions:
     - theme: brand
       text: 시작하기
       link: /ko/guide/getting-started
     - theme: alt
-      text: 텍스트 비교
-      link: /ko/guide/text-diff
+      text: 직접 써보기
+      link: /ko/guide/playground
     - theme: alt
       text: API
       link: /ko/api/
@@ -29,30 +29,42 @@ hero:
       link: https://github.com/jooy2/diffine
 
 features:
-  - title: 한 번에 두 단계로 본다
-    details: 먼저 줄을 맞춰 어디가 바뀌었는지 찾고, 바뀐 줄 짝 안에서 다시 단어를 맞춰 무엇이 바뀌었는지 찾습니다. "이 줄이 다르다"와 "이 단어가 다르다"는 다른 이야기이고, 읽는 사람에게 필요한 쪽은 뒤엣것입니다.
+  - title: 줄과 단어를 함께
+    details: 먼저 줄을 맞추고, 고쳐진 줄 짝 안에서 단어를 한 번 더 맞춥니다.
     link: /ko/guide/diff
     linkText: 비교 결과
-  - title: 결과는 그림이 아니라 값이다
-    details: 비교 결과로 행과 변경 목록과 집계를 돌려줍니다. React도 DOM도 섞이지 않은 평범한 객체라 뷰어로 그려도 되고, 다른 곳에 출력해도 되고, 워커에서 미리 계산해 넘겨도 됩니다. 뷰어는 그 값을 쓰는 여러 방법 중 하나입니다.
+  - title: 결과는 평범한 객체
+    details: 엔진은 행과 변경 목록과 집계를 돌려줍니다. React도 DOM도 섞이지 않은 평범한 객체입니다.
     link: /ko/guide/diff
     linkText: 비교 결과
-  - title: 화면 요소는 전부 옵션이다
-    details: 줄 번호, 줄 바꿈, 양쪽 높이 맞추기, 가운데 연결선, 한 줄로 보기. 각각이 기본값을 가진 prop이라 스타일시트를 건드리지 않고도 연결선까지 갖춘 좌우 비교부터 줄만 나열한 화면까지 갑니다.
+  - title: 화면 요소는 전부 prop
+    details: 줄 번호, 줄 바꿈, 높이 맞추기, 연결선, 한 줄로 보기. 각각 기본값이 있고 스타일시트를 건드릴 일이 없습니다.
     link: /ko/guide/text-diff
     linkText: 텍스트 비교
-  - title: 의존성은 하나, 쓸 때만 내려받는다
-    details: 비교 엔진도, 높이를 맞추는 계산도, 뷰어도 직접 만들었습니다. 비교 라이브러리도, 에디터 컴포넌트도, CSS 프레임워크도 없습니다. highlight.js 하나가 예외인데, 문법과 함께 import() 뒤에 있어서 색을 입히지 않는 페이지는 아무것도 내려받지 않습니다.
+  - title: 의존성은 하나
+    details: highlight.js 하나뿐이고 import() 뒤에 있습니다. 색을 입히지 않는 페이지는 아무것도 내려받지 않습니다.
     link: /ko/guide/getting-started
     linkText: 시작하기
 ---
 
-## 지금 상태
+## 무엇을 할 수 있나
 
-비교 엔진과 뷰어, 그림 비교를 만들고 테스트해 [`diffine-react`](https://www.npmjs.com/package/diffine-react)로 npm에 올렸습니다. 이 사이트의 예제는 전부 그 패키지가 실제로 돌아가는 화면이고, 설치했을 때와 같은 소스를 그립니다. 릴리스 사이에 무엇이 바뀌었는지는 [변경 기록](./changelog)에 있습니다.
+- 두 문서를 줄 단위로 비교하고, 바뀐 줄 안에서 다시 단어나 글자 단위로 비교
+- 두 이미지를 픽셀 단위로 비교. 허용 오차, 경계 보정, 어긋남 보정 지원
+- 텍스트는 좌우 비교와 한 줄로 보기, 이미지는 좌우·겹쳐 보기·나눠 보기·마스크
+- 브라우저의 되돌리기와 입력기와 선택 영역을 그대로 쓰는 에디터 모드
+- 창마다 따로 도는 찾기와 바꾸기
+- 34개 언어 구문 강조. 직접 만든 강조기도 연결 가능
+- 2만 줄짜리 문서도 끊김 없이 스크롤
+- 밝은 테마와 어두운 테마, 영어와 한국어, 키보드와 스크린 리더 지원
+- TypeScript 타입 선언 포함
 
-패키지를 따로 폴더에 둔 이유는 다른 언어로도 낼 계획이기 때문입니다. 각 패키지는 자기 매니페스트 옆에 자기 변경 기록을 두고 따로 버전을 매기므로, 한쪽의 릴리스가 다른 쪽의 릴리스는 아닙니다.
+## 두 문서 비교
 
 <DiffineDemo sample="code" controls colour height="24rem" />
 
-[시작하기](./guide/getting-started)에 지금 있는 기능이 다 정리돼 있습니다.
+## 두 이미지 비교
+
+<DiffinePictures sample="retouched" height="24rem" />
+
+둘 다 npm에 올라간 패키지가 이 페이지에서 실제로 도는 화면입니다. 설치와 첫 컴포넌트는 [시작하기](./guide/getting-started)에 있습니다.
