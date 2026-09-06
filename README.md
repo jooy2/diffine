@@ -70,6 +70,12 @@ There is no install at the repository root and no root manifest of any kind — 
 
 The site is also served in Korean at [diffine.cdget.com/ko/](https://diffine.cdget.com/ko/).
 
+## Contributing
+
+Issues and pull requests are both welcome. [CONTRIBUTING.md](CONTRIBUTING.md) says what to run where, what a commit message looks like, and what a change is expected to carry with it. Taking part means agreeing to the [Code of Conduct](CODE_OF_CONDUCT.md).
+
+A security problem goes through [SECURITY.md](SECURITY.md) rather than through an issue: an issue is public from the moment it is opened.
+
 ## License
 
 [MIT](LICENSE) © [CDGet](https://cdget.com)

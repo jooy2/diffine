@@ -1,0 +1,5 @@
+# The platforms GitHub draws a "Sponsor" button for, at the top of the
+# repository and beside each release.
+
+github: jooy2
+custom: ["https://cdget.com/donate"]
