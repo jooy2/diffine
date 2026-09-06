@@ -21,10 +21,13 @@ import { useSyntaxHighlight } from '../../internal/highlight/useSyntax.js';
 import { stringsFor } from '../../internal/i18n.js';
 import { useRowAlignment } from '../../internal/layout.js';
 import { useChangeNavigation } from '../../internal/navigate.js';
+import type { PaneLayout } from '../../internal/rows.js';
 import { changeOfRow, splitLayout, unifiedLayout } from '../../internal/rows.js';
 import { useSyncedScroll } from '../../internal/scroll.js';
+import { useDocumentSearch, type DocumentSearch } from '../../internal/search.js';
 import { sourceOf } from '../../internal/source.js';
 import { useVirtualRows } from '../../internal/virtual.js';
+import { DiffineFind, DiffineFindToggle } from '../shared/DiffineFind.js';
 import { DiffineLanguageName } from '../shared/DiffineLanguage.js';
 import { DiffineLinks } from '../shared/DiffineLinks.js';
 import { DiffineNav } from '../shared/DiffineNav.js';
@@ -139,6 +142,22 @@ export interface DiffineViewerProps extends Omit<
   summary?: boolean;
 
   /**
+   * Whether a reader can search the documents from inside the viewer.
+   *
+   * A pane at a time, which is what a comparison wants: a name being chased
+   * through the version on the left is not a name being chased through the
+   * version on the right, so each side has a button in the bar above it and a
+   * bar of its own underneath. Ctrl+F, or Cmd+F, opens the one for the pane the
+   * keyboard is in.
+   *
+   * It is also what reaches text `virtualize` has left undrawn, which the
+   * browser's own find cannot.
+   *
+   * @default true
+   */
+  search?: boolean;
+
+  /**
    * Whether only the lines a reader can see are drawn.
    *
    * A comparison of twenty thousand lines is twenty thousand rows in the page,
@@ -231,6 +250,9 @@ export interface DiffineViewerProps extends Omit<
   highlight?: DiffineHighlight;
 }
 
+/** No lines at all, for the second pane of a view that only draws one. */
+const NO_LINES: PaneLayout = { lines: [], positions: new Int32Array(0), widest: null };
+
 /**
  * Two documents, and what happened between them.
  *
@@ -261,6 +283,7 @@ export function DiffineViewer({
   header = true,
   navigation = true,
   summary = true,
+  search = true,
   virtualize = true,
   selected: selectedProp,
   defaultSelected = -1,
@@ -275,6 +298,7 @@ export function DiffineViewer({
   highlight,
   className,
   style,
+  onKeyDown: onKeyDownProp,
   ...rest
 }: DiffineViewerProps): React.JSX.Element {
   const strings = React.useMemo(() => stringsFor(locale, overrides), [locale, overrides]);
@@ -396,6 +420,55 @@ export function DiffineViewer({
     onSelectedChange
   });
 
+  /*
+   * One search per pane, opened and closed on its own.
+   *
+   * Both are held whichever view is drawn, because a hook cannot be called
+   * behind a condition: a unified view has one pane, and the second search runs
+   * over no lines until a split view puts a document back under it.
+   */
+  const searchable = search && !empty;
+  const firstSearch = useDocumentSearch({
+    enabled: searchable,
+    layout: layouts[0],
+    pane: firstPane,
+    rowHeight,
+    remeasure
+  });
+  const secondSearch = useDocumentSearch({
+    enabled: searchable && split,
+    layout: layouts[1] ?? NO_LINES,
+    pane: secondPane,
+    rowHeight,
+    remeasure
+  });
+
+  /** Which pane a key was pressed in, which is the one the shortcut opens. */
+  function searchOf(target: EventTarget | null): DocumentSearch {
+    const element = target instanceof Element ? target.closest('[data-side]') : null;
+
+    return split && element?.getAttribute('data-side') === 'after' ? secondSearch : firstSearch;
+  }
+
+  function onKeyDown(event: React.KeyboardEvent<HTMLDivElement>): void {
+    onKeyDownProp?.(event);
+
+    if (!searchable || event.defaultPrevented) {
+      return;
+    }
+
+    // Ctrl+F, or Cmd+F where that is the modifier. Every other combination with
+    // an F in it belongs to the browser, and Shift is one of them.
+    if (!(event.ctrlKey || event.metaKey) || event.altKey || event.shiftKey) {
+      return;
+    }
+
+    if (event.key.toLowerCase() === 'f') {
+      event.preventDefault();
+      searchOf(event.target).show();
+    }
+  }
+
   const syntax = useSyntaxHighlight(language, comparison.before, comparison.after);
   // The application's own highlighter replaces the language rather than joining
   // it. A line has one set of runs, and two of them cutting it at once is not a
@@ -403,8 +476,10 @@ export function DiffineViewer({
   const colour = highlight ?? syntax;
 
   const digits = String(Math.max(comparison.before.length, comparison.after.length, 1)).length;
-  const tools = (navigation && !empty) || languageLabel;
+  const tools = (navigation && !empty) || languageLabel || searchable;
   const bar = header || tools;
+  const bothLabel = `${beforeSource.label} → ${afterSource.label}`;
+  const firstLabel = split ? beforeSource.label : bothLabel;
 
   return (
     <div
@@ -427,12 +502,22 @@ export function DiffineViewer({
           ...style
         } as React.CSSProperties
       }
+      onKeyDown={onKeyDown}
       {...rest}
     >
       {bar ? (
         <div className="diffine-header">
           <div className="diffine-title" data-side="before">
             {header ? <span className="diffine-label">{beforeSource.label}</span> : null}
+            {searchable && split ? (
+              <div className="diffine-tools">
+                <DiffineFindToggle
+                  search={firstSearch}
+                  label={beforeSource.label}
+                  strings={strings}
+                />
+              </div>
+            ) : null}
           </div>
           {split && connectors ? <div className="diffine-title-gap" aria-hidden="true" /> : null}
           <div className="diffine-title" data-side="after">
@@ -444,6 +529,13 @@ export function DiffineViewer({
                     total={comparison.changes.length}
                     current={current}
                     onStep={step}
+                    strings={strings}
+                  />
+                ) : null}
+                {searchable ? (
+                  <DiffineFindToggle
+                    search={split ? secondSearch : firstSearch}
+                    label={split ? afterSource.label : bothLabel}
                     strings={strings}
                   />
                 ) : null}
@@ -462,7 +554,7 @@ export function DiffineViewer({
         <div className="diffine-body">
           <DiffineViewerPane
             side={split ? 'before' : 'unified'}
-            name={split ? beforeSource.label : `${beforeSource.label} → ${afterSource.label}`}
+            name={firstLabel}
             layout={layouts[0]}
             window={windows[0]}
             rowHeight={rowHeight}
@@ -471,6 +563,8 @@ export function DiffineViewer({
             markers={markers}
             strings={strings}
             highlight={colour}
+            matches={firstSearch.rows}
+            match={firstSearch.match}
             paneRef={firstPane}
           />
           {split && connectors ? (
@@ -497,11 +591,43 @@ export function DiffineViewer({
               markers={markers}
               strings={strings}
               highlight={colour}
+              matches={secondSearch.rows}
+              match={secondSearch.match}
               paneRef={secondPane}
             />
           ) : null}
         </div>
       )}
+
+      {firstSearch.open || secondSearch.open ? (
+        <div className="diffine-find-bar">
+          <div className="diffine-find-cell" data-side="before">
+            {firstSearch.open ? (
+              <DiffineFind
+                search={firstSearch}
+                label={firstLabel}
+                replaceable={false}
+                onClose={() => firstPane.current?.focus()}
+                strings={strings}
+              />
+            ) : null}
+          </div>
+          {split && connectors ? <div className="diffine-find-gap" aria-hidden="true" /> : null}
+          {split ? (
+            <div className="diffine-find-cell" data-side="after">
+              {secondSearch.open ? (
+                <DiffineFind
+                  search={secondSearch}
+                  label={afterSource.label}
+                  replaceable={false}
+                  onClose={() => secondPane.current?.focus()}
+                  strings={strings}
+                />
+              ) : null}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
 
       {summary && !empty ? (
         <DiffineSummary

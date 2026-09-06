@@ -69,6 +69,7 @@ describe('DiffineViewer', () => {
       header: false,
       navigation: false,
       summary: false,
+      search: false,
       languageLabel: false
     });
 
@@ -353,5 +354,30 @@ describe('colouring a line', () => {
     const markup = render({ before: 'one', after: 'one', highlight: () => null });
 
     expect(markup).toContain('<span class="diffine-text">one</span>');
+  });
+});
+
+describe('searching a pane', () => {
+  it('gives each pane a button of its own, named for the side it opens', () => {
+    const markup = render({ before: BEFORE, after: { content: AFTER, label: 'v2' } });
+
+    expect(markup).toContain('aria-label="Find in Before"');
+    expect(markup).toContain('aria-label="Find in v2"');
+  });
+
+  it('draws one button for a view with one pane in it', () => {
+    const unified = render({ before: BEFORE, after: AFTER, view: 'unified' });
+
+    expect([...unified.matchAll(/aria-label="Find in /g)]).toHaveLength(1);
+    expect(unified).toContain('aria-label="Find in Before → After"');
+  });
+
+  it('draws no button at all when it is turned off, or when there is nothing to search', () => {
+    expect(render({ before: BEFORE, after: AFTER, search: false })).not.toContain('Find in');
+    expect(render({ before: '', after: '' })).not.toContain('Find in');
+  });
+
+  it('leaves the bar closed until a reader asks for it', () => {
+    expect(render({ before: BEFORE, after: AFTER })).not.toContain('diffine-find-bar');
   });
 });

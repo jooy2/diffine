@@ -3,6 +3,7 @@
 import * as React from 'react';
 import type { DiffineStrings } from '../../types.js';
 import { fill } from '../../internal/i18n.js';
+import { Chevron } from './DiffineIcons.js';
 
 export interface DiffineNavProps {
   total: number;
@@ -61,26 +62,5 @@ export function DiffineNav({
         {current < 0 ? '' : fill(strings.changePosition, { position: current + 1, total })}
       </span>
     </div>
-  );
-}
-
-/** Drawn rather than imported: two lines are not worth a dependency. */
-function Chevron({ up = false }: { up?: boolean }): React.JSX.Element {
-  return (
-    <svg
-      className="diffine-chevron"
-      viewBox="0 0 16 16"
-      width="14"
-      height="14"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.75"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-      focusable="false"
-    >
-      <path d={up ? 'M3.5 10 8 5.5 12.5 10' : 'M3.5 6 8 10.5 12.5 6'} />
-    </svg>
   );
 }

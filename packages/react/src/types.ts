@@ -321,8 +321,8 @@ export interface DiffineSource {
 /**
  * Every word the viewer puts on the screen.
  *
- * Two of these are read by a screen reader rather than shown, which is why they
- * are sentences rather than labels.
+ * Some of these are read by a screen reader rather than shown, which is why
+ * they are sentences rather than labels.
  */
 export interface DiffineStrings {
   /** The header over the left side, and its region's name. */
@@ -357,6 +357,32 @@ export interface DiffineStrings {
   nextChange: string;
   /** Which change is being looked at: `{position}` of `{total}`. */
   changePosition: string;
+  /** The name of the button that opens the search bar, and of its field. */
+  search: string;
+  /** Which side is being searched, for the button above each pane: `{label}`. */
+  searchIn: string;
+  /** The name of the button that moves back a match. */
+  searchPrevious: string;
+  /** The name of the button that moves on a match. */
+  searchNext: string;
+  /** The name of the button that closes the search bar. */
+  searchClose: string;
+  /** Which match is being looked at: `{position}` of `{total}`. */
+  searchPosition: string;
+  /** What is said when the query found nothing. */
+  searchEmpty: string;
+  /** The name of the switch for telling `Title` from `title`. */
+  matchCase: string;
+  /** The name of the switch for matching whole words only. */
+  wholeWord: string;
+  /** The name of the switch for reading the query as a regular expression. */
+  regex: string;
+  /** The name of the button that writes over the match being looked at. */
+  replace: string;
+  /** What the field holding the text to write instead is called. */
+  replaceWith: string;
+  /** The name of the button that writes over every match. */
+  replaceAll: string;
 }
 
 /**

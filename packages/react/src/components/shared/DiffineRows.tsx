@@ -3,6 +3,7 @@
 import * as React from 'react';
 import type { DiffineHighlight, DiffineStrings } from '../../types.js';
 import type { PaneLayout } from '../../internal/rows.js';
+import type { SearchMatch } from '../../internal/search.js';
 import type { VirtualWindow } from '../../internal/virtual.js';
 import { DiffineLine } from './DiffineLine.js';
 
@@ -18,6 +19,10 @@ export interface DiffineRowsProps {
   markers: boolean;
   strings: DiffineStrings;
   highlight?: DiffineHighlight;
+  /** What a search found, keyed by the line it found it in. */
+  matches?: ReadonlyMap<number, readonly SearchMatch[]>;
+  /** The match a reader is on, which is the one drawn differently from the rest. */
+  match?: SearchMatch | null;
 }
 
 /**
@@ -37,7 +42,9 @@ export function DiffineRows({
   lineNumbers,
   markers,
   strings,
-  highlight
+  highlight,
+  matches,
+  match
 }: DiffineRowsProps): React.JSX.Element {
   const above = shown.start * rowHeight;
   const below = (layout.lines.length - shown.end) * rowHeight;
@@ -68,6 +75,8 @@ export function DiffineRows({
             markers={markers}
             strings={strings}
             highlight={highlight}
+            matches={matches?.get(row)}
+            match={match}
           />
         );
       })}

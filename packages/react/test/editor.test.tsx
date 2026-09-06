@@ -143,6 +143,7 @@ describe('DiffineEditor', () => {
       header: false,
       navigation: false,
       summary: false,
+      search: false,
       languagePicker: false
     });
 
@@ -227,5 +228,24 @@ describe('DiffineEditor', () => {
 
     expect(wrapped).toContain('data-wrap="true"');
     expect(wrapped).toContain('wrap="soft"');
+  });
+});
+
+describe('searching a field', () => {
+  it('gives each field a button of its own, named for the side it opens', () => {
+    const markup = render({
+      defaultBefore: { content: BEFORE, label: 'saved' },
+      defaultAfter: AFTER
+    });
+
+    expect(markup).toContain('aria-label="Find in saved"');
+    expect(markup).toContain('aria-label="Find in After"');
+  });
+
+  it('draws no button when it is turned off', () => {
+    const off = render({ defaultBefore: BEFORE, defaultAfter: AFTER, search: false });
+
+    expect(off).not.toContain('Find in');
+    expect(off).not.toContain('diffine-find-bar');
   });
 });

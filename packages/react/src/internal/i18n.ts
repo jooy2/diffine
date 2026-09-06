@@ -1,11 +1,12 @@
 /**
  * The words the components put on the screen.
  *
- * There are fourteen of them, and there will not be many more: what these draw is
- * two documents, and everything else on the screen came out of those documents.
+ * There are not many, and there will not be many more: what these draw is two
+ * documents, and everything else on the screen came out of those documents.
  * What is here is the frame around them — what each side is called, what an
- * empty field invites, what is said when there is nothing to show, and what a
- * screen reader is told about a view whose whole meaning is in its colours.
+ * empty field invites, what is said when there is nothing to show, what the
+ * controls above and below the panes are named, and what a screen reader is
+ * told about a view whose whole meaning is in its colours.
  *
  * An application whose language is not on this list passes `strings` instead,
  * and one whose language is on it can still pass `strings` to change a word.
@@ -28,7 +29,20 @@ const LOCALES: Record<DiffineLocale, DiffineStrings> = {
     documentSize: '{label}: {characters} characters, {size}',
     previousChange: 'Previous change',
     nextChange: 'Next change',
-    changePosition: 'Change {position} of {total}'
+    changePosition: 'Change {position} of {total}',
+    search: 'Find',
+    searchIn: 'Find in {label}',
+    searchPrevious: 'Previous match',
+    searchNext: 'Next match',
+    searchClose: 'Close find',
+    searchPosition: 'Match {position} of {total}',
+    searchEmpty: 'No matches',
+    matchCase: 'Match case',
+    wholeWord: 'Whole word',
+    regex: 'Regular expression',
+    replace: 'Replace',
+    replaceWith: 'Replace with',
+    replaceAll: 'Replace all'
   },
   ko: {
     before: '이전',
@@ -44,7 +58,20 @@ const LOCALES: Record<DiffineLocale, DiffineStrings> = {
     documentSize: '{label}: {characters}자, {size}',
     previousChange: '이전 변경',
     nextChange: '다음 변경',
-    changePosition: '변경 {total}건 중 {position}번째'
+    changePosition: '변경 {total}건 중 {position}번째',
+    search: '찾기',
+    searchIn: '{label}에서 찾기',
+    searchPrevious: '이전 결과',
+    searchNext: '다음 결과',
+    searchClose: '찾기 닫기',
+    searchPosition: '결과 {total}건 중 {position}번째',
+    searchEmpty: '결과 없음',
+    matchCase: '대소문자 구분',
+    wholeWord: '단어 단위',
+    regex: '정규식',
+    replace: '바꾸기',
+    replaceWith: '바꿀 내용',
+    replaceAll: '모두 바꾸기'
   }
 };
 

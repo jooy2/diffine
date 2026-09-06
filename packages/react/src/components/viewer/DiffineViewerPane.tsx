@@ -3,6 +3,7 @@
 import * as React from 'react';
 import type { DiffineHighlight, DiffineStrings } from '../../types.js';
 import type { PaneLayout } from '../../internal/rows.js';
+import type { SearchMatch } from '../../internal/search.js';
 import type { VirtualWindow } from '../../internal/virtual.js';
 import { DiffineRows } from '../shared/DiffineRows.js';
 
@@ -20,6 +21,10 @@ export interface DiffineViewerPaneProps {
   markers: boolean;
   strings: DiffineStrings;
   highlight?: DiffineHighlight;
+  /** What a search found, keyed by the line it found it in. */
+  matches?: ReadonlyMap<number, readonly SearchMatch[]>;
+  /** The match a reader is on, which is the one drawn differently from the rest. */
+  match?: SearchMatch | null;
   paneRef: React.RefObject<HTMLDivElement | null>;
   side: string;
 }
@@ -35,6 +40,8 @@ export function DiffineViewerPane({
   markers,
   strings,
   highlight,
+  matches,
+  match,
   paneRef,
   side
 }: DiffineViewerPaneProps): React.JSX.Element {
@@ -57,6 +64,8 @@ export function DiffineViewerPane({
           markers={markers}
           strings={strings}
           highlight={highlight}
+          matches={matches}
+          match={match}
         />
       </div>
     </div>

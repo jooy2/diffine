@@ -45,6 +45,12 @@
   --diffine-code-variable: #c2410c;
   --diffine-code-meta: #6e798c;
 
+  /* What a search found, and the one of those a reader is being shown. A third
+     colour rather than the accent: a match can land on a line that is already
+     tinted green or red, and it has to be legible on all three grounds. */
+  --diffine-search: #ffe9a8;
+  --diffine-search-current: #ffbd3d;
+
   /* The space opposite a line that has no counterpart. */
   --diffine-blank: #f0f3f7;
 
@@ -142,6 +148,8 @@
     --diffine-code-meta: #8d99ad;
     --diffine-insert-text: #5fd08a;
     --diffine-delete-text: #ff8b95;
+    --diffine-search: #5c4713;
+    --diffine-search-current: #8a5c0f;
     --diffine-blank: #151b23;
     --diffine-selection: #4c9dff40;
   }
@@ -160,6 +168,8 @@
   --diffine-delete-piece: #7f303a;
   --diffine-insert-text: #5fd08a;
   --diffine-delete-text: #ff8b95;
+  --diffine-search: #5c4713;
+  --diffine-search-current: #8a5c0f;
   --diffine-blank: #151b23;
   --diffine-selection: #4c9dff40;
 }
@@ -624,6 +634,27 @@
   background: var(--diffine-delete-piece);
 }
 
+/* ---- What a search found -------------------------------------------------
+ *
+ * Written after the pieces above rather than before them, which is what settles
+ * a run that is both: a word somebody searched for inside a word that changed
+ * carries the same weight from both rules, so the last one wins and a reader
+ * looking for something sees what they are looking for.
+ * ----------------------------------------------------------------------- */
+
+.diffine-found,
+.diffine-piece[data-found] {
+  border-radius: 0.1875rem;
+  padding-block: 0.0625rem;
+  background: var(--diffine-search);
+}
+
+/* The one of them a reader has been taken to. */
+.diffine-found[data-current='true'],
+.diffine-piece[data-found='current'] {
+  background: var(--diffine-search-current);
+}
+
 /* ---- What the highlighter says -------------------------------------------
  *
  * Every class highlight.js emits, mapped onto the eight colours above.
@@ -786,7 +817,11 @@
   color: var(--diffine-muted);
 }
 
-.diffine-nav-button {
+/* One square with a mark in it, which is every button on the component that is
+   not a word: the two that move between changes, the two that move between
+   matches, and the ones that open and close the search bar. */
+.diffine-nav-button,
+.diffine-icon-button {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -801,19 +836,28 @@
   cursor: pointer;
 }
 
-.diffine-nav-button:hover:not(:disabled) {
+.diffine-nav-button:hover:not(:disabled),
+.diffine-icon-button:hover:not(:disabled) {
   background: var(--diffine-surface);
   color: var(--diffine-text);
 }
 
-.diffine-nav-button:focus-visible {
+.diffine-nav-button:focus-visible,
+.diffine-icon-button:focus-visible {
   outline: 2px solid var(--diffine-accent);
   outline-offset: -2px;
 }
 
-.diffine-nav-button:disabled {
+.diffine-nav-button:disabled,
+.diffine-icon-button:disabled {
   opacity: 0.4;
   cursor: default;
+}
+
+/* The button above a pane, while that pane's bar is open. */
+.diffine-icon-button[aria-expanded='true'] {
+  background: var(--diffine-surface);
+  color: var(--diffine-accent);
 }
 
 .diffine-nav-position {
@@ -845,6 +889,218 @@
  */
 .diffine-link[data-current='true'] .diffine-link-edge {
   stroke-width: 2;
+}
+
+/* ---- Searching -----------------------------------------------------------
+ *
+ * The bar under a pane, on the same grid the header and the counts are on.
+ *
+ * Which is what makes one bar per pane possible without a wrapper around each
+ * of them: the left half is under the left pane and the right half under the
+ * right one, exactly as the two names above them are, so each bar sits under
+ * the document it searches. And the panes themselves are untouched — a column
+ * that held a bar inside it would be shorter than the column of bands beside
+ * it, and every change drawn between the two would be pointing at the wrong
+ * line.
+ *
+ * A side opens and closes on its own. The grid is drawn as soon as either of
+ * them is open, and the half belonging to the other one is empty.
+ * ----------------------------------------------------------------------- */
+
+.diffine-find-bar {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  flex: 0 0 auto;
+  border-top: 1px solid var(--diffine-border);
+  background: var(--diffine-gutter);
+}
+
+.diffine[data-linked='true'] .diffine-find-bar {
+  grid-template-columns: 1fr var(--diffine-links-width) 1fr;
+}
+
+/* One pane, so one bar across the whole of it. */
+.diffine[data-view='unified'] .diffine-find-bar {
+  grid-template-columns: 1fr;
+}
+
+.diffine-find-cell {
+  display: flex;
+  overflow: hidden;
+  min-width: 0;
+  padding: 0.25rem 0.5rem;
+}
+
+.diffine-find {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: flex-start;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+/* Two rows where there is a replacement to type, one where there is not. */
+.diffine-find-rows {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.diffine-find-row {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+/*
+ * The query and the three switches that read it, drawn as one control.
+ *
+ * The switches are inside the box rather than beside it because they are part
+ * of the question being asked — whether `Title` counts as `title` is not a
+ * separate setting from the word being looked for — and because a row this
+ * narrow has no width to spare for them anywhere else.
+ */
+.diffine-find-box {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 0.0625rem;
+  min-width: 4rem;
+  padding-inline: 0.375rem 0.125rem;
+  border: 1px solid var(--diffine-border);
+  border-radius: 0.25rem;
+  background: var(--diffine-surface);
+}
+
+.diffine-find-box:focus-within {
+  border-color: var(--diffine-accent);
+  box-shadow: 0 0 0 1px var(--diffine-accent);
+}
+
+/* A query with nothing to find, said in the colour a deletion is drawn in —
+   which is the component's own word for "this is not there". */
+.diffine-find-box[data-empty='true'] {
+  border-color: var(--diffine-delete-text);
+}
+
+.diffine-find-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding-block: 0.1875rem;
+  border: 0;
+  outline: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+}
+
+.diffine-find-input::placeholder {
+  opacity: 1;
+  color: var(--diffine-muted);
+}
+
+.diffine-find-flags {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 0.0625rem;
+}
+
+.diffine-find-flag {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.375rem;
+  height: 1.25rem;
+  padding-inline: 0.1875rem;
+  border: 0;
+  border-radius: 0.1875rem;
+  background: none;
+  color: var(--diffine-muted);
+  font: inherit;
+  letter-spacing: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+}
+
+/* Which of the three it is, said in the mark itself: `Aa` is the case, `ab`
+   underlined is the whole word it has to be, `.*` is an expression. */
+.diffine-find-flag[data-flag='word'] {
+  text-decoration: underline;
+}
+
+.diffine-find-flag:hover {
+  background: var(--diffine-gutter);
+  color: var(--diffine-text);
+}
+
+.diffine-find-flag[aria-pressed='true'] {
+  background: var(--diffine-selection);
+  color: var(--diffine-text);
+}
+
+.diffine-find-flag:focus-visible {
+  outline: 2px solid var(--diffine-accent);
+  outline-offset: -2px;
+}
+
+/* Which match a reader is on, drawn for the eye. A screen reader is told the
+   same thing in a sentence, exactly as it is for the count of changes. */
+.diffine-find-count {
+  flex: 0 0 auto;
+  min-width: 6ch;
+  padding-inline: 0.125rem;
+  color: var(--diffine-muted);
+  white-space: nowrap;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  user-select: none;
+}
+
+/* The disclosure for the row that replaces: the mark that points at the next
+   change, laid on its side while the row it opens is closed. */
+.diffine-find-more {
+  margin-block-start: 0.0625rem;
+}
+
+.diffine-find-more[aria-expanded='false'] .diffine-chevron {
+  transform: rotate(-90deg);
+}
+
+/* The two buttons that write. They are words rather than marks: nothing drawn
+   in fourteen pixels says "over every one of them" clearly enough to be pressed
+   without being read first. */
+.diffine-find-action {
+  flex: 0 0 auto;
+  padding: 0.125rem 0.5rem;
+  border: 1px solid var(--diffine-border);
+  border-radius: 0.25rem;
+  background: var(--diffine-surface);
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.diffine-find-action:hover:not(:disabled) {
+  border-color: var(--diffine-accent);
+  color: var(--diffine-text);
+}
+
+.diffine-find-action:focus-visible {
+  outline: 2px solid var(--diffine-accent);
+  outline-offset: -2px;
+}
+
+.diffine-find-action:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 
 /* ---- The lines that are not drawn ---------------------------------------- */

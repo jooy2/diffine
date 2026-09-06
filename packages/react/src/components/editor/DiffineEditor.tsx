@@ -17,6 +17,7 @@ import type {
 } from '../../types.js';
 import { diffText } from '../../diff.js';
 import { useControlled } from '../../internal/controlled.js';
+import { typeOver } from '../../internal/field.js';
 import { fontVariables } from '../../internal/font.js';
 import { stringsFor } from '../../internal/i18n.js';
 import { useIsomorphicLayoutEffect } from '../../internal/layout.js';
@@ -24,8 +25,16 @@ import { useChangeNavigation } from '../../internal/navigate.js';
 import { changeOfRow, fieldLayout } from '../../internal/rows.js';
 import { useSyntaxHighlight } from '../../internal/highlight/useSyntax.js';
 import { useSyncedScroll } from '../../internal/scroll.js';
+import {
+  lineStarts,
+  rangeOf,
+  replacedText,
+  useDocumentSearch,
+  type SearchMatch
+} from '../../internal/search.js';
 import { contentOf, sourceOf } from '../../internal/source.js';
 import { useVirtualRows } from '../../internal/virtual.js';
+import { DiffineFind, DiffineFindToggle } from '../shared/DiffineFind.js';
 import { DiffineLanguagePicker } from '../shared/DiffineLanguage.js';
 import { DiffineLinks } from '../shared/DiffineLinks.js';
 import { DiffineNav } from '../shared/DiffineNav.js';
@@ -141,6 +150,18 @@ export interface DiffineEditorProps extends Omit<
    * @default true
    */
   summary?: boolean;
+
+  /**
+   * Whether a reader can search the documents from inside the editor.
+   *
+   * A pane at a time, with a button in the bar above each side and a bar of its
+   * own underneath it. Ctrl+F, or Cmd+F, opens the one for the field the caret
+   * is in; Ctrl+R opens it with the row for replacing already drawn, which a
+   * side that cannot be typed into does not get.
+   *
+   * @default true
+   */
+  search?: boolean;
 
   /**
    * Whether only the lines a reader can see are drawn behind the fields.
@@ -301,6 +322,7 @@ export function DiffineEditor({
   header = true,
   navigation = true,
   summary = true,
+  search = true,
   virtualize = true,
   selected: selectedProp,
   defaultSelected = -1,
@@ -319,6 +341,7 @@ export function DiffineEditor({
   highlight,
   className,
   style,
+  onKeyDown: onKeyDownProp,
   ...rest
 }: DiffineEditorProps): React.JSX.Element {
   const strings = React.useMemo(() => stringsFor(locale, overrides), [locale, overrides]);
@@ -337,6 +360,14 @@ export function DiffineEditor({
 
   const beforePane = React.useRef<HTMLDivElement>(null);
   const afterPane = React.useRef<HTMLDivElement>(null);
+  // The fields themselves, held here rather than inside the panes: a search
+  // moves the caret to what it found, and a replace writes through the
+  // browser's own editing command, and both of those are the field's business.
+  const beforeField = React.useRef<HTMLTextAreaElement>(null);
+  const afterField = React.useRef<HTMLTextAreaElement>(null);
+
+  const beforeReadOnly = readOnly === true || readOnly === 'before';
+  const afterReadOnly = readOnly === true || readOnly === 'after';
 
   // Every option of its own rather than the object holding them. An application
   // that writes `diff={{ whitespace: 'trailing' }}` inline hands over a new
@@ -431,6 +462,145 @@ export function DiffineEditor({
     onSelectedChange
   });
 
+  /**
+   * Where a match sits in the document rather than in the line that holds it.
+   *
+   * Everything a search works with is a range inside a drawn line, which is
+   * what the highlighting needs and what a `<textarea>` cannot be told
+   * anything about. A field counts one document from the beginning, so the
+   * line has to be turned back into the characters in front of it.
+   */
+  function offsetOf(side: DiffineSide, match: SearchMatch): { start: number; end: number } | null {
+    const text = side === 'before' ? beforeText : afterText;
+
+    return rangeOf(side === 'before' ? beforeLayout : afterLayout, lineStarts(text), match);
+  }
+
+  /** Puts the caret on what the search moved to, so that closing it lands there. */
+  function moveCaret(side: DiffineSide, match: SearchMatch): void {
+    const field = side === 'before' ? beforeField.current : afterField.current;
+    const range = offsetOf(side, match);
+
+    if (field && range) {
+      field.setSelectionRange(range.start, range.end);
+    }
+  }
+
+  const beforeSearch = useDocumentSearch({
+    enabled: search,
+    layout: beforeLayout,
+    pane: beforePane,
+    rowHeight,
+    remeasure,
+    onReveal: (match) => moveCaret('before', match)
+  });
+  const afterSearch = useDocumentSearch({
+    enabled: search,
+    layout: afterLayout,
+    pane: afterPane,
+    rowHeight,
+    remeasure,
+    onReveal: (match) => moveCaret('after', match)
+  });
+
+  /**
+   * Writes `text` over one range of a document.
+   *
+   * Through the field where there is one, so that the browser's undo stack has
+   * the edit on it and a reader can take it back with Ctrl+Z the way they would
+   * take back anything else they typed. Where that command has gone, the value
+   * is set instead and the undo stack goes with it — which is worse, and is
+   * still better than a Replace button that does nothing.
+   */
+  function write(side: DiffineSide, whole: string, start: number, end: number, text: string): void {
+    const field = side === 'before' ? beforeField.current : afterField.current;
+
+    if (field && typeOver(field, start, end, text)) {
+      return;
+    }
+
+    if (side === 'before') {
+      setBeforeText(whole);
+      onBeforeChange?.(whole);
+    } else {
+      setAfterText(whole);
+      onAfterChange?.(whole);
+    }
+  }
+
+  function replaceOne(side: DiffineSide): void {
+    const pane = side === 'before' ? beforeSearch : afterSearch;
+    const text = side === 'before' ? beforeText : afterText;
+    const range = pane.match && offsetOf(side, pane.match);
+
+    if (!range) {
+      return;
+    }
+
+    write(
+      side,
+      `${text.slice(0, range.start)}${pane.replacement}${text.slice(range.end)}`,
+      range.start,
+      range.end,
+      pane.replacement
+    );
+    // The document is about to be compared again and searched again, and the
+    // match a reader was on has just stopped being one. Asking for the one that
+    // takes its place is what makes Replace pressed twice move down the file.
+    pane.reveal();
+  }
+
+  function replaceEvery(side: DiffineSide): void {
+    const pane = side === 'before' ? beforeSearch : afterSearch;
+    const text = side === 'before' ? beforeText : afterText;
+    const starts = lineStarts(text);
+    const layout = side === 'before' ? beforeLayout : afterLayout;
+    // Every match rather than the ones that were counted: the count stops at a
+    // limit, and a button called Replace All that left some behind would be a
+    // lie about what it did.
+    const ranges = pane
+      .all()
+      .map((match) => rangeOf(layout, starts, match))
+      .filter((range) => range !== null);
+
+    if (ranges.length === 0) {
+      return;
+    }
+
+    const whole = replacedText(text, ranges, pane.replacement);
+
+    write(side, whole, 0, text.length, whole);
+    pane.reveal();
+  }
+
+  /** Which field a key was pressed in, which is the pane the shortcut opens. */
+  function onKeyDown(event: React.KeyboardEvent<HTMLDivElement>): void {
+    onKeyDownProp?.(event);
+
+    if (!search || event.defaultPrevented) {
+      return;
+    }
+
+    // Ctrl+F and Ctrl+R, or Cmd+F and Cmd+R where that is the modifier. Every
+    // other combination with those letters in it belongs to the browser.
+    if (!(event.ctrlKey || event.metaKey) || event.altKey || event.shiftKey) {
+      return;
+    }
+
+    const key = event.key.toLowerCase();
+
+    if (key !== 'f' && key !== 'r') {
+      return;
+    }
+
+    const element = event.target instanceof Element ? event.target.closest('[data-side]') : null;
+    const side: DiffineSide = element?.getAttribute('data-side') === 'after' ? 'after' : 'before';
+    const editable = side === 'before' ? !beforeReadOnly : !afterReadOnly;
+
+    event.preventDefault();
+    (side === 'before' ? beforeSearch : afterSearch).show(key === 'r' && editable);
+  }
+
   const syntax = useSyntaxHighlight(language, comparison.before, comparison.after);
   // The application's own highlighter replaces the language rather than joining
   // it. A line has one set of runs, and two of them cutting it at once is not a
@@ -438,7 +608,7 @@ export function DiffineEditor({
   const colour = highlight ?? syntax;
 
   const digits = String(Math.max(beforeLayout.lines.length, afterLayout.lines.length, 1)).length;
-  const tools = navigation || languagePicker;
+  const tools = navigation || languagePicker || search;
 
   return (
     <div
@@ -462,12 +632,18 @@ export function DiffineEditor({
           ...style
         } as React.CSSProperties
       }
+      onKeyDown={onKeyDown}
       {...rest}
     >
       {header || tools ? (
         <div className="diffine-header">
           <div className="diffine-title" data-side="before">
             {header ? <span className="diffine-label">{beforeLabel}</span> : null}
+            {search ? (
+              <div className="diffine-tools">
+                <DiffineFindToggle search={beforeSearch} label={beforeLabel} strings={strings} />
+              </div>
+            ) : null}
           </div>
           {connectors ? <div className="diffine-title-gap" aria-hidden="true" /> : null}
           <div className="diffine-title" data-side="after">
@@ -481,6 +657,9 @@ export function DiffineEditor({
                     onStep={step}
                     strings={strings}
                   />
+                ) : null}
+                {search ? (
+                  <DiffineFindToggle search={afterSearch} label={afterLabel} strings={strings} />
                 ) : null}
                 {languagePicker ? (
                   <DiffineLanguagePicker
@@ -507,7 +686,7 @@ export function DiffineEditor({
             setBeforeText(value);
             onBeforeChange?.(value);
           }}
-          readOnly={readOnly === true || readOnly === 'before'}
+          readOnly={beforeReadOnly}
           spellCheck={spellCheck}
           indentWithTab={indentWithTab}
           wrap={wrap}
@@ -519,7 +698,10 @@ export function DiffineEditor({
           markers={markers}
           strings={strings}
           highlight={colour}
+          matches={beforeSearch.rows}
+          match={beforeSearch.match}
           paneRef={beforePane}
+          fieldRef={beforeField}
         />
         {connectors ? (
           <DiffineLinks
@@ -541,7 +723,7 @@ export function DiffineEditor({
             setAfterText(value);
             onAfterChange?.(value);
           }}
-          readOnly={readOnly === true || readOnly === 'after'}
+          readOnly={afterReadOnly}
           spellCheck={spellCheck}
           indentWithTab={indentWithTab}
           wrap={wrap}
@@ -553,9 +735,44 @@ export function DiffineEditor({
           markers={markers}
           strings={strings}
           highlight={colour}
+          matches={afterSearch.rows}
+          match={afterSearch.match}
           paneRef={afterPane}
+          fieldRef={afterField}
         />
       </div>
+
+      {beforeSearch.open || afterSearch.open ? (
+        <div className="diffine-find-bar">
+          <div className="diffine-find-cell" data-side="before">
+            {beforeSearch.open ? (
+              <DiffineFind
+                search={beforeSearch}
+                label={beforeLabel}
+                replaceable={!beforeReadOnly}
+                onReplace={() => replaceOne('before')}
+                onReplaceAll={() => replaceEvery('before')}
+                onClose={() => beforeField.current?.focus()}
+                strings={strings}
+              />
+            ) : null}
+          </div>
+          {connectors ? <div className="diffine-find-gap" aria-hidden="true" /> : null}
+          <div className="diffine-find-cell" data-side="after">
+            {afterSearch.open ? (
+              <DiffineFind
+                search={afterSearch}
+                label={afterLabel}
+                replaceable={!afterReadOnly}
+                onReplace={() => replaceOne('after')}
+                onReplaceAll={() => replaceEvery('after')}
+                onClose={() => afterField.current?.focus()}
+                strings={strings}
+              />
+            ) : null}
+          </div>
+        </div>
+      ) : null}
 
       {summary ? (
         <DiffineSummary

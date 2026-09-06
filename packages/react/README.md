@@ -51,6 +51,7 @@ Every part of the view is a prop with a default, so the component goes from a fu
 | `syncScroll`  | `true`     | Whether scrolling one pane scrolls the other.                     |
 | `header`      | `true`     | Whether each side is named above it.                              |
 | `navigation`  | `true`     | Whether the buttons for moving between changes are drawn.         |
+| `search`      | `true`     | Whether a reader can search a pane from inside the component.     |
 | `summary`     | `true`     | Whether the counts are written under the view.                    |
 | `virtualize`  | `true`     | Whether only the lines a reader can see are drawn.                |
 | `tabSize`     | `4`        | How wide a tab is drawn.                                          |
@@ -74,6 +75,16 @@ The buttons in the bar above the panes step through the changes and wrap at eith
 ```
 
 Setting `selected` scrolls the view, so an application with its own list of changes beside the viewer can drive it from there.
+
+### Searching
+
+Each pane has a search of its own: a button in the bar above it, a bar of its own underneath it, and Ctrl+F — Cmd+F on a Mac — for whichever pane the keyboard is in. Two panes, two queries, two counts, opened and closed one at a time, because a name being chased through the version on the left is not a name being chased through the version on the right.
+
+Every match is marked as it is typed and the pane moves to the one being read. The query is text by default, and the three switches inside the box read it as a case-sensitive one, as whole words only, or as a regular expression.
+
+In the editor, Ctrl+R opens the same bar with a row for replacing under it, and the caret follows the search — closing the bar leaves it on the match that was being read. Replacing goes through the browser's own editing command, so Ctrl+Z takes it back. A side that is `readOnly` gets the search without the replacing.
+
+`search={false}` turns the whole of it off, button and shortcut together.
 
 ### Long documents
 

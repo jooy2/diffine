@@ -8,7 +8,9 @@ import type {
   DiffineSide,
   DiffineStrings
 } from '../../types.js';
+import type { LineRange } from '../../internal/pieces.js';
 import { splitLine } from '../../internal/pieces.js';
+import type { SearchMatch } from '../../internal/search.js';
 
 /** What is drawn in the marker column, per side. */
 const MARKERS: Record<DiffineSide, Partial<Record<DiffRowKind, string>>> = {
@@ -58,6 +60,10 @@ export interface DiffineLineProps {
   markers: boolean;
   strings: DiffineStrings;
   highlight?: DiffineHighlight;
+  /** What a search found in this line, or nothing when it found nothing here. */
+  matches?: readonly SearchMatch[];
+  /** The match a reader is on, which is the one drawn differently from the rest. */
+  match?: SearchMatch | null;
 }
 
 /**
@@ -79,7 +85,9 @@ export function DiffineLine({
   lineNumbers,
   markers,
   strings,
-  highlight
+  highlight,
+  matches,
+  match
 }: DiffineLineProps): React.JSX.Element {
   const label = line ? labelFor(strings, kind, side) : null;
 
@@ -111,23 +119,40 @@ export function DiffineLine({
       ) : null}
       <span className="diffine-text">
         {label ? <span className="diffine-said">{`${label}: `}</span> : null}
-        {line ? <DiffineLineText line={line} side={side} highlight={highlight} /> : null}
+        {line ? (
+          <DiffineLineText
+            line={line}
+            side={side}
+            highlight={highlight}
+            matches={matches}
+            match={match}
+          />
+        ) : null}
       </span>
     </div>
   );
 }
 
-/** The line itself, with whatever moved inside it — and whatever colours it. */
+/** The line itself, with whatever moved inside it — and whatever marks it. */
 function DiffineLineText({
   line,
   side,
-  highlight
+  highlight,
+  matches,
+  match
 }: {
   line: DiffLine;
   side: DiffineSide;
   highlight?: DiffineHighlight;
+  matches?: readonly SearchMatch[];
+  match?: SearchMatch | null;
 }): React.JSX.Element {
-  const pieces = splitLine(line, highlight?.(line, side));
+  const found: LineRange[] | undefined = matches?.map((each) => ({
+    start: each.start,
+    end: each.end,
+    current: each === match
+  }));
+  const pieces = splitLine(line, highlight?.(line, side), found);
 
   if (!pieces) {
     return <>{line.text}</>;
@@ -137,6 +162,22 @@ function DiffineLineText({
     <>
       {pieces.map((piece, index) => {
         if (piece.kind === 'equal') {
+          // A run a search turned up is a `<mark>` for the same reason a run the
+          // comparison turned up is one: it is text picked out of the line for
+          // the reader's benefit rather than text with a colour on it.
+          if (piece.match) {
+            return (
+              <mark
+                key={index}
+                className={piece.className ? `diffine-found ${piece.className}` : 'diffine-found'}
+                data-current={piece.match === 'current' ? 'true' : undefined}
+                style={piece.style}
+              >
+                {piece.text}
+              </mark>
+            );
+          }
+
           return piece.className || piece.style ? (
             <span key={index} className={piece.className} style={piece.style}>
               {piece.text}
@@ -151,6 +192,7 @@ function DiffineLineText({
             key={index}
             className={piece.className ? `diffine-piece ${piece.className}` : 'diffine-piece'}
             data-kind={piece.kind}
+            data-found={piece.match}
             style={piece.style}
           >
             {piece.text}

@@ -2,27 +2,12 @@
 
 import * as React from 'react';
 import type { DiffineHighlight, DiffineSide, DiffineStrings } from '../../types.js';
+import { typeInto } from '../../internal/field.js';
 import { useIsomorphicLayoutEffect } from '../../internal/layout.js';
 import type { PaneLayout } from '../../internal/rows.js';
+import type { SearchMatch } from '../../internal/search.js';
 import type { VirtualWindow } from '../../internal/virtual.js';
 import { DiffineRows } from '../shared/DiffineRows.js';
-
-/**
- * Types `text` over whatever is selected, keeping the browser's own undo stack.
- *
- * `execCommand` is on its way out of the platform and there is still nothing
- * that replaces this one use of it: writing to `value` empties the undo stack,
- * and an editor whose Ctrl+Z has stopped working is worse than one without a
- * Tab key. Where it has already gone, `false` sends the caller to its own
- * version — which is why this returns whether it worked rather than assuming.
- */
-function typeInto(field: HTMLTextAreaElement, text: string): boolean {
-  try {
-    return document.execCommand('insertText', false, text);
-  } catch {
-    return false;
-  }
-}
 
 export interface DiffineEditorPaneProps {
   side: DiffineSide;
@@ -46,7 +31,16 @@ export interface DiffineEditorPaneProps {
   markers: boolean;
   strings: DiffineStrings;
   highlight?: DiffineHighlight;
+  /** What a search found, keyed by the line it found it in. */
+  matches?: ReadonlyMap<number, readonly SearchMatch[]>;
+  /** The match a reader is on, which is the one drawn differently from the rest. */
+  match?: SearchMatch | null;
   paneRef: React.RefObject<HTMLDivElement | null>;
+  /**
+   * The field itself, which the editor holds so that a search can move the
+   * caret and a replace can write through the browser's own editing command.
+   */
+  fieldRef: React.RefObject<HTMLTextAreaElement | null>;
 }
 
 /**
@@ -90,10 +84,11 @@ export function DiffineEditorPane({
   markers,
   strings,
   highlight,
-  paneRef
+  matches,
+  match,
+  paneRef,
+  fieldRef: field
 }: DiffineEditorPaneProps): React.JSX.Element {
-  const field = React.useRef<HTMLTextAreaElement>(null);
-
   /**
    * Whether Escape has been pressed, which is how a keyboard leaves the field.
    *
@@ -170,6 +165,8 @@ export function DiffineEditorPane({
             markers={markers}
             strings={strings}
             highlight={highlight}
+            matches={matches}
+            match={match}
           />
         </div>
         <textarea

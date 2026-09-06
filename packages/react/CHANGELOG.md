@@ -68,4 +68,10 @@ The first published version.
 
 - **`indentWithTab` types a tab, and is off by default.** A control a keyboard cannot leave is a page a keyboard cannot leave. Turned on there are two ways out, both of them the ones somebody would try: Shift+Tab moves back a control, and Escape hands the next Tab to the browser. The tab itself goes in through the browser's own editing command, so undo still undoes it.
 
+- **Each pane carries a search of its own.** A button in the bar above it opens a bar under it, and Ctrl+F opens the one for the pane the keyboard is in — two panes, two queries, two counts, opened and closed one at a time, because a name being chased through the version on the left is not a name being chased through the version on the right. Matches are marked as the query is typed, the pane moves to the one being read, and Enter and Shift+Enter step through the rest. Three switches inside the box read the query as a case-sensitive one, as whole words only, or as a regular expression.
+
+  It reads the document rather than the page, so it reaches the lines `virtualize` left undrawn and the browser's own find cannot. `search={false}` turns the button and the shortcut off together, and `--diffine-search` and `--diffine-search-current` are the two colours it marks with.
+
+- **Ctrl+R opens that bar with a row for replacing on it.** The editor's alone, and not for a side that is `readOnly`. Replace writes over the match being read and moves to the one that takes its place, so pressing it again walks down the document, and Replace All writes over every one of them. Both go in through the browser's own editing command, so Ctrl+Z takes them back — and the caret follows the search, which means closing the bar leaves it on the match that was being read.
+
 - **`--diffine-selection` and `strings.placeholder` join the theming interface.** The selection colour has to be see-through, because the words under a selection are drawn behind the field; the placeholder is what an empty field says before anybody has typed into it.
