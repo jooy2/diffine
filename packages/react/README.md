@@ -4,9 +4,9 @@
 
 [![license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/jooy2/diffine/blob/main/LICENSE) [![npm latest package](https://img.shields.io/npm/v/diffine-react/latest.svg)](https://www.npmjs.com/package/diffine-react) [![npm downloads](https://img.shields.io/npm/dm/diffine-react.svg)](https://www.npmjs.com/package/diffine-react)
 
-**Diffine works out what changed between two versions and puts it on the screen.** Two panes side by side, the matching lines held level with each other, and the words that actually moved marked inside the lines that carry them — to read, or to type into. Two pictures get the same treatment a pixel at a time.
+**Diffine compares two versions and shows what changed.** A diff engine and a side-by-side viewer in one package, for text and for pictures, to read or to type into.
 
-📘 **[diffine.cdget.com](https://diffine.cdget.com)** — guides and the full API, in English and Korean.
+📘 **[diffine.cdget.com](https://diffine.cdget.com)** for the guides and the full API, in English and Korean.
 
 ## Install
 
@@ -14,7 +14,7 @@
 npm install diffine-react
 ```
 
-`react` and `react-dom` are peer dependencies — React 18 or 19. The one dependency is `highlight.js`, and it is behind an `import()`: a component left on `language="plain"` fetches none of it.
+`react` and `react-dom` are peer dependencies: React 18 or 19. The one dependency is `highlight.js`, and it sits behind an `import()`, so a component left on `language="plain"` fetches none of it.
 
 ## Reading a comparison
 
@@ -77,11 +77,11 @@ Setting `selected` scrolls the view, so an application with its own list of chan
 
 ### Searching
 
-Each pane has a search of its own: a button in the bar above it, a bar of its own underneath it, and Ctrl+F — Cmd+F on a Mac — for whichever pane the keyboard is in. Two panes, two queries, two counts, opened and closed one at a time, because a name being chased through the version on the left is not a name being chased through the version on the right.
+Each pane has a search of its own: a button in the bar above it, a bar of its own underneath it, and Ctrl+F (Cmd+F on a Mac) for whichever pane the keyboard is in. Two panes, two queries, two counts, opened and closed one at a time, because a name being chased through the version on the left is usually not the name being chased through the version on the right.
 
 Every match is marked as it is typed and the pane moves to the one being read. The query is text by default, and the three switches inside the box read it as a case-sensitive one, as whole words only, or as a regular expression.
 
-In the editor, Ctrl+H opens the same bar with a row for replacing under it, and the caret follows the search — closing the bar leaves it on the match that was being read. Replacing goes through the browser's own editing command, so Ctrl+Z takes it back. A side that is `readOnly` gets the search without the replacing.
+In the editor, Ctrl+H opens the same bar with a row for replacing under it, and the caret follows the search, so closing the bar leaves it on the match that was being read. Replacing goes through the browser's own editing command, so Ctrl+Z takes it back. A side that is `readOnly` gets the search without the replacing.
 
 `search={false}` turns the whole of it off, button and shortcut together.
 
@@ -97,13 +97,13 @@ In the editor, Ctrl+H opens the same bar with a row for replacing under it, and 
 <TextDiff before={saved} after={draft} language="typescript" />
 ```
 
-It takes a highlight.js identifier, or `plain` for a document that is not code. `DIFFINE_LANGUAGES` is the whole list with the name to write beside each one, and the bar above the panes writes that name at its right end. In `editor` mode the same corner is the list itself, as a menu, because a document somebody pasted is a document nobody knew the language of:
+It takes a highlight.js identifier, or `plain` for a document that is not code. `DIFFINE_LANGUAGES` is the whole list with the name to write beside each one, and the bar above the panes writes that name at its right end. In `editor` mode the same corner is a menu that opens the list, because a document somebody pasted is a document nobody knew the language of:
 
 ```tsx
 <TextDiff mode="editor" defaultBefore={saved} defaultAfter={draft} defaultLanguage="python" />
 ```
 
-`highlight.js` and each grammar are behind an `import()`, so nothing is fetched until a language other than `plain` is asked for, and what is fetched is that one grammar. The colours are eight custom properties — `--diffine-code-keyword` and the rest — and every class the library emits is mapped onto one of them.
+`highlight.js` and each grammar are behind an `import()`, so nothing is fetched until a language other than `plain` is asked for, and what is fetched is that one grammar. The colours are eight custom properties (`--diffine-code-keyword` and the rest) that every class the library emits is mapped onto.
 
 `highlight` is the way in for an application that already has a highlighter of its own. It is handed a whole line and returns the runs it wants drawn differently, and it replaces `language` rather than adding to it. The line is cut at the boundaries of both that and the comparison, so a changed word that is half a string literal is drawn as exactly that.
 
@@ -142,7 +142,7 @@ Whatever the whitespace options ignore is still drawn. They change which lines c
 
 ### Styling
 
-Every colour and measurement is a custom property on the `.diffine` element, so a palette of your own is a handful of declarations rather than a fight with specificity:
+Every colour and measurement is a custom property on the `.diffine` element, so a palette of your own is a handful of declarations rather than rules that have to win on specificity:
 
 ```css
 .diffine {
@@ -178,7 +178,7 @@ export function Compose({ saved }: { saved: string }) {
 
 Leave `before` and `after` out and pass `defaultBefore` and `defaultAfter` instead to let the component keep the documents itself. Either way `onBeforeChange` and `onAfterChange` report what was typed.
 
-Each pane draws its document twice: once as the lines you see, and once as a plain `<textarea>` over the top whose own text is invisible and whose caret is not. That is what lets a tinted row, a marked word and `highlight` sit under text somebody is editing, while the field goes on being a field — its undo stack, its input method, its selection and its accessibility all the browser's.
+Each pane draws its document twice: once as the lines you see, and once as a plain `<textarea>` over the top whose own text is invisible and whose caret is not. That is what lets a tinted row, a marked word and `highlight` sit under text somebody is editing, while the field goes on being a field, with its undo stack, its input method, its selection and its accessibility all the browser's.
 
 The two sides are never held level, because a blank line put in to keep them in step would be a line somebody could put the caret in. The column between the panes says which part of one answers which part of the other.
 
@@ -193,7 +193,7 @@ Every other prop means the same thing in both modes, except `view`, `alignLines`
 
 ## Comparing two pictures
 
-`ImageDiff` compares two pictures pixel by pixel and draws what it found: the pixels that changed tinted over both sides, a box round each run of them, and one zoom that moves both panes.
+`ImageDiff` compares two pictures pixel by pixel and draws what it found: the pixels that changed tinted over both sides, a box round each run of them, and one zoom and one position shared by both panes.
 
 ```tsx
 import { ImageDiff } from 'diffine-react';
@@ -202,7 +202,7 @@ import 'diffine-react/styles.css';
 <ImageDiff before={saved} after={rendered} />;
 ```
 
-Each side takes a `Blob`, an `ImageBitmap`, or a buffer of pixels shaped like `ImageData` — a `File` off an input, or the body of a `fetch`. There is no URL among them: fetching one is the application's to do, and what arrives here is what it already holds.
+Each side takes a `Blob`, an `ImageBitmap`, or a buffer of pixels shaped like `ImageData`: a `File` off an input, or the body of a `fetch`. There is no URL among them, because fetching one is the application's to do.
 
 ```tsx
 <ImageDiff
@@ -241,7 +241,7 @@ diffSequence(['a', 'b', 'c'], ['a', 'c']);
 
 `diffSequence` takes any two arrays of tokens, for an application whose pieces are neither lines nor words.
 
-`diffine-react/image` is the same bargain for pictures, and it is worth more there: comparing two photographs is a few million pieces of arithmetic, and this is how that happens in a worker.
+`diffine-react/image` is the same for pictures, and it matters more there: comparing two photographs is a few million pieces of arithmetic, and this is how that happens in a worker.
 
 ```ts
 import { diffImage } from 'diffine-react/image';

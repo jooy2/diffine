@@ -1,8 +1,8 @@
 # Contributing to Diffine
 
-Thank you for taking the time. Bug reports, fixes, documentation and new ideas are all welcome, and this page is what you need to know before you start.
+Bug reports, fixes, documentation and new ideas are all welcome. This page covers what to know before you start.
 
-Diffine follows the [Contributor Covenant](CODE_OF_CONDUCT.md). Taking part means you have read it and agree to it. To report a security problem, do not open an issue — see [SECURITY.md](SECURITY.md).
+Diffine follows the [Contributor Covenant](CODE_OF_CONDUCT.md). Taking part means you have read it and agree to it. To report a security problem, do not open an issue; see [SECURITY.md](SECURITY.md).
 
 ## Issues
 
@@ -26,7 +26,7 @@ There is no install at the root and no root manifest. Each folder is entered and
 | `packages/react` | The npm package, `diffine-react`         | `cd packages/react && npm install`, then `npm test`, `npm run lint`, `npm run build` |
 | `docs`           | The documentation site, in two languages | `cd docs && npm install`, then `npm run dev`                                         |
 
-The site renders the library from `packages/react/src` rather than from a build, so an edit to a component is on the page as soon as it is saved. That has one consequence worth knowing before it surprises you: **a dependency added to the package has to be declared in `docs/package.json` as well**, and named in `resolve.dedupe` in `docs/.vitepress/config.ts` and in the `paths` of `docs/tsconfig.json`. The site's own workflow installs nothing under `packages/`, which is what makes a missing declaration fail in CI rather than on a machine that happens to have run `npm install` in both places.
+The site renders the library from `packages/react/src` rather than from a build, so an edit to a component is on the page as soon as it is saved. That has one consequence worth knowing in advance: **a dependency added to the package has to be declared in `docs/package.json` as well**, and named in `resolve.dedupe` in `docs/.vitepress/config.ts` and in the `paths` of `docs/tsconfig.json`. The site's own workflow installs nothing under `packages/`, which is what makes a missing declaration fail in CI rather than on a machine that happens to have run `npm install` in both places.
 
 ## Making a change
 
@@ -39,7 +39,7 @@ The site renders the library from `packages/react/src` rather than from a build,
 7. Add or change tests where the change earns them: a new feature, a rewrite, a bug worth a regression test, or logic intricate enough that reading it is not enough to trust it. Confirm the existing tests still pass.
 8. Run `npm run lint`, `npm run typecheck` and `npm test` in `packages/react`, and `npm run lint`, `npm run typecheck` and `npm run build` in `docs` if you touched the site.
 
-The tests run in Node with no DOM. Anything answered by measuring an element — how tall a wrapped row is, where the band between two panes goes — cannot be checked there and is checked in a browser instead. Say in the pull request what you looked at.
+The tests run in Node with no DOM. Anything answered by measuring an element (how tall a wrapped row is, where the band between two panes goes) cannot be checked there and is checked in a browser instead. Say in the pull request what you looked at.
 
 ## Commit messages
 
@@ -78,7 +78,7 @@ Never commit a secret, a build artifact, a dependency folder, an editor setting,
 
 - Say what the change is, why it is needed, and how it works.
 - Check whether somebody has already opened it.
-- Keep one pull request to one change. A fix and a refactor in the same branch are two reviews wearing one hat.
+- Keep one pull request to one change. A fix and a refactor in the same branch are two reviews in one.
 - Write in English.
 
 A maintainer reads and tests the change before it is merged. That can take a while, and you may be asked for a revision or for something the description left out.
