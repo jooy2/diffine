@@ -1,0 +1,36 @@
+name: 'Typo or wording'
+description: A mistake in the documentation, in a README, or in the words a component puts on the screen.
+labels: ['documentation']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before you open this, please:
+
+        - Search for an issue that already says it.
+        - Open one issue per page.
+        - Write in English, and give a title somebody else would search for.
+
+        The site is written in English and Korean, and the two are written rather than translated — so a sentence that is wrong in one of them is usually right in the other. Both are worth reporting.
+  - type: input
+    attributes:
+      label: Where
+      description: The address of the page, or the path of the file.
+      placeholder: https://diffine.cdget.com/ko/guide/viewer
+    validations:
+      required: true
+  - type: dropdown
+    attributes:
+      label: Which language
+      options:
+        - 'English'
+        - 'Korean'
+        - 'Both'
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: What is wrong
+      description: The text as it stands, and what it should say. Quote enough of it to find.
+    validations:
+      required: true

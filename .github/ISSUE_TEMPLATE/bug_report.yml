@@ -1,0 +1,64 @@
+name: 'Bug report'
+description: Something in the comparison, the viewer or the editor is wrong.
+labels: ['bug']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before you open this, please:
+
+        - Read the page for the part you are reporting on at https://diffine.cdget.com. A prop that turns out to do something else is worth knowing before it is filed as a bug.
+        - Search for an issue that already says it.
+        - Open one issue per problem.
+        - Move to the latest version of the package and check it is still there.
+        - Write in English, and give a title somebody else would search for.
+
+        Do not report a security vulnerability here. An issue is public from the moment it is opened — see [SECURITY.md](https://github.com/jooy2/diffine/blob/main/SECURITY.md).
+  - type: textarea
+    attributes:
+      label: What happens
+      description: |
+        What you see, and what it stops you doing. If there is an error in the console, paste it whole. A screenshot or a recording is worth more than a description of one.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: The two documents, and the props
+      description: |
+        The smallest pair of documents that shows it, and the props the component was given. This is the fastest way to a fix — most bugs in a comparison are a bug about one particular pair of documents, and a description of them is not the same thing as having them.
+      render: tsx
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: What you expected instead
+      description: What the correct behaviour would have been, if it is not obvious from the above.
+  - type: dropdown
+    attributes:
+      label: Which part
+      options:
+        - 'DiffineViewer'
+        - 'DiffineEditor'
+        - 'The comparison itself (diffText, diffWords, diffCharacters, diffSequence)'
+        - 'The stylesheet, the palette or the custom properties'
+        - 'The documentation site'
+        - 'Not sure'
+  - type: input
+    attributes:
+      label: Version of `diffine-react`
+      placeholder: 0.1.0
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: Version of React
+      placeholder: 19.2.0
+  - type: input
+    attributes:
+      label: Browser
+      description: The version as well, where you have it. Leave this out for something that happens on a server.
+      placeholder: Chrome 141, Safari 26, Firefox 145...
+  - type: input
+    attributes:
+      label: Operating system
+      placeholder: macOS 26, Windows 11, Ubuntu 24.04, iOS 26, Android 16...

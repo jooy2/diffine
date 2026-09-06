@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Documentation
+    url: https://diffine.cdget.com
+    about: The guide and the full API, in English and Korean. Most questions are answered there.
+  - name: Security vulnerability
+    url: https://github.com/jooy2/diffine/security/advisories/new
+    about: Report one privately here. An issue is public from the moment it is opened.
