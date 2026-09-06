@@ -4,6 +4,7 @@ import * as React from 'react';
 import type { DiffineLocale, DiffineStrings } from '../../types.js';
 import { fill } from '../../internal/i18n.js';
 import { formatBytes, formatCount, measureText } from '../../internal/measure.js';
+import { TallyIcon } from './DiffineIcons.js';
 
 export interface DiffineSummaryProps {
   /** The left document, as it stands, for its own end of the bar. */
@@ -136,41 +137,5 @@ function Metric({
         {`${count} · ${size}`}
       </span>
     </span>
-  );
-}
-
-/**
- * What each mark is, on a sixteen-unit square.
- *
- * Three of them are the `~`, `+` and `−` the gutter puts beside a line, drawn
- * again at the size of the bar. A reader who has learnt them once up there has
- * learnt them here.
- */
-const ICONS: Record<string, string> = {
-  document: 'M4.5 2.5h5l2.5 2.5v8.5h-7.5zM9.5 2.5V5h2.5',
-  change: 'M2.5 9.5q2.75-4 5.5 0t5.5 0',
-  insert: 'M8 3.5v9M3.5 8h9',
-  delete: 'M3.5 8h9',
-  identical: 'M3.5 8.5 6.5 11.5 12.5 4.5'
-};
-
-/** Drawn rather than imported: five paths are not worth a dependency. */
-function TallyIcon({ kind }: { kind: keyof typeof ICONS }): React.JSX.Element {
-  return (
-    <svg
-      className="diffine-tally-icon"
-      viewBox="0 0 16 16"
-      width="13"
-      height="13"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-      focusable="false"
-    >
-      <path d={ICONS[kind]} />
-    </svg>
   );
 }

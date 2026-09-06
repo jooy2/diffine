@@ -53,8 +53,7 @@ const LOCALES: Record<DiffineLocale, DiffineStrings> = {
     zoomFit: 'Fit to the pane',
     zoomLevel: '{percent}%',
     fade: 'Fade between the two',
-    wipe: 'Drag to wipe between the two',
-    showMask: 'Mark what changed'
+    wipe: 'Drag to wipe between the two'
   },
   ko: {
     before: '이전',
@@ -94,8 +93,7 @@ const LOCALES: Record<DiffineLocale, DiffineStrings> = {
     zoomFit: '창에 맞추기',
     zoomLevel: '{percent}%',
     fade: '두 이미지 겹쳐 보기',
-    wipe: '끌어서 나눠 보기',
-    showMask: '변경 부분 표시'
+    wipe: '끌어서 나눠 보기'
   }
 };
 

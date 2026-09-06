@@ -80,6 +80,18 @@ export function formatCount(count: number, locale: string): string {
   return formatterFor(locale, 0).format(count);
 }
 
+/**
+ * A number with a fraction, for a share of a picture rather than a count of
+ * anything.
+ *
+ * Two decimals, because the interesting answer is often a small one: a hundred
+ * pixels of a photograph is `0.01`, and rounding that to a whole number turns
+ * "something changed" into "nothing did".
+ */
+export function formatNumber(value: number, locale: string, fraction = 2): string {
+  return formatterFor(locale, fraction).format(value);
+}
+
 const UNITS = ['B', 'KB', 'MB', 'GB'] as const;
 
 /**

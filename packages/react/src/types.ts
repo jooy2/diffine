@@ -632,8 +632,6 @@ export interface DiffineStrings {
   fade: string;
   /** The name of the handle that wipes one picture across the other. */
   wipe: string;
-  /** The name of the switch that marks what changed. */
-  showMask: string;
 }
 
 /**
