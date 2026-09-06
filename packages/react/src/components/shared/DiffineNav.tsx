@@ -4,11 +4,11 @@ import * as React from 'react';
 import type { DiffineStrings } from '../../types.js';
 import { fill } from '../../internal/i18n.js';
 
-export interface DiffineViewerNavProps {
+export interface DiffineNavProps {
   total: number;
   /** Which change a reader has moved to, or -1 before they have moved to any. */
   current: number;
-  /** Which way to move. Where that lands is the viewer's to work out. */
+  /** Which way to move. Where that lands is the component's to work out. */
   onStep: (direction: 1 | -1) => void;
   strings: DiffineStrings;
 }
@@ -24,12 +24,12 @@ export interface DiffineViewerNavProps {
  * the same thing in a sentence when it changes. A fraction read out as "one
  * slash four" is not what anybody meant by it.
  */
-export function DiffineViewerNav({
+export function DiffineNav({
   total,
   current,
   onStep,
   strings
-}: DiffineViewerNavProps): React.JSX.Element {
+}: DiffineNavProps): React.JSX.Element {
   const none = total === 0;
 
   return (

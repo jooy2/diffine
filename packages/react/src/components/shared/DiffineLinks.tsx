@@ -81,7 +81,7 @@ function bandFor(
   return { top: 0, bottom: 0 };
 }
 
-export interface DiffineViewerLinksProps {
+export interface DiffineLinksProps {
   changes: readonly DiffChange[];
   beforeLayout: PaneLayout;
   afterLayout: PaneLayout;
@@ -108,7 +108,7 @@ export interface DiffineViewerLinksProps {
  * already measured. Reading every row's position again on each frame of a
  * scroll is the version of this that makes a long document unusable.
  */
-export function DiffineViewerLinks({
+export function DiffineLinks({
   changes,
   beforeLayout,
   afterLayout,
@@ -117,7 +117,7 @@ export function DiffineViewerLinks({
   rowHeight,
   current,
   deps
-}: DiffineViewerLinksProps): React.JSX.Element {
+}: DiffineLinksProps): React.JSX.Element {
   const column = React.useRef<HTMLDivElement>(null);
   const geometry = React.useRef<[Map<number, RowBox>, Map<number, RowBox>]>([new Map(), new Map()]);
   const [links, setLinks] = React.useState<Link[]>([]);

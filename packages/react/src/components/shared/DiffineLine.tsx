@@ -33,7 +33,7 @@ function labelFor(strings: DiffineStrings, kind: DiffRowKind, side: DiffineSide)
   return null;
 }
 
-export interface DiffineViewerLineProps {
+export interface DiffineLineProps {
   /**
    * Where this line sits in its pane's own list, or `null` for one that is not
    * really there — the hidden copy of the longest line that holds the pane's
@@ -68,7 +68,7 @@ export interface DiffineViewerLineProps {
  * nothing at all are two different things, and drawing both as empty loses
  * which of the two a reader is looking at.
  */
-export function DiffineViewerLine({
+export function DiffineLine({
   row,
   kind,
   side,
@@ -80,7 +80,7 @@ export function DiffineViewerLine({
   markers,
   strings,
   highlight
-}: DiffineViewerLineProps): React.JSX.Element {
+}: DiffineLineProps): React.JSX.Element {
   const label = line ? labelFor(strings, kind, side) : null;
 
   return (
@@ -111,14 +111,14 @@ export function DiffineViewerLine({
       ) : null}
       <span className="diffine-text">
         {label ? <span className="diffine-said">{`${label}: `}</span> : null}
-        {line ? <DiffineViewerText line={line} side={side} highlight={highlight} /> : null}
+        {line ? <DiffineLineText line={line} side={side} highlight={highlight} /> : null}
       </span>
     </div>
   );
 }
 
 /** The line itself, with whatever moved inside it — and whatever colours it. */
-function DiffineViewerText({
+function DiffineLineText({
   line,
   side,
   highlight
