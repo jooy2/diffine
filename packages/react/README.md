@@ -4,11 +4,11 @@
 
 [![license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/jooy2/diffine/blob/main/LICENSE) [![npm latest package](https://img.shields.io/npm/v/diffine-react/latest.svg)](https://www.npmjs.com/package/diffine-react) [![npm downloads](https://img.shields.io/npm/dm/diffine-react.svg)](https://www.npmjs.com/package/diffine-react)
 
-**Diffine works out what changed between two versions and puts it on the screen.** Two panes side by side, the matching lines held level with each other, and the words that actually moved marked inside the lines that carry them — to read, or to type into.
+**Diffine works out what changed between two versions and puts it on the screen.** Two panes side by side, the matching lines held level with each other, and the words that actually moved marked inside the lines that carry them — to read, or to type into. Two pictures get the same treatment a pixel at a time.
 
 📘 **[diffine.cdget.com](https://diffine.cdget.com)** — guides and the full API, in English and Korean.
 
-> **`0.0.1`.** The comparison and both modes of the view are written and they run. The names are not settled yet, so treat every export as something that can still change shape until `1.0.0`.
+> **`0.0.1`.** The comparisons and every mode of the view are written and they run. The names are not settled yet, so treat every export as something that can still change shape until `1.0.0`.
 
 ## Install
 
@@ -193,6 +193,30 @@ The two sides are never held level, because a blank line put in to keep them in 
 
 Every other prop means the same thing in both modes, except `view`, `alignLines` and `result`, which an editor ignores. With `indentWithTab` on there are two ways out of the field: Shift+Tab moves back a control, and Escape hands the next Tab to the browser.
 
+## Comparing two pictures
+
+`ImageDiff` compares two pictures pixel by pixel and draws what it found: the pixels that changed tinted over both sides, a box round each run of them, and one zoom that moves both panes.
+
+```tsx
+import { ImageDiff } from 'diffine-react';
+import 'diffine-react/styles.css';
+
+<ImageDiff before={saved} after={rendered} />;
+```
+
+Each side takes a `Blob`, an `ImageBitmap`, or a buffer of pixels shaped like `ImageData` — a `File` off an input, or the body of a `fetch`. There is no URL among them: fetching one is the application's to do, and what arrives here is what it already holds.
+
+```tsx
+<ImageDiff
+  before={{ content: saved, label: 'baseline.png' }}
+  after={{ content: rendered, label: 'run 4821' }}
+  view="wipe"
+  diff={{ tolerance: 0.05, align: 'shift' }}
+/>
+```
+
+`view` is `split`, `overlay`, `wipe` or `mask`; `mode="editor"` lets a reader drop a picture on either pane. `tolerance` decides how much of a difference counts, `ignoreAntialiasing` drops the pixels a renderer's own smoothing left behind, and `align` finds the offset between two shots that are not lined up. The whole of it is on the [image diff page](https://diffine.cdget.com/guide/image-diff).
+
 ## The comparison on its own
 
 `diffine-react/diff` is the engine with no React and no DOM in it, for a summary line, a count in a badge, or a comparison worked out in a worker and handed to the component as a value.
@@ -219,12 +243,27 @@ diffSequence(['a', 'b', 'c'], ['a', 'c']);
 
 `diffSequence` takes any two arrays of tokens, for an application whose pieces are neither lines nor words.
 
+`diffine-react/image` is the same bargain for pictures, and it is worth more there: comparing two photographs is a few million pieces of arithmetic, and this is how that happens in a worker.
+
+```ts
+import { diffImage } from 'diffine-react/image';
+
+const result = diffImage(before, after, { align: 'shift' });
+
+result.regions; // where the changes are, as rectangles
+result.stats.ratio; // how much of the frame is not the same
+result.mask; // a byte a pixel: 0 unchanged, and 1, 2 or 3 for the rest
+```
+
+Both sides are `ImageData`, or anything shaped like it. Opening a file is not part of it.
+
 ## Entry points
 
 | Import                     | What it is                                            |
 | -------------------------- | ----------------------------------------------------- |
 | `diffine-react`            | Everything: the components, the engine and the types. |
-| `diffine-react/diff`       | The comparison, with no component in the bundle.      |
+| `diffine-react/diff`       | The text comparison, with no component in the bundle. |
+| `diffine-react/image`      | The picture comparison, on its own.                   |
 | `diffine-react/types`      | The types on their own.                               |
 | `diffine-react/styles.css` | The stylesheet, for both components.                  |
 
