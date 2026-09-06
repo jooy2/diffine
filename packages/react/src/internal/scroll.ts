@@ -45,12 +45,32 @@ export function useSyncedScroll(
     // which neither pane has anything left to say.
     const NEAR_ENOUGH = 1;
 
+    /*
+     * How near is near enough, in the target's own pixels.
+     *
+     * A pixel, until the two documents are wildly different lengths. A fraction
+     * of the way down a pane of eighty pixels of travel cannot say more than
+     * one part in eighty, so the answer that comes back from a pane that short
+     * is only ever that precise — and read against seventy thousand pixels of
+     * travel on the other side, one pixel of rounding over there is nine
+     * hundred over here. Insisting on a pixel then is insisting the long pane
+     * move to a position the short one never meant, which is a jump of half a
+     * screen every time anything scrolls the long one to a particular line.
+     */
+    const tolerance = (source: HTMLElement, target: HTMLElement) => {
+      const travel = source.scrollHeight - source.clientHeight;
+
+      return aligned || travel <= 0
+        ? NEAR_ENOUGH
+        : Math.max(NEAR_ENOUGH, (target.scrollHeight - target.clientHeight) / travel);
+    };
+
     const follow = (source: HTMLElement, target: HTMLElement) => () => {
       const wanted = aligned
         ? source.scrollTop
         : fractionOf(source) * (target.scrollHeight - target.clientHeight);
 
-      if (Math.abs(target.scrollTop - wanted) > NEAR_ENOUGH) {
+      if (Math.abs(target.scrollTop - wanted) > tolerance(source, target)) {
         target.scrollTop = wanted;
       }
 
