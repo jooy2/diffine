@@ -329,6 +329,7 @@ export function DiffineViewer({
     <div
       className={className ? `diffine ${className}` : 'diffine'}
       data-view={view}
+      data-linked={split && connectors}
       data-scheme={colorScheme}
       data-wrap={wrap}
       data-align={alignLines}
@@ -346,7 +347,7 @@ export function DiffineViewer({
           <div className="diffine-title" data-side="before">
             {header ? <span className="diffine-label">{beforeSource.label}</span> : null}
           </div>
-          {split ? <div className="diffine-title-gap" aria-hidden="true" /> : null}
+          {split && connectors ? <div className="diffine-title-gap" aria-hidden="true" /> : null}
           <div className="diffine-title" data-side="after">
             {header ? <span className="diffine-label">{afterSource.label}</span> : null}
             {navigation && !empty ? (

@@ -78,6 +78,22 @@ describe('DiffineViewer', () => {
     expect(bare).toContain('diffine-line');
   });
 
+  it('splits the bar above the panes where the column between them is', () => {
+    const linked = render({ before: BEFORE, after: AFTER });
+
+    expect(linked).toContain('data-linked="true"');
+    expect(linked).toContain('diffine-title-gap');
+
+    // No column between the panes, so no third column in the bar over them —
+    // the two halves of the header would otherwise sit over the wrong panes.
+    for (const props of [{ connectors: false }, { view: 'unified' as const }]) {
+      const alone = render({ before: BEFORE, after: AFTER, ...props });
+
+      expect(alone).toContain('data-linked="false"');
+      expect(alone).not.toContain('diffine-title-gap');
+    }
+  });
+
   it('leaves out the blanks when the two sides are not held level', () => {
     const markup = render({ before: BEFORE, after: AFTER, alignLines: false });
 

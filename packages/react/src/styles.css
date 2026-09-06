@@ -130,14 +130,17 @@
 
 .diffine-header {
   display: grid;
-  grid-template-columns: 1fr var(--diffine-links-width) 1fr;
+  grid-template-columns: 1fr 1fr;
   flex: 0 0 auto;
   border-bottom: 1px solid var(--diffine-border);
   background: var(--diffine-gutter);
 }
 
-.diffine[data-view='unified'] .diffine-header {
-  grid-template-columns: 1fr 1fr;
+/* The middle column is the column between the panes, so it is here when that
+   one is and not when it is not — a header split down the middle over two panes
+   that are not is a header whose halves point at the wrong documents. */
+.diffine[data-linked='true'] .diffine-header {
+  grid-template-columns: 1fr var(--diffine-links-width) 1fr;
 }
 
 .diffine-title {
