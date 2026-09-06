@@ -217,6 +217,9 @@ export interface ImageDiffProps extends Omit<
 /** Nothing to draw, so that a pane with no picture in it is still a pane. */
 const NO_LAYERS: readonly Layer[] = [];
 
+/** No boxes either, held rather than built so a pane is not painted again for one. */
+const NO_REGIONS: readonly DiffImageRegion[] = [];
+
 /**
  * Two pictures, what changed between them, and every way of looking at that.
  *
@@ -389,8 +392,11 @@ export function ImageDiff({
     onViewportChange?.(next === 'fit' ? fitViewport(frame, box) : next);
   }
 
-  const regions = outlines && comparison ? comparison.regions : [];
-  const changes = comparison?.regions ?? [];
+  const regions = outlines && comparison ? comparison.regions : NO_REGIONS;
+  const changes = comparison?.regions ?? NO_REGIONS;
+  // A comparison with fewer changes than the last one leaves a reader pointing
+  // at a change that is no longer there.
+  const current = selected < changes.length ? selected : -1;
 
   /** One change on from wherever a reader is, and round the ends. */
   function step(direction: 1 | -1): void {
@@ -398,7 +404,7 @@ export function ImageDiff({
       return;
     }
 
-    const from = selected < 0 ? (direction === 1 ? -1 : 0) : selected;
+    const from = current < 0 ? (direction === 1 ? -1 : 0) : current;
     const next = (from + direction + changes.length) % changes.length;
 
     setSelected(next);
@@ -488,7 +494,7 @@ export function ImageDiff({
     onBox,
     mask: marks ? mask : null,
     regions,
-    current: selected,
+    current,
     outline: palette?.outline ?? 'transparent',
     marker: palette?.marker ?? 'transparent',
     ground: palette?.ground ?? 'transparent',
@@ -527,7 +533,7 @@ export function ImageDiff({
             {!split && tools ? (
               <Tools
                 changes={changes}
-                selected={selected}
+                selected={current}
                 onStep={step}
                 onScale={scale}
                 onFit={() => look('fit')}
@@ -554,7 +560,7 @@ export function ImageDiff({
               {tools ? (
                 <Tools
                   changes={changes}
-                  selected={selected}
+                  selected={current}
                   onStep={step}
                   onScale={scale}
                   onFit={() => look('fit')}
