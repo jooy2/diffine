@@ -125,6 +125,12 @@ function draw() {
     navigation: props.navigation,
     summary: props.summary,
     virtualize: props.virtualize,
+    // Coloured as whatever the sample is written in, unless the demo is the one
+    // showing what `highlight` is for — the two answer the same question, and
+    // that page is about the second answer.
+    language: props.colour ? undefined : sample.language,
+    languagePicker: false,
+    languageLabel: !props.colour && Boolean(sample.language),
     highlight: props.colour ? highlight : undefined,
     diff: {
       inline: props.inline,

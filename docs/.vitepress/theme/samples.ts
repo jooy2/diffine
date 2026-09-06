@@ -13,6 +13,8 @@ export interface Sample {
   after: string;
   beforeLabel: string;
   afterLabel: string;
+  /** What the pair is written in, for `language`. Left out where it is prose. */
+  language?: string;
 }
 
 const CODE_BEFORE = `export function subtotal(items) {
@@ -119,7 +121,8 @@ export const SAMPLES = {
     before: CODE_BEFORE,
     after: CODE_AFTER,
     beforeLabel: 'cart.js @ main',
-    afterLabel: 'cart.js @ currency'
+    afterLabel: 'cart.js @ currency',
+    language: 'javascript'
   },
   prose: {
     before: PROSE_BEFORE,
@@ -131,7 +134,8 @@ export const SAMPLES = {
     before: CONFIG_BEFORE,
     after: CONFIG_AFTER,
     beforeLabel: 'deploy.yml @ v1',
-    afterLabel: 'deploy.yml @ v2'
+    afterLabel: 'deploy.yml @ v2',
+    language: 'yaml'
   },
   korean: {
     before: KOREAN_BEFORE,
@@ -143,7 +147,8 @@ export const SAMPLES = {
     before: 'const total = subtotal + tax;   \n  const rounded = round(total);\nreturn rounded;\n',
     after: 'const total = subtotal + tax;\n    const rounded = round(total);\nreturn rounded;\n',
     beforeLabel: 'Before',
-    afterLabel: 'After'
+    afterLabel: 'After',
+    language: 'javascript'
   }
 } satisfies Record<string, Sample>;
 
