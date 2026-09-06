@@ -30,7 +30,7 @@ The first published version.
 
 - **The viewer takes a comparison instead of two documents.** `result` is for an application that worked one out in a worker, on a server, or once for a list of viewers.
 
-- **`language` colours the two documents as whatever they are written in.** A highlight.js identifier, or `plain` for a document that is not code, with `DIFFINE_LANGUAGES` as the whole list and the name written at the right end of the bar above the panes. The editor draws that list as a menu instead, because a document somebody pasted is a document nobody knew the language of — `defaultLanguage` and `onLanguageChange` are the usual pair for holding the choice.
+- **`language` colours the two documents as whatever they are written in.** A highlight.js identifier, or `plain` for a document that is not code, with `DIFFINE_LANGUAGES` as the whole list and the name written at the right end of the bar above the panes. The editor draws that list as a menu instead, because a document somebody pasted is a document nobody knew the language of — `defaultLanguage` and `onLanguageChange` are the usual pair for holding the choice. The menu is built rather than a `<select>`, so it is drawn in the component's own style, and it keeps everything a `<select>` gives a reader: the arrow keys, Home and End, Enter, Escape, and typing a letter to jump to a language.
 
   The library and each grammar sit behind an `import()`, so a viewer left on `plain` fetches none of it and one asking for Python fetches Python. The colours are eight custom properties, `--diffine-code-keyword` and the rest, that every class highlight.js emits is mapped onto.
 

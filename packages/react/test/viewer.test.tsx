@@ -180,7 +180,7 @@ describe('DiffineViewer', () => {
       '>brainfuck</span>'
     );
     expect(render({ before: BEFORE, after: AFTER, languageLabel: false })).not.toContain(
-      'diffine-language'
+      'diffine-syntax'
     );
   });
 

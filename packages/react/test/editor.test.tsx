@@ -173,17 +173,27 @@ describe('DiffineEditor', () => {
     );
   });
 
-  it('offers every language it knows, and starts on the one it was given', () => {
-    const menu = render({ defaultBefore: BEFORE, defaultAfter: AFTER, defaultLanguage: 'python' });
+  it('names the language it was given, on a control that opens a menu', () => {
+    const picker = render({
+      defaultBefore: BEFORE,
+      defaultAfter: AFTER,
+      defaultLanguage: 'python'
+    });
 
-    expect(menu).toContain('class="diffine-language diffine-language-menu"');
-    expect(menu).toContain('<option value="plain">Plain</option>');
-    expect(menu).toContain('<option value="python" selected="">Python</option>');
-    expect(menu).toContain('<option value="typescript">TypeScript</option>');
+    expect(picker).toContain('role="combobox"');
+    expect(picker).toContain('aria-expanded="false"');
+    expect(picker).toContain('aria-label="Syntax highlighting"');
+    expect(picker).toContain('>Python</span>');
 
+    // The list is drawn when it is opened and not before, so there is nothing
+    // of it in the markup a server sends.
+    expect(picker).not.toContain('role="listbox"');
+    expect(picker).not.toContain('role="option"');
+
+    expect(render({ defaultBefore: BEFORE, defaultAfter: AFTER })).toContain('>Plain</span>');
     expect(
       render({ defaultBefore: BEFORE, defaultAfter: AFTER, languagePicker: false })
-    ).not.toContain('diffine-language');
+    ).not.toContain('diffine-syntax');
   });
 
   it('says the same things in the language it was asked for', () => {

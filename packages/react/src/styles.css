@@ -252,38 +252,125 @@
   margin-inline-start: auto;
 }
 
-.diffine-language {
+/*
+ * What the documents are being coloured as.
+ *
+ * Held against the right edge and right-aligned inside its own width, which is
+ * as wide as the longest name on the list. A control that were only as wide as
+ * the name it happens to be showing would move the whole bar sideways every
+ * time a reader chose a different language.
+ *
+ * `syntax` rather than `language` in every one of these names, and not for the
+ * sake of a shorter word. `[class*='language-']` is how a documentation theme
+ * finds the code blocks it renders — VitePress, Docusaurus and anything built
+ * on Prism or Shiki all use it — and it is a class and an attribute, so it
+ * beats a class of ours. A menu called `diffine-language-list` on a page like
+ * that is a menu drawn as a code block: laid out in the flow, in the theme's
+ * own colours, positioned by a rule nobody here wrote.
+ */
+.diffine-syntax {
   overflow: hidden;
-  max-width: 10rem;
+  flex: 0 0 auto;
+  min-width: 11ch;
   color: var(--diffine-muted);
   white-space: nowrap;
+  text-align: right;
   text-overflow: ellipsis;
   user-select: none;
 }
 
-/* A `<select>` drawn as the word beside it until it is reached for, so that a
-   bar with a menu in it and a bar with a name in it are the same bar. */
-.diffine-language-menu {
+.diffine-syntax-field {
+  display: flex;
+  flex: 0 0 auto;
+}
+
+/*
+ * The editor's, which opens a menu.
+ *
+ * Drawn as the word the viewer writes until it is reached for, so that a bar
+ * with a menu in it and a bar with a name in it are the same bar.
+ */
+.diffine-syntax-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.25rem;
   margin: 0;
-  padding: 0.0625rem 0.25rem;
+  padding: 0.0625rem 0.125rem 0.0625rem 0.25rem;
   border: 1px solid transparent;
   border-radius: 0.25rem;
   background: none;
-  color: var(--diffine-muted);
   font: inherit;
   letter-spacing: inherit;
   cursor: pointer;
 }
 
-.diffine-language-menu:hover {
+.diffine-syntax-current {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.diffine-syntax-caret {
+  flex: 0 0 auto;
+  opacity: 0.7;
+  transition: transform 0.12s;
+}
+
+.diffine-syntax-trigger:hover,
+.diffine-syntax-trigger[aria-expanded='true'] {
   border-color: var(--diffine-border);
   background: var(--diffine-surface);
   color: var(--diffine-text);
 }
 
-.diffine-language-menu:focus-visible {
+.diffine-syntax-trigger[aria-expanded='true'] .diffine-syntax-caret {
+  transform: rotate(180deg);
+}
+
+.diffine-syntax-trigger:focus-visible {
   outline: 2px solid var(--diffine-accent);
   outline-offset: -2px;
+}
+
+/*
+ * The menu, taken out of the flow.
+ *
+ * The component clips what overflows it, so a list laid out inside the bar
+ * would be cut off at the bar. `fixed` is bounded by the window instead, and
+ * the component works out where to put it from the control's own box — which is
+ * also what lets it open upwards when there is more room above.
+ */
+.diffine-syntax-list {
+  position: fixed;
+  z-index: 20;
+  overflow-y: auto;
+  padding: 0.25rem;
+  border: 1px solid var(--diffine-border);
+  border-radius: 0.375rem;
+  background: var(--diffine-surface);
+  box-shadow: 0 0.5rem 1.5rem -0.5rem rgb(0 0 0 / 0.25);
+  overscroll-behavior: contain;
+  text-align: right;
+}
+
+.diffine-syntax-option {
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.25rem;
+  color: var(--diffine-muted);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+/* The one the keyboard or the pointer is on. */
+.diffine-syntax-option[data-active] {
+  background: var(--diffine-gutter);
+  color: var(--diffine-text);
+}
+
+/* The one the documents are being drawn as. */
+.diffine-syntax-option[data-current] {
+  color: var(--diffine-text);
+  font-weight: 600;
 }
 
 /*
