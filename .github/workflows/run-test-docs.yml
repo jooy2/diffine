@@ -35,6 +35,10 @@ jobs:
       # installed in `packages/react` — which is what makes an import the
       # library makes but this folder has not declared fail here rather than on
       # a machine that happens to have run `npm install` in both places.
+      #
+      # Which is why `docs/package.json` carries the library's own runtime
+      # dependencies as well as its own. A dependency the library adds belongs
+      # there, in `resolve.dedupe`, and in the `paths` of `docs/tsconfig.json`.
       - run: npm ci
       - name: Lint
         run: npm run lint

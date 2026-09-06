@@ -412,14 +412,20 @@ const vitePressConfig: UserConfig = {
         { find: /^diffine-react$/, replacement: resolve(reactPackageDir, 'src/index.ts') }
       ],
       /*
-       * Where the aliased source resolves React from.
+       * Where the aliased source resolves what it imports from.
        *
        * Without this, Node's own lookup walks up from `packages/react/src` and
        * lands in `packages/react/node_modules` — a folder this site never
        * installs and CI does not have. Two copies of React is also not a bigger
        * bundle but a null hook dispatcher the moment the second one renders.
+       *
+       * `highlight.js` is here for the first half of that reason rather than
+       * the second. The library reaches every grammar through an `import()`,
+       * and a bundler resolves one of those when it builds rather than when it
+       * runs — so a copy this folder cannot see is a build that fails, not a
+       * viewer that draws its documents uncoloured.
        */
-      dedupe: ['react', 'react-dom']
+      dedupe: ['react', 'react-dom', 'highlight.js']
     },
     optimizeDeps: {
       include: ['react', 'react-dom', 'react-dom/client']
