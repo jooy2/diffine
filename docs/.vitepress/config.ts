@@ -29,6 +29,30 @@ const socialImage = `${siteUrl}/256x256.png`;
 const baseOf = (lang: string) => (lang === defaultLocale ? '/' : `/${lang}/`);
 
 /* ---------------------------------------------------------------------------
+ * The id a heading gets, and the anchor a link is written against
+ *
+ * VitePress decomposes a heading to NFKD to strip accents off Latin letters,
+ * and puts back only what is left. A Korean syllable decomposes into jamo that
+ * are not accents, so nothing puts them back together and `커스텀 속성` becomes
+ * an id spelled in jamo — which the same words typed into a link never match.
+ *
+ * Composing the result undoes exactly that and nothing else: a letter that
+ * lost an accent has no accent to recompose, and a Hangul syllable becomes the
+ * syllable it was written as.
+ * ------------------------------------------------------------------------- */
+const slugOf = (text: string): string =>
+  text
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[\u0000-\u001f]/g, '')
+    .replace(/[\s~`!@#$%^&*()\-_+=[\]{}|\\;:"'\u201c\u201d\u2018\u2019<>,.?/]+/g, '-')
+    .replace(/-{2,}/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .replace(/^(\d)/, '_$1')
+    .toLowerCase()
+    .normalize('NFC');
+
+/* ---------------------------------------------------------------------------
  * What each locale says
  *
  * Three things per language and no more: the sentence under the site's name,
@@ -388,6 +412,11 @@ const vitePressConfig: UserConfig = {
   ],
   sitemap: {
     hostname: packageJson.homepage
+  },
+  markdown: {
+    // The heading ids the anchors are written against — see `slugOf`.
+    anchor: { slugify: slugOf },
+    headers: { slugify: slugOf }
   },
   /* -------------------------------------------------------------------------
    * The live demos
