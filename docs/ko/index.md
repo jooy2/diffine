@@ -7,7 +7,7 @@ description: 두 버전을 비교해 무엇이 달라졌는지 보여줍니다. 
 
 hero:
   name: Diffine
-  text: 무엇이 달라졌는지 보여줍니다
+  text: 달라진 곳을 보여줍니다
   tagline: 비교 엔진과 나란히 보는 뷰어를 한 패키지에 담은 React 라이브러리입니다. 텍스트와 이미지를, 읽기와 고쳐 쓰기를 모두 지원합니다.
   image:
     src: /hero.png
