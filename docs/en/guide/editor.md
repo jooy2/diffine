@@ -128,6 +128,8 @@ The comparison runs again on every keystroke rather than after a pause. An edit 
 
 Nothing is fetched until a language other than `plain` is chosen. See [the viewer](./viewer#colouring-the-text) for what arrives when it is, and for the eight custom properties the colours come from.
 
+Running a grammar over a long document is the expensive part of a keystroke here, and by a long way — tens of milliseconds where comparing the same document costs one. So the colours are deferred: the keystroke is drawn against the ones the last keystroke produced, and the new ones arrive in a pass the browser can interrupt if another key is pressed. What a reader sees in between is the line they are typing coloured as it was a moment ago.
+
 `highlight` works here for the same reason the tints do: the text a reader sees is drawn by the lines behind the field, so a highlighter can reach it. It replaces `language` rather than adding to it, so an editor that passes it usually turns `languagePicker` off as well.
 
 ```tsx

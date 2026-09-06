@@ -18,6 +18,16 @@ import { isLoaded, loadLanguage, tokenizeLines } from './engine.js';
  * The two documents are tokenised once per comparison rather than once per
  * render, and the lines they are tokenised from are the comparison's own — so
  * entry `n` is line `n`, with no second opinion about where a line ends.
+ *
+ * That tokenising is the expensive part of an editor keystroke, and by a long
+ * way: a grammar over five thousand lines costs tens of milliseconds where
+ * comparing the same five thousand costs one. So it is deferred. The keystroke
+ * renders against the colours the last one produced, the new ones arrive in a
+ * pass React can interrupt, and a reader typing quickly is never waiting on a
+ * grammar. What they see in between is the line they are typing coloured as it
+ * was a keystroke ago — a run of the wrong length is cut to the line's own
+ * length rather than spilling past it, so the worst of it is a word that is the
+ * wrong colour for a frame.
  */
 export function useSyntaxHighlight(
   language: string | undefined,
@@ -52,13 +62,16 @@ export function useSyntaxHighlight(
     };
   }, [wanted]);
 
+  const settled = React.useDeferredValue(before);
+  const settledAfter = React.useDeferredValue(after);
+
   const beforeTokens = React.useMemo(
-    () => (ready ? tokenizeLines(before, ready) : null),
-    [ready, before]
+    () => (ready ? tokenizeLines(settled, ready) : null),
+    [ready, settled]
   );
   const afterTokens = React.useMemo(
-    () => (ready ? tokenizeLines(after, ready) : null),
-    [ready, after]
+    () => (ready ? tokenizeLines(settledAfter, ready) : null),
+    [ready, settledAfter]
   );
 
   return React.useMemo(() => {

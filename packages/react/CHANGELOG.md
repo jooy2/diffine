@@ -34,6 +34,8 @@ The first published version.
 
   The library and each grammar sit behind an `import()`, so a viewer left on `plain` fetches none of it and one asking for Python fetches Python. The colours are eight custom properties, `--diffine-code-keyword` and the rest, that every class highlight.js emits is mapped onto.
 
+  The colouring is deferred, so it is never what a keystroke waits on: an editor draws the new text against the colours the last keystroke produced, and the new ones arrive in a pass that yields to the next key.
+
   `highlight` still takes an application's own highlighter, and replaces `language` rather than adding to it.
 
 - **The bar under the panes says what each document weighs and what happened between them.** It sits on the header's grid, so the left half is under the left pane and the right half under the right one, and each side carries its own character count and its size in bytes. The counts go at the far right as a `~`, a `+` and a `−` against three numbers — the same three marks the gutter puts beside a line — and a screen reader is told the sentence instead. `documentSize` is the string that sentence is written from.
