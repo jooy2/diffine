@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { DiffineViewer, diffText } from 'diffine-react';
-import type { DiffineViewerProps } from 'diffine-react';
+import { TextDiff, diffText } from 'diffine-react';
+import type { TextDiffProps } from 'diffine-react';
 
 /**
- * The viewer as markup, with no layout under it.
+ * The reading mode as markup, with no layout under it.
  *
  * What this can check is everything the component decides: which lines are on
  * which side, what each one is called, which columns are drawn. What it cannot
@@ -13,7 +13,7 @@ import type { DiffineViewerProps } from 'diffine-react';
  * with no layout in it would answer zero to every question about one. Those
  * belong in a browser rather than in a convincing imitation of one.
  */
-const render = (props: DiffineViewerProps) => renderToStaticMarkup(<DiffineViewer {...props} />);
+const render = (props: TextDiffProps) => renderToStaticMarkup(<TextDiff {...props} />);
 
 /** Every line of one side, in order, as `kind` and the words in it. */
 function linesOf(markup: string, side: string): string[] {
@@ -35,7 +35,7 @@ function linesOf(markup: string, side: string): string[] {
 const BEFORE = 'one\ntwo\nthree';
 const AFTER = 'one\ntwo changed\nthree\nfour';
 
-describe('DiffineViewer', () => {
+describe('TextDiff, reading', () => {
   it('draws both documents side by side', () => {
     const markup = render({ before: BEFORE, after: AFTER });
 
@@ -51,6 +51,18 @@ describe('DiffineViewer', () => {
       'equal 3three',
       'insert 4+Added: four'
     ]);
+  });
+
+  it('draws a comparison it was handed on its own, with no documents beside it', () => {
+    const markup = render({ result: diffText('one\ntwo', 'one\n2') });
+
+    expect(markup).not.toContain('diffine-empty');
+    expect(linesOf(markup, 'after')).toEqual(['equal 1one', 'replace 2~Changed: 2']);
+  });
+
+  it('draws nothing to type into until it is asked for a mode that has one', () => {
+    expect(render({ before: BEFORE, after: AFTER })).not.toContain('<textarea');
+    expect(render({ before: BEFORE, after: AFTER })).not.toContain('diffine-editor');
   });
 
   it('says what each side is called, and falls back to the word for it', () => {
@@ -243,7 +255,7 @@ describe('DiffineViewer', () => {
       id: 'review',
       className: 'mine',
       'aria-describedby': 'notes'
-    } as DiffineViewerProps);
+    } as TextDiffProps);
 
     expect(markup).toContain('class="diffine mine"');
     expect(markup).toContain('id="review"');

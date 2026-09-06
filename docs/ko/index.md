@@ -19,8 +19,8 @@ hero:
       text: 시작하기
       link: /ko/guide/getting-started
     - theme: alt
-      text: 뷰어
-      link: /ko/guide/viewer
+      text: 텍스트 비교
+      link: /ko/guide/text-diff
     - theme: alt
       text: API
       link: /ko/api/
@@ -39,8 +39,8 @@ features:
     linkText: 비교 결과
   - title: 화면 요소는 전부 옵션이다
     details: 줄 번호, 줄 바꿈, 양쪽 높이 맞추기, 가운데 연결선, 한 줄로 보기. 각각이 기본값을 가진 prop이라 스타일시트를 건드리지 않고도 연결선까지 갖춘 좌우 비교부터 줄만 나열한 화면까지 갑니다.
-    link: /ko/guide/viewer
-    linkText: 뷰어
+    link: /ko/guide/text-diff
+    linkText: 텍스트 비교
   - title: 의존성은 하나, 쓸 때만 내려받는다
     details: 비교 엔진도, 높이를 맞추는 계산도, 뷰어도 직접 만들었습니다. 비교 라이브러리도, 에디터 컴포넌트도, CSS 프레임워크도 없습니다. highlight.js 하나가 예외인데, 문법과 함께 import() 뒤에 있어서 색을 입히지 않는 페이지는 아무것도 내려받지 않습니다.
     link: /ko/guide/getting-started

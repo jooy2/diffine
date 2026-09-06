@@ -32,11 +32,11 @@ npm install diffine-react
 Two props and a stylesheet:
 
 ```tsx
-import { DiffineViewer } from 'diffine-react';
+import { TextDiff } from 'diffine-react';
 import 'diffine-react/styles.css';
 
 export function Review({ saved, draft }: { saved: string; draft: string }) {
-  return <DiffineViewer before={saved} after={draft} />;
+  return <TextDiff before={saved} after={draft} />;
 }
 ```
 
@@ -49,7 +49,7 @@ The stylesheet is imported once, anywhere in the application. It declares nothin
 A bare string is the document. The object form names it as well, and the name is what the header over each pane says:
 
 ```tsx
-<DiffineViewer
+<TextDiff
   before={{ content: saved, label: 'v1.2' }}
   after={{ content: draft, label: 'Working copy' }}
 />
@@ -57,10 +57,10 @@ A bare string is the document. The object form names it as well, and the name is
 
 ### Set the height
 
-The viewer is `24rem` tall by default and scrolls inside that. Give it a height of your own on the element, or set the custom property the default comes from:
+It is `24rem` tall by default and scrolls inside that. Give it a height of your own on the element, or set the custom property the default comes from:
 
 ```tsx
-<DiffineViewer before={saved} after={draft} style={{ height: '40rem' }} />
+<TextDiff before={saved} after={draft} style={{ height: '40rem' }} />
 ```
 
 ```css
@@ -69,10 +69,10 @@ The viewer is `24rem` tall by default and scrolls inside that. Give it a height 
 }
 ```
 
-`--diffine-height: auto` makes the viewer as tall as the comparison, and leaves the scrolling to the page.
+`--diffine-height: auto` makes it as tall as the comparison, and leaves the scrolling to the page.
 
 ## Where to go next
 
-- [**The viewer**](./viewer) — every part of the view, and the prop that turns it on or off.
+- [**Text diff**](./text-diff) — every part of the view, the editing mode, and the prop that turns each one on or off.
 - [**The comparison**](./diff) — what the engine returns, and how to read it without drawing anything.
-- [**API**](../api/) — every component, function and option, in one place.
+- [**API**](../api/) — every export, function and option, in one place.

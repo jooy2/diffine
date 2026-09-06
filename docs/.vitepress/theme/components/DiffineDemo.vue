@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * A real `DiffineViewer` or `DiffineEditor`, on a VitePress page.
+ * A real `TextDiff`, in one mode or the other, on a VitePress page.
  *
  * Nothing about it is a screenshot or a re-implementation — see `island.ts` for
  * how a React component reaches a page here and why what is drawn below is the
@@ -13,8 +13,14 @@
 import { computed, ref } from 'vue';
 import { useData } from 'vitepress';
 import { createElement } from 'react';
-import { DiffineEditor, DiffineViewer } from 'diffine-react';
-import type { DiffInlineMode, DiffWhitespace, DiffineSide, DiffineView } from 'diffine-react';
+import { TextDiff } from 'diffine-react';
+import type {
+  DiffInlineMode,
+  DiffWhitespace,
+  DiffineMode,
+  DiffineSide,
+  DiffineView
+} from 'diffine-react';
 import 'diffine-react/styles.css';
 import { highlight } from '../highlight';
 import { useReactIsland } from '../island';
@@ -22,8 +28,8 @@ import { SAMPLES, type SampleName } from '../samples';
 
 const props = withDefaults(
   defineProps<{
-    /** Which of the two components the demo is of. */
-    component?: 'viewer' | 'editor';
+    /** Which mode the demo is of. */
+    mode?: DiffineMode;
     sample?: SampleName;
     view?: DiffineView;
     lineNumbers?: boolean;
@@ -38,9 +44,9 @@ const props = withDefaults(
     ignoreCase?: boolean;
     navigation?: boolean;
     virtualize?: boolean;
-    /** Editor only: which side cannot be typed into. */
+    /** Editor mode only: which side cannot be typed into. */
     readOnly?: boolean | DiffineSide;
-    /** Editor only: whether Tab types a tab. */
+    /** Editor mode only: whether Tab types a tab. */
     indentWithTab?: boolean;
     /** Whether the sample is drawn through the little highlighter beside this. */
     colour?: boolean;
@@ -51,7 +57,7 @@ const props = withDefaults(
     controls?: boolean;
   }>(),
   {
-    component: 'viewer',
+    mode: 'viewer',
     sample: 'code',
     view: 'split',
     lineNumbers: true,
@@ -143,23 +149,23 @@ function draw() {
     style: { height: props.height }
   };
 
-  if (props.component === 'editor') {
-    return createElement(DiffineEditor, {
+  if (props.mode === 'editor') {
+    return createElement(TextDiff, {
       ...shared,
-      // The editor keeps the two documents itself, so a new sample is a new
-      // editor rather than a prop it would be right to ignore.
+      mode: 'editor' as const,
+      // An editable document is the component's own once it has it, so a new
+      // sample is a new component rather than a prop it would be right to
+      // ignore.
       key: props.sample,
       defaultBefore: before,
       defaultAfter: after,
       readOnly: props.readOnly,
       indentWithTab: props.indentWithTab,
-      // Named on the two components under two names, because a viewer is told
-      // its language and an editor is asked for one.
-      languagePicker: coloured()
+      languageLabel: coloured()
     });
   }
 
-  return createElement(DiffineViewer, {
+  return createElement(TextDiff, {
     ...shared,
     before,
     after,
@@ -175,7 +181,7 @@ useReactIsland(host, draw, { watch: [chosen, isDark, locale, () => props.sample]
 <template>
   <div class="diffine-demo">
     <div v-if="controls" class="diffine-demo-controls">
-      <label v-if="component === 'viewer'">
+      <label v-if="mode === 'viewer'">
         <input
           type="checkbox"
           :checked="chosen.view === 'unified'"
@@ -187,7 +193,7 @@ useReactIsland(host, draw, { watch: [chosen, isDark, locale, () => props.sample]
         <input type="checkbox" v-model="chosen.wrap" />
         {{ labels.wrap }}
       </label>
-      <label v-if="component === 'viewer'">
+      <label v-if="mode === 'viewer'">
         <input type="checkbox" v-model="chosen.alignLines" />
         {{ labels.align }}
       </label>

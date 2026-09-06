@@ -32,11 +32,11 @@ npm install diffine-react
 prop 두 개와 스타일시트 한 줄이면 됩니다.
 
 ```tsx
-import { DiffineViewer } from 'diffine-react';
+import { TextDiff } from 'diffine-react';
 import 'diffine-react/styles.css';
 
 export function Review({ saved, draft }: { saved: string; draft: string }) {
-  return <DiffineViewer before={saved} after={draft} />;
+  return <TextDiff before={saved} after={draft} />;
 }
 ```
 
@@ -49,18 +49,15 @@ export function Review({ saved, draft }: { saved: string; draft: string }) {
 문자열만 넘기면 그게 문서입니다. 객체로 넘기면 이름도 같이 붙고, 그 이름이 각 창 위에 표시됩니다.
 
 ```tsx
-<DiffineViewer
-  before={{ content: saved, label: 'v1.2' }}
-  after={{ content: draft, label: '작업본' }}
-/>
+<TextDiff before={{ content: saved, label: 'v1.2' }} after={{ content: draft, label: '작업본' }} />
 ```
 
 ### 높이 정하기
 
-뷰어의 기본 높이는 `24rem`이고 그 안에서 스크롤합니다. 엘리먼트에 직접 높이를 주거나, 기본값이 나오는 커스텀 속성을 바꾸세요.
+기본 높이는 `24rem`이고 그 안에서 스크롤합니다. 엘리먼트에 직접 높이를 주거나, 기본값이 나오는 커스텀 속성을 바꾸세요.
 
 ```tsx
-<DiffineViewer before={saved} after={draft} style={{ height: '40rem' }} />
+<TextDiff before={saved} after={draft} style={{ height: '40rem' }} />
 ```
 
 ```css
@@ -73,6 +70,6 @@ export function Review({ saved, draft }: { saved: string; draft: string }) {
 
 ## 다음에 볼 것
 
-- [**뷰어**](./viewer) — 화면의 각 요소와 그것을 켜고 끄는 prop.
+- [**텍스트 비교**](./text-diff) — 화면의 각 요소와 고쳐 쓰는 모드, 그리고 그것을 켜고 끄는 prop.
 - [**비교 결과**](./diff) — 엔진이 무엇을 돌려주는지, 아무것도 그리지 않고 읽는 방법.
-- [**API**](../api/) — 컴포넌트와 함수와 옵션 전부.
+- [**API**](../api/) — 내보내는 것과 함수와 옵션 전부.

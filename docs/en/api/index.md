@@ -11,16 +11,27 @@ Every export of `diffine-react`, in one place. The [guide](../guide/getting-star
 
 | Import                     | What it holds                                                    |
 | -------------------------- | ---------------------------------------------------------------- |
-| `diffine-react`            | Everything: the components, the engine and the types.            |
+| `diffine-react`            | Everything: the component, the engine and the types.             |
 | `diffine-react/diff`       | The comparison, with no component reaching the bundle.           |
 | `diffine-react/types`      | The types on their own, for an application naming one in a prop. |
-| `diffine-react/styles.css` | The stylesheet, for both components.                             |
+| `diffine-react/styles.css` | The stylesheet.                                                  |
 
-## `DiffineViewer`
+## `TextDiff`
 
 ```tsx
-<DiffineViewer before={saved} after={draft} />
+<TextDiff before={saved} after={draft} />
+<TextDiff mode="editor" defaultBefore={saved} defaultAfter={draft} />
 ```
+
+### Modes
+
+| Prop   | Type                   | Default    | What it decides                                |
+| ------ | ---------------------- | ---------- | ---------------------------------------------- |
+| `mode` | `'viewer' \| 'editor'` | `'viewer'` | Whether the two documents are read or written. |
+
+One component draws both. `editor` lays a field over each pane, so the comparison is worked out again as somebody types into it; everything else — the rows, the tints, the marked words, the bands, the buttons, the search — is the same in both.
+
+Three props belong to `editor` and are ignored there rather than everywhere else: `view` and `alignLines` (a field cannot be a unified column and cannot be padded out with blanks somebody could type into), and `result` (a comparison worked out elsewhere is a comparison of documents nobody has typed into yet). `readOnly`, `indentWithTab`, `spellCheck`, `defaultBefore`, `defaultAfter` and `onLanguageChange` do nothing in `viewer` mode.
 
 ### The documents
 
@@ -28,10 +39,18 @@ Every export of `diffine-react`, in one place. The [guide](../guide/getting-star
 | --- | --- | --- | --- |
 | `before` | `string \| DiffineSource` | `''` | The document on the left. |
 | `after` | `string \| DiffineSource` | `''` | The document on the right. |
-| `result` | `DiffResult` | — | A comparison already worked out. `before` and `after` are ignored. |
+| `defaultBefore` | `string \| DiffineSource` | `''` | What the left field starts with. Editor only. |
+| `defaultAfter` | `string \| DiffineSource` | `''` | What the right field starts with. Editor only. |
+| `onBeforeChange` | `(value: string) => void` | — | The left document was typed into. |
+| `onAfterChange` | `(value: string) => void` | — | The right document was typed into. |
+| `onDiff` | `(result: DiffResult) => void` | — | The comparison, every time it is worked out again. |
+| `readOnly` | `boolean \| 'before' \| 'after'` | `false` | Which side cannot be typed into. Editor only. |
+| `result` | `DiffResult` | — | A comparison already worked out. `before` and `after` are ignored. Viewer only. |
 | `diff` | `DiffOptions` | — | How the two are compared. See below. |
 
 `DiffineSource` is `{ content: string; label?: string }`. The label is what the header calls that side; without one it is the word for it in the current locale.
+
+A document nobody can type into is read from the props on every render. An editable one is the usual React pair instead: passing `before` or `after` makes that document the application's, passing `defaultBefore` or `defaultAfter` leaves it to the component, and which of the two it is, is decided on the first render. `onBeforeChange` and `onAfterChange` are called whichever of the two is holding it.
 
 ### The view
 
@@ -45,19 +64,32 @@ Every export of `diffine-react`, in one place. The [guide](../guide/getting-star
 | `connectors` | `boolean` | `true` | Whether each change is drawn as a band between the panes. |
 | `syncScroll` | `boolean` | `true` | Whether scrolling one pane scrolls the other. |
 | `header` | `boolean` | `true` | Whether each side is named above it. |
-| `search` | `boolean` | `true` | Whether a reader can search a pane from inside the viewer. |
+| `navigation` | `boolean` | `true` | Whether the buttons for moving between changes are drawn. |
+| `search` | `boolean` | `true` | Whether a reader can search a pane from inside the component. |
 | `summary` | `boolean` | `true` | Whether the bar under the view is drawn. |
+| `virtualize` | `boolean` | `true` | Whether only the lines a reader can see are drawn. |
 | `language` | `string` | `'plain'` | What the documents are written in, so they are coloured as it. |
-| `languageLabel` | `boolean` | `true` | Whether that language is named at the right end of the bar. |
+| `defaultLanguage` | `string` | `'plain'` | Which one to start on, when the component is to keep it. |
+| `onLanguageChange` | `(language: string) => void` | — | A language was chosen from the menu. Editor only. |
+| `languageLabel` | `boolean` | `true` | Whether that language is drawn at the right end of the bar. |
 | `tabSize` | `number` | `4` | How wide a tab is drawn, in characters. |
 | `colorScheme` | `'system' \| 'light' \| 'dark'` | `'system'` | Which palette to draw in. |
 | `font` | `DiffineFont` | — | The typeface the documents are drawn in. |
-| `locale` | `'en' \| 'ko'` | `'en'` | The language of the viewer's own words. |
+| `locale` | `'en' \| 'ko'` | `'en'` | The language of the component's own words. |
 | `strings` | `Partial<DiffineStrings>` | — | Words to use instead of the locale's. |
 
-`connectors` and `syncScroll` are about the space between two panes, so both are ignored in the unified view.
+`connectors` and `syncScroll` are about the space between two panes, so both are ignored in the unified view. `languageLabel` draws the name of the language in `viewer` mode and the menu it was chosen from in `editor` mode; `language`, `defaultLanguage` and `onLanguageChange` are the usual pair for that choice.
 
 Anything else the component is given goes straight to the element, so `id`, `className`, `style` and the `aria-*` attributes behave as they would on a `<div>`.
+
+### Typing
+
+| Prop | Type | Default | What it decides |
+| --- | --- | --- | --- |
+| `indentWithTab` | `boolean` | `false` | Whether Tab types a tab instead of moving to the next control. |
+| `spellCheck` | `boolean` | `false` | Whether the browser marks its own spelling mistakes. |
+
+Both are `editor` mode's. With `indentWithTab` on, **Shift+Tab** moves back a control and **Escape** hands the next Tab to the browser, so the field is never one a keyboard cannot leave.
 
 ### Which change a reader is on
 
@@ -75,7 +107,7 @@ Each pane is searched on its own: a button in the bar above it opens a bar of it
 
 Matches are marked as the query is typed, the pane moves to the one being read, and **Enter** and **Shift+Enter** step through the rest. The three switches inside the box read the query as a case-sensitive one, as whole words only, and as a regular expression. **Escape** closes the bar.
 
-The editor adds a row for replacing, which **Ctrl+R** opens together with the bar — that key is the browser's own reload, and the editor takes it while the keyboard is inside the component. The replacement is written as the text it is — `$1` is a dollar and a one — and it goes in through the browser's own editing command, so Ctrl+Z takes it back. A `readOnly` side is searched and not replaced in.
+The editor adds a row for replacing, which **Ctrl+H** opens together with the bar. The replacement is written as the text it is — `$1` is a dollar and a one — and it goes in through the browser's own editing command, so Ctrl+Z takes it back. A `readOnly` side is searched and not replaced in.
 
 A pane whose search is open still draws only the lines a reader can see, so a match found on line nine thousand is scrolled to and drawn there. `search={false}` turns the button and the shortcuts off together, which is what a page wants if those keys belong to something else on it.
 
@@ -160,71 +192,11 @@ interface DiffineToken {
 }
 ```
 
-Called for each line either component draws, with the whole line. The runs come back in order; a gap between two of them is drawn plain, and `null` leaves the line alone. `length` counts the same units `String.prototype.slice` does.
+Called for each line the component draws, with the whole line. The runs come back in order; a gap between two of them is drawn plain, and `null` leaves the line alone. `length` counts the same units `String.prototype.slice` does.
 
 The line is cut at the boundaries of both these runs and the comparison's, so a changed word that is half a string literal is drawn as exactly that.
 
 Passing this replaces `language` rather than adding to it. A line has one set of runs, and two highlighters cutting it at once is not a question with an answer.
-
-## `DiffineEditor`
-
-```tsx
-<DiffineEditor defaultBefore={saved} defaultAfter={draft} />
-```
-
-The viewer with the two panes made editable. Every prop below that the viewer also takes means the same thing there; the differences are that the sides are never held level, and that there is no unified view.
-
-### The documents
-
-| Prop | Type | Default | What it is |
-| --- | --- | --- | --- |
-| `before` | `string \| DiffineSource` | — | The left document, held by the application. |
-| `after` | `string \| DiffineSource` | — | The right document, held by the application. |
-| `defaultBefore` | `string \| DiffineSource` | `''` | What the left field starts with. |
-| `defaultAfter` | `string \| DiffineSource` | `''` | What the right field starts with. |
-| `onBeforeChange` | `(value: string) => void` | — | The left document was typed into. |
-| `onAfterChange` | `(value: string) => void` | — | The right document was typed into. |
-| `onDiff` | `(result: DiffResult) => void` | — | The comparison, every time it is worked out again. |
-| `readOnly` | `boolean \| 'before' \| 'after'` | `false` | Which side cannot be typed into. |
-| `diff` | `DiffOptions` | — | How the two are compared. Run again on every keystroke. |
-
-Passing `before` or `after` makes that document the application's, in the usual React pair. Which of the two it is, is decided on the first render. `onBeforeChange` and `onAfterChange` are called whichever of the two is holding it.
-
-### The view
-
-| Prop | Type | Default | What it decides |
-| --- | --- | --- | --- |
-| `lineNumbers` | `boolean` | `true` | Whether each line carries its number. |
-| `markers` | `boolean` | `true` | Whether a changed line carries a `+`, `−` or `~`. |
-| `wrap` | `boolean` | `false` | Whether a long line wraps or runs off the side. |
-| `connectors` | `boolean` | `true` | Whether each change is drawn as a band between the panes. |
-| `syncScroll` | `boolean` | `true` | Whether scrolling one pane scrolls the other. |
-| `header` | `boolean` | `true` | Whether each side is named above it. |
-| `navigation` | `boolean` | `true` | Whether the buttons for moving between changes are drawn. |
-| `search` | `boolean` | `true` | Whether a reader can search a field from inside the editor. |
-| `summary` | `boolean` | `true` | Whether the bar under the fields is drawn. |
-| `language` | `string` | — | What the documents are written in, held by the application. |
-| `defaultLanguage` | `string` | `'plain'` | Which one to start on, when the editor is to keep it. |
-| `onLanguageChange` | `(language: string) => void` | — | A language was chosen. |
-| `languagePicker` | `boolean` | `true` | Whether the menu of languages is drawn in the bar. |
-| `virtualize` | `boolean` | `true` | Whether only the lines a reader can see are drawn. |
-| `tabSize` | `number` | `4` | How wide a tab is drawn, in characters. |
-| `colorScheme` | `'system' \| 'light' \| 'dark'` | `'system'` | Which palette to draw in. |
-| `font` | `DiffineFont` | — | The typeface the documents are drawn in. |
-| `locale` | `'en' \| 'ko'` | `'en'` | The language of the editor's own words. |
-| `strings` | `Partial<DiffineStrings>` | — | Words to use instead of the locale's. |
-| `highlight` | `DiffineHighlight` | — | How a line is coloured beyond the comparison. |
-
-### Typing
-
-| Prop | Type | Default | What it decides |
-| --- | --- | --- | --- |
-| `indentWithTab` | `boolean` | `false` | Whether Tab types a tab instead of moving to the next control. |
-| `spellCheck` | `boolean` | `false` | Whether the browser marks its own spelling mistakes. |
-
-With `indentWithTab` on, **Shift+Tab** moves back a control and **Escape** hands the next Tab to the browser, so the field is never one a keyboard cannot leave.
-
-`selected`, `defaultSelected` and `onSelectedChange` are the viewer's, unchanged. Anything else the component is given goes straight to the element.
 
 ## `diffText`
 

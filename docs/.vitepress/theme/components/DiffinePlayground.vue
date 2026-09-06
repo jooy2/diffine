@@ -20,7 +20,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue';
 import { useData } from 'vitepress';
 import { createElement } from 'react';
-import { DiffineEditor, DiffineViewer } from 'diffine-react';
+import { TextDiff } from 'diffine-react';
 import type { DiffInlineMode } from 'diffine-react';
 import 'diffine-react/styles.css';
 import { useReactIsland } from '../island';
@@ -184,8 +184,9 @@ function draw() {
     : documents.after;
 
   if (mode.value === 'editor') {
-    return createElement(DiffineEditor, {
+    return createElement(TextDiff, {
       ...shared,
+      mode: 'editor' as const,
       // A different pair of documents is a different editor. The component
       // keeps them once it has them, which is what makes it an editor, so
       // handing it new ones means building it again.
@@ -209,7 +210,7 @@ function draw() {
     });
   }
 
-  return createElement(DiffineViewer, {
+  return createElement(TextDiff, {
     ...shared,
     before,
     after,

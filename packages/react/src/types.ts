@@ -247,10 +247,22 @@ export interface DiffResult {
 export type DiffineSide = 'before' | 'after';
 
 /**
+ * Whether the two documents are read or written.
+ *
+ * One component draws both, because they were never two things: the same
+ * comparison, the same rows, the same colours, the same way through the
+ * changes. An editor is that with a field over each pane, so the comparison is
+ * worked out again as somebody types into it.
+ */
+export type DiffineMode = 'viewer' | 'editor';
+
+/**
  * How the two documents are laid out.
  *
  * - `split` — one document either side, held level with each other.
  * - `unified` — one column, with what went out above what came in.
+ *
+ * A unified column is not a thing to type into, so an editor is always split.
  */
 export type DiffineView = 'split' | 'unified';
 

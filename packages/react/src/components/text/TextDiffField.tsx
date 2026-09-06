@@ -9,7 +9,7 @@ import type { SearchMatch } from '../../internal/search.js';
 import type { VirtualWindow } from '../../internal/virtual.js';
 import { DiffineRows } from '../shared/DiffineRows.js';
 
-export interface DiffineEditorPaneProps {
+export interface TextDiffFieldProps {
   side: DiffineSide;
   /** What this side is called, which is the field's name to a screen reader. */
   name: string;
@@ -67,7 +67,7 @@ export interface DiffineEditorPaneProps {
  * document it is already being handed, and the field is the copy that can be
  * read a line at a time and edited.
  */
-export function DiffineEditorPane({
+export function TextDiffField({
   side,
   name,
   value,
@@ -88,7 +88,7 @@ export function DiffineEditorPane({
   match,
   paneRef,
   fieldRef: field
-}: DiffineEditorPaneProps): React.JSX.Element {
+}: TextDiffFieldProps): React.JSX.Element {
   /**
    * Whether Escape has been pressed, which is how a keyboard leaves the field.
    *

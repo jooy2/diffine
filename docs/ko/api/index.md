@@ -14,13 +14,24 @@ order: 1
 | `diffine-react`            | 전부. 컴포넌트와 엔진과 타입.                             |
 | `diffine-react/diff`       | 비교 엔진만. 컴포넌트는 번들에 들어가지 않습니다.         |
 | `diffine-react/types`      | 타입만. prop에 타입 이름을 쓰려는 애플리케이션을 위한 것. |
-| `diffine-react/styles.css` | 두 컴포넌트가 함께 쓰는 스타일시트.                       |
+| `diffine-react/styles.css` | 스타일시트.                                               |
 
-## `DiffineViewer`
+## `TextDiff`
 
 ```tsx
-<DiffineViewer before={saved} after={draft} />
+<TextDiff before={saved} after={draft} />
+<TextDiff mode="editor" defaultBefore={saved} defaultAfter={draft} />
 ```
+
+### 모드
+
+| prop   | 타입                   | 기본값     | 무엇을 정하는지        |
+| ------ | ---------------------- | ---------- | ---------------------- |
+| `mode` | `'viewer' \| 'editor'` | `'viewer'` | 두 문서를 읽을지 쓸지. |
+
+컴포넌트 하나가 둘 다 그립니다. `editor`는 창마다 입력란을 한 겹 덮어서 글자를 칠 때마다 비교를 다시 계산하고, 나머지는 — 줄도, 깔리는 색도, 짚어 주는 단어도, 띠도, 버튼도, 찾기도 — 양쪽이 같습니다.
+
+`editor`에만 속하는 prop이 셋 있습니다. `view`와 `alignLines`는 입력란이 한 열이 될 수도, 커서를 놓을 수 있는 빈 칸으로 채워질 수도 없어서 무시되고, `result`는 아직 아무도 손대지 않은 문서의 비교라서 무시됩니다. 반대로 `readOnly`, `indentWithTab`, `spellCheck`, `defaultBefore`, `defaultAfter`, `onLanguageChange`는 `viewer`에서 하는 일이 없습니다.
 
 ### 문서
 
@@ -28,10 +39,18 @@ order: 1
 | --- | --- | --- | --- |
 | `before` | `string \| DiffineSource` | `''` | 왼쪽 문서. |
 | `after` | `string \| DiffineSource` | `''` | 오른쪽 문서. |
-| `result` | `DiffResult` | — | 이미 계산된 비교 결과. 주면 `before`와 `after`는 무시됩니다. |
+| `defaultBefore` | `string \| DiffineSource` | `''` | 왼쪽 입력란이 처음 담을 내용. 에디터 전용. |
+| `defaultAfter` | `string \| DiffineSource` | `''` | 오른쪽 입력란이 처음 담을 내용. 에디터 전용. |
+| `onBeforeChange` | `(value: string) => void` | — | 왼쪽 문서가 바뀌었을 때. |
+| `onAfterChange` | `(value: string) => void` | — | 오른쪽 문서가 바뀌었을 때. |
+| `onDiff` | `(result: DiffResult) => void` | — | 비교를 다시 계산할 때마다의 결과. |
+| `readOnly` | `boolean \| 'before' \| 'after'` | `false` | 고칠 수 없는 쪽. 에디터 전용. |
+| `result` | `DiffResult` | — | 이미 계산된 비교 결과. 주면 `before`와 `after`는 무시됩니다. 뷰어 전용. |
 | `diff` | `DiffOptions` | — | 비교 방식. 아래 참고. |
 
 `DiffineSource`는 `{ content: string; label?: string }`입니다. `label`이 헤더에 표시되는 이름이고, 없으면 현재 로케일의 기본 단어가 들어갑니다.
+
+고칠 수 없는 문서는 렌더할 때마다 prop에서 다시 읽습니다. 고칠 수 있는 문서는 늘 쓰는 한 쌍입니다. `before`나 `after`를 주면 그 문서는 애플리케이션의 것이 되고, `defaultBefore`나 `defaultAfter`를 주면 컴포넌트가 들고 있습니다. 둘 중 어느 쪽인지는 첫 렌더에서 정해지고, `onBeforeChange`와 `onAfterChange`는 어느 쪽이 들고 있든 호출됩니다.
 
 ### 화면
 
@@ -45,19 +64,32 @@ order: 1
 | `connectors` | `boolean` | `true` | 변경을 두 창 사이에 띠로 그릴지. |
 | `syncScroll` | `boolean` | `true` | 한쪽을 스크롤하면 다른 쪽도 따라갈지. |
 | `header` | `boolean` | `true` | 각 문서의 이름을 위에 쓸지. |
+| `navigation` | `boolean` | `true` | 변경 사이를 오가는 버튼을 그릴지. |
 | `search` | `boolean` | `true` | 창 안에서 문서를 찾을 수 있게 할지. |
 | `summary` | `boolean` | `true` | 아래쪽 상태 표시줄을 그릴지. |
+| `virtualize` | `boolean` | `true` | 보이는 줄만 그릴지. |
 | `language` | `string` | `'plain'` | 문서가 어떤 언어인지. 그 언어로 색을 입힙니다. |
-| `languageLabel` | `boolean` | `true` | 그 언어 이름을 위쪽 줄 오른쪽 끝에 쓸지. |
+| `defaultLanguage` | `string` | `'plain'` | 컴포넌트가 직접 들고 있을 때 처음 언어. |
+| `onLanguageChange` | `(language: string) => void` | — | 메뉴에서 언어를 골랐을 때. 에디터 전용. |
+| `languageLabel` | `boolean` | `true` | 그 언어를 위쪽 줄 오른쪽 끝에 그릴지. |
 | `tabSize` | `number` | `4` | 탭을 몇 칸으로 그릴지. |
 | `colorScheme` | `'system' \| 'light' \| 'dark'` | `'system'` | 어떤 팔레트로 그릴지. |
 | `font` | `DiffineFont` | — | 문서를 그리는 글꼴. |
-| `locale` | `'en' \| 'ko'` | `'en'` | 뷰어 자신이 쓰는 말의 언어. |
+| `locale` | `'en' \| 'ko'` | `'en'` | 컴포넌트 자신이 쓰는 말의 언어. |
 | `strings` | `Partial<DiffineStrings>` | — | 로케일 대신 쓸 단어. |
 
-`connectors`와 `syncScroll`은 두 창 사이의 이야기라서 `unified`에서는 무시됩니다.
+`connectors`와 `syncScroll`은 두 창 사이의 이야기라서 `unified`에서는 무시됩니다. `languageLabel`은 `viewer`에서 언어 이름을, `editor`에서 그 이름을 고르는 메뉴를 그립니다. 그 선택을 누가 들고 있는지는 `language`, `defaultLanguage`, `onLanguageChange`가 정합니다.
 
 그 밖에 넘긴 것은 전부 엘리먼트로 그대로 갑니다. `id`, `className`, `style`, `aria-*`는 `<div>`에서와 똑같이 동작합니다.
+
+### 입력
+
+| prop            | 타입      | 기본값  | 무엇을 정하는지                             |
+| --------------- | --------- | ------- | ------------------------------------------- |
+| `indentWithTab` | `boolean` | `false` | Tab이 탭 문자를 넣을지, 다음 컨트롤로 갈지. |
+| `spellCheck`    | `boolean` | `false` | 브라우저가 맞춤법 표시를 할지.              |
+
+둘 다 `editor`의 것입니다. `indentWithTab`을 켜도 **Shift+Tab**은 이전 컨트롤로 가고 **Escape**는 다음 Tab을 브라우저에 넘깁니다. 키보드로 빠져나올 수 없는 입력란은 되지 않습니다.
 
 ### 지금 보고 있는 변경
 
@@ -75,7 +107,7 @@ order: 1
 
 입력하는 동안 찾은 자리가 표시되고 창은 지금 보고 있는 자리로 이동합니다. **Enter**와 **Shift+Enter**로 다음과 이전을 오갑니다. 입력란 안의 스위치 세 개는 각각 대소문자 구분, 단어 단위, 정규식입니다. **Escape**는 막대를 닫습니다.
 
-에디터에는 바꾸기 줄이 하나 더 붙고 **Ctrl+R**이 막대와 함께 그 줄을 엽니다. 이 키는 브라우저의 새로 고침이고, 키보드가 컴포넌트 안에 있는 동안은 에디터가 가져갑니다. 바꿀 내용은 적은 글자 그대로 들어갑니다. `$1`은 달러 기호와 숫자 1입니다. 브라우저 자신의 편집 명령으로 넣기 때문에 Ctrl+Z로 되돌립니다. `readOnly`인 쪽은 찾기만 되고 바꾸기는 되지 않습니다.
+에디터에는 바꾸기 줄이 하나 더 붙고 **Ctrl+H**가 막대와 함께 그 줄을 엽니다. 바꿀 내용은 적은 글자 그대로 들어갑니다. `$1`은 달러 기호와 숫자 1입니다. 브라우저 자신의 편집 명령으로 넣기 때문에 Ctrl+Z로 되돌립니다. `readOnly`인 쪽은 찾기만 되고 바꾸기는 되지 않습니다.
 
 찾기를 연 창도 보이는 줄만 그립니다. 9000번째 줄에서 찾은 자리는 그리로 스크롤한 다음 그려집니다. `search={false}`는 버튼과 단축키를 함께 끕니다. 그 키를 페이지의 다른 기능이 쓰고 있다면 이 값을 쓰세요.
 
@@ -160,71 +192,11 @@ interface DiffineToken {
 }
 ```
 
-두 컴포넌트가 그리는 줄마다, 줄 전체를 넘겨 호출합니다. 구간은 순서대로 읽고 사이의 빈 곳은 그냥 그리며, `null`이면 그 줄은 손대지 않습니다. `length`는 `String.prototype.slice`와 같은 단위로 셉니다.
+컴포넌트가 그리는 줄마다, 줄 전체를 넘겨 호출합니다. 구간은 순서대로 읽고 사이의 빈 곳은 그냥 그리며, `null`이면 그 줄은 손대지 않습니다. `length`는 `String.prototype.slice`와 같은 단위로 셉니다.
 
 줄은 이 구간과 비교 결과의 경계를 모두 반영해 잘립니다. 문자열의 절반인 바뀐 단어는 문자열의 절반인 바뀐 단어로 그려집니다.
 
 이것을 주면 `language`에 더해지는 것이 아니라 `language`를 대신합니다. 한 줄에는 구간이 한 벌뿐이고, 둘이 동시에 자르는 것에는 답이 없습니다.
-
-## `DiffineEditor`
-
-```tsx
-<DiffineEditor defaultBefore={saved} defaultAfter={draft} />
-```
-
-두 창을 고칠 수 있게 만든 뷰어입니다. 아래 prop 중 뷰어에도 있는 것은 뜻이 같습니다. 다른 점은 양쪽 높이를 맞추지 않는다는 것과 한 줄로 보기가 없다는 것입니다.
-
-### 문서
-
-| prop | 타입 | 기본값 | 무엇인지 |
-| --- | --- | --- | --- |
-| `before` | `string \| DiffineSource` | — | 왼쪽 문서. 애플리케이션이 들고 있습니다. |
-| `after` | `string \| DiffineSource` | — | 오른쪽 문서. 애플리케이션이 들고 있습니다. |
-| `defaultBefore` | `string \| DiffineSource` | `''` | 왼쪽 입력란이 처음 담을 내용. |
-| `defaultAfter` | `string \| DiffineSource` | `''` | 오른쪽 입력란이 처음 담을 내용. |
-| `onBeforeChange` | `(value: string) => void` | — | 왼쪽 문서가 바뀌었을 때. |
-| `onAfterChange` | `(value: string) => void` | — | 오른쪽 문서가 바뀌었을 때. |
-| `onDiff` | `(result: DiffResult) => void` | — | 비교를 다시 계산할 때마다의 결과. |
-| `readOnly` | `boolean \| 'before' \| 'after'` | `false` | 고칠 수 없는 쪽. |
-| `diff` | `DiffOptions` | — | 두 문서를 비교하는 방식. 글자를 칠 때마다 다시 돌립니다. |
-
-`before`나 `after`를 주면 그 문서는 애플리케이션의 것이 됩니다. 둘 중 어느 쪽인지는 첫 렌더에서 정해집니다. `onBeforeChange`와 `onAfterChange`는 어느 쪽이 들고 있든 호출됩니다.
-
-### 화면
-
-| prop | 타입 | 기본값 | 무엇을 정하는지 |
-| --- | --- | --- | --- |
-| `lineNumbers` | `boolean` | `true` | 줄마다 번호를 붙일지. |
-| `markers` | `boolean` | `true` | 바뀐 줄에 `+`, `−`, `~`를 붙일지. |
-| `wrap` | `boolean` | `false` | 긴 줄을 접을지 옆으로 흘릴지. |
-| `connectors` | `boolean` | `true` | 변경마다 두 창 사이에 띠를 그릴지. |
-| `syncScroll` | `boolean` | `true` | 한쪽을 스크롤하면 다른 쪽도 따라갈지. |
-| `header` | `boolean` | `true` | 각 쪽 위에 이름을 쓸지. |
-| `navigation` | `boolean` | `true` | 변경 사이를 오가는 버튼을 그릴지. |
-| `search` | `boolean` | `true` | 입력란 안에서 문서를 찾을 수 있게 할지. |
-| `summary` | `boolean` | `true` | 아래쪽 상태 표시줄을 그릴지. |
-| `language` | `string` | — | 문서가 어떤 언어인지. 애플리케이션이 들고 있습니다. |
-| `defaultLanguage` | `string` | `'plain'` | 에디터가 직접 들고 있을 때 처음 언어. |
-| `onLanguageChange` | `(language: string) => void` | — | 언어를 골랐을 때. |
-| `languagePicker` | `boolean` | `true` | 언어 메뉴를 위쪽 줄에 그릴지. |
-| `virtualize` | `boolean` | `true` | 보이는 줄만 그릴지. |
-| `tabSize` | `number` | `4` | 탭을 몇 글자 너비로 그릴지. |
-| `colorScheme` | `'system' \| 'light' \| 'dark'` | `'system'` | 어떤 색으로 그릴지. |
-| `font` | `DiffineFont` | — | 문서를 그리는 글꼴. |
-| `locale` | `'en' \| 'ko'` | `'en'` | 에디터가 쓰는 말의 언어. |
-| `strings` | `Partial<DiffineStrings>` | — | 로케일 문구 대신 쓸 문구. |
-| `highlight` | `DiffineHighlight` | — | 비교 결과와 별개로 줄에 색을 입히는 방법. |
-
-### 입력
-
-| prop            | 타입      | 기본값  | 무엇을 정하는지                             |
-| --------------- | --------- | ------- | ------------------------------------------- |
-| `indentWithTab` | `boolean` | `false` | Tab이 탭 문자를 넣을지, 다음 컨트롤로 갈지. |
-| `spellCheck`    | `boolean` | `false` | 브라우저가 맞춤법 표시를 할지.              |
-
-`indentWithTab`을 켜도 **Shift+Tab**은 이전 컨트롤로 가고 **Escape**는 다음 Tab을 브라우저에 넘깁니다. 키보드로 빠져나올 수 없는 입력란은 되지 않습니다.
-
-`selected`, `defaultSelected`, `onSelectedChange`는 뷰어와 같습니다. 그 밖에 넘긴 것은 그대로 요소로 갑니다.
 
 ## `diffText`
 

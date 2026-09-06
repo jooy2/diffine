@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { DiffineEditor } from 'diffine-react';
-import type { DiffineEditorProps } from 'diffine-react';
+import { TextDiff } from 'diffine-react';
+import type { TextDiffProps } from 'diffine-react';
 
 /**
- * The editor as markup, with no layout under it.
+ * The editing mode as markup, with no layout under it.
  *
  * What this can check is everything the component decides: what each field
  * holds, what it is called, which lines are drawn behind it, and which of them
@@ -14,7 +14,8 @@ import type { DiffineEditorProps } from 'diffine-react';
  * that have a width and a height, and a renderer with no layout in it would
  * answer zero to every question about one. It belongs in a browser.
  */
-const render = (props: DiffineEditorProps) => renderToStaticMarkup(<DiffineEditor {...props} />);
+const render = (props: TextDiffProps) =>
+  renderToStaticMarkup(<TextDiff mode="editor" {...props} />);
 
 /** Every line of one side, in order, as `kind` and the words in it. */
 function linesOf(markup: string, side: string): string[] {
@@ -41,7 +42,7 @@ function fieldsOf(markup: string): string[] {
 const BEFORE = 'one\ntwo\nthree';
 const AFTER = 'one\ntwo changed\nthree\nfour';
 
-describe('DiffineEditor', () => {
+describe('TextDiff, editing', () => {
   it('puts each document in a field of its own', () => {
     expect(fieldsOf(render({ defaultBefore: BEFORE, defaultAfter: AFTER }))).toEqual([
       BEFORE,
@@ -78,6 +79,18 @@ describe('DiffineEditor', () => {
       'equal 3three',
       'insert 4+Added: four'
     ]);
+  });
+
+  it('is a split view whatever it was told, because a column is not a thing to type in', () => {
+    const markup = render({
+      defaultBefore: BEFORE,
+      defaultAfter: AFTER,
+      view: 'unified',
+      alignLines: true
+    });
+
+    expect(markup).toContain('data-view="split"');
+    expect(markup).toContain('data-align="false"');
   });
 
   it('never holds the two sides level, because a blank is a line to type in', () => {
@@ -144,7 +157,7 @@ describe('DiffineEditor', () => {
       navigation: false,
       summary: false,
       search: false,
-      languagePicker: false
+      languageLabel: false
     });
 
     expect(bare).not.toContain('diffine-number');
@@ -193,7 +206,7 @@ describe('DiffineEditor', () => {
 
     expect(render({ defaultBefore: BEFORE, defaultAfter: AFTER })).toContain('>Plain</span>');
     expect(
-      render({ defaultBefore: BEFORE, defaultAfter: AFTER, languagePicker: false })
+      render({ defaultBefore: BEFORE, defaultAfter: AFTER, languageLabel: false })
     ).not.toContain('diffine-syntax');
   });
 

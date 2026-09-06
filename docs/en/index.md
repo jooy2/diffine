@@ -19,8 +19,8 @@ hero:
       text: Get started
       link: /guide/getting-started
     - theme: alt
-      text: The viewer
-      link: /guide/viewer
+      text: Text diff
+      link: /guide/text-diff
     - theme: alt
       text: API
       link: /api/
@@ -39,8 +39,8 @@ features:
     linkText: The comparison
   - title: The view is made of options
     details: Line numbers, wrapping, holding the two sides level, the connectors between them, the unified view. Each one is a prop with a default, so the component goes from a full side-by-side down to a bare column of lines without a stylesheet being touched.
-    link: /guide/viewer
-    linkText: The viewer
+    link: /guide/text-diff
+    linkText: Text diff
   - title: One dependency, fetched when you use it
     details: The engine, the alignment and the viewer are ours — no diff library under the comparison, no editor component under the view, no CSS framework under the styling. highlight.js is the exception, and it sits behind an import() with each grammar, so a page that colours nothing downloads none of it.
     link: /guide/getting-started

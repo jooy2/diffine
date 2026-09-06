@@ -128,7 +128,7 @@ const sidebarOptions = locales.map((lang) => ({
  * alternates.
  * ------------------------------------------------------------------------- */
 
-/** `en/guide/viewer.md` → `/guide/viewer`, and `en/api/index.md` → `/api/`. */
+/** `en/guide/text-diff.md` → `/guide/text-diff`, and `en/api/index.md` → `/api/`. */
 function urlPathOf(filePath: string): string {
   const [lang, ...rest] = filePath.split('/');
   const page = rest

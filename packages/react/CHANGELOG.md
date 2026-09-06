@@ -8,7 +8,7 @@ The first published version.
 
 ### Added
 
-- **`diffText` compares two documents and hands back what it found.** The lines each was split into, the rows a side-by-side view draws, the changes in the order they appear, and the counts. It is a plain object with no React and no DOM in it, so the same call answers a badge on a page, a line in a terminal, and the viewer.
+- **`diffText` compares two documents and hands back what it found.** The lines each was split into, the rows a side-by-side view draws, the changes in the order they appear, and the counts. It is a plain object with no React and no DOM in it, so the same call answers a badge on a page, a line in a terminal, and the component.
 
 - **The words inside a changed line are compared as well as the lines.** A row that says a line changed is half an answer; `inline` decides whether the other half is words, graphemes, or nothing. A pair of lines that turns out to have too little in common is left unmarked rather than striped with the punctuation the two happen to share — `inlineThreshold` is where that line is drawn.
 
@@ -22,17 +22,17 @@ The first published version.
 
 - **`highlight.js` is the package's one dependency**, and it is never loaded until a `language` other than `plain` is asked for. `react` and `react-dom` remain peer dependencies.
 
-- **`DiffineViewer` draws two documents side by side.** The matching lines are held level with each other, a line with no counterpart gets a blank opposite it, and the column between the panes draws each change as a band from where it left to where it arrived. Scrolling one pane scrolls the other, and a line that wraps takes its counterpart's row down with it so the two documents never fall out of step.
+- **`TextDiff` draws two documents side by side.** The matching lines are held level with each other, a line with no counterpart gets a blank opposite it, and the column between the panes draws each change as a band from where it left to where it arrived. Scrolling one pane scrolls the other, and a line that wraps takes its counterpart's row down with it so the two documents never fall out of step.
 
 - **Every part of the view is a prop with a default.** Line numbers, the `+` and `−` markers, wrapping, holding the two sides level, the connectors, the synchronised scrolling, the header, the summary, the tab width, the palette and the language — each one on its own, so the component goes from a full side-by-side down to a bare column of lines without a stylesheet being touched.
 
-- **`view="unified"` puts what went out above what came in**, in one column, with both documents' line numbers down the side. It is the same comparison read a second way rather than a second comparison.
+- **`view="unified"` puts what went out above what came in**, in one column, with both documents' line numbers down the side. It is the same comparison read a second way rather than a second comparison, and it is a viewer's: one column of lines from two documents is a thing to read rather than a thing to type into.
 
-- **The viewer takes a comparison instead of two documents.** `result` is for an application that worked one out in a worker, on a server, or once for a list of viewers.
+- **`result` takes a comparison instead of two documents.** For an application that worked one out in a worker, on a server, or once for a list of views. An editor ignores it.
 
-- **`language` colours the two documents as whatever they are written in.** A highlight.js identifier, or `plain` for a document that is not code, with `DIFFINE_LANGUAGES` as the whole list and the name written at the right end of the bar above the panes. The editor draws that list as a menu instead, because a document somebody pasted is a document nobody knew the language of — `defaultLanguage` and `onLanguageChange` are the usual pair for holding the choice. The menu is built rather than a `<select>`, so it is drawn in the component's own style, and it keeps everything a `<select>` gives a reader: the arrow keys, Home and End, Enter, Escape, and typing a letter to jump to a language.
+- **`language` colours the two documents as whatever they are written in.** A highlight.js identifier, or `plain` for a document that is not code, with `DIFFINE_LANGUAGES` as the whole list and the name written at the right end of the bar above the panes. An editor draws that list as a menu instead, because a document somebody pasted is a document nobody knew the language of — `defaultLanguage` and `onLanguageChange` are the usual pair for holding the choice. The menu is built rather than a `<select>`, so it is drawn in the component's own style, and it keeps everything a `<select>` gives a reader: the arrow keys, Home and End, Enter, Escape, and typing a letter to jump to a language.
 
-  The library and each grammar sit behind an `import()`, so a viewer left on `plain` fetches none of it and one asking for Python fetches Python. The colours are eight custom properties, `--diffine-code-keyword` and the rest, that every class highlight.js emits is mapped onto.
+  The library and each grammar sit behind an `import()`, so a component left on `plain` fetches none of it and one asking for Python fetches Python. The colours are eight custom properties, `--diffine-code-keyword` and the rest, that every class highlight.js emits is mapped onto.
 
   The colouring is deferred, so it is never what a keystroke waits on: an editor draws the new text against the colours the last keystroke produced, and the new ones arrive in a pass that yields to the next key.
 
@@ -46,7 +46,7 @@ The first published version.
 
 - **Every colour and measurement is a custom property.** An application with a palette of its own overrides `--diffine-*` on the element rather than writing rules that have to beat the package's.
 
-- **The viewer says what it is showing to a reader who cannot see it.** Each pane is a named region, every changed line carries the word for what happened to it where a screen reader will find it and a copy will not, and the `+`, `−` and `~` markers say in shape what the colours say in colour.
+- **It says what it is showing to a reader who cannot see it.** Each pane is a named region, every changed line carries the word for what happened to it where a screen reader will find it and a copy will not, and the `+`, `−` and `~` markers say in shape what the colours say in colour.
 
 - **English and Korean, and any other language an application writes itself.** `locale` picks one of the two and `strings` replaces any word in either.
 
@@ -60,7 +60,7 @@ The first published version.
 
 - **`highlight` lets an application colour the text inside a line**, which is where a syntax highlighter goes. It is handed the whole line — a grammar applied to a fragment does not come out right, and fragments are what a comparison produces — and hands back the runs it wants drawn differently. The line is then cut at the boundaries of both, so a changed word that is half a string literal is drawn as exactly that. With the rows virtualised it is called for the lines on the screen rather than for the document.
 
-- **`DiffineEditor` is the viewer with the two panes made editable.** The same comparison, the same lines, the same bands across the column between them, and the same buttons for stepping through the changes — with a field over each side, so the comparison is worked out again as somebody types into it. `before`/`after` or `defaultBefore`/`defaultAfter` decide whether the documents are the application's or the component's, `onBeforeChange` and `onAfterChange` report either way, and `readOnly` takes a side for the common arrangement of a saved version on the left and a draft on the right.
+- **`mode="editor"` is the same view with the two panes made editable.** The same comparison, the same lines, the same bands across the column between them, and the same buttons for stepping through the changes — with a field over each side, so the comparison is worked out again as somebody types into it. One component rather than two, because reading a comparison and writing one were never two things: `mode` is what decides which of its parts are on the screen, and every other prop means the same in both. `before`/`after` or `defaultBefore`/`defaultAfter` decide whether the documents are the application's or the component's, `onBeforeChange` and `onAfterChange` report either way, and `readOnly` takes a side for the common arrangement of a saved version on the left and a draft on the right.
 
 - **The field is laid over the lines rather than replacing them.** A `<textarea>` cannot colour a word inside itself, and nothing that can is also an undo stack, an input method, a selection and a control a screen reader already knows how to read. So the field's own text is invisible, its caret is not, and everything on the screen is drawn behind it — tints, marked words and `highlight` included. What the two have to agree on is written into the stylesheet rather than measured, so the alignment holds at any size and does not lag a frame behind a resize.
 
@@ -72,6 +72,6 @@ The first published version.
 
   It reads the document rather than the page, so it reaches the lines `virtualize` left undrawn and the browser's own find cannot. `search={false}` turns the button and the shortcut off together, and `--diffine-search` and `--diffine-search-current` are the two colours it marks with.
 
-- **Ctrl+R opens that bar with a row for replacing on it.** The editor's alone, and not for a side that is `readOnly`. Replace writes over the match being read and moves to the one that takes its place, so pressing it again walks down the document, and Replace All writes over every one of them. Both go in through the browser's own editing command, so Ctrl+Z takes them back — and the caret follows the search, which means closing the bar leaves it on the match that was being read.
+- **Ctrl+H opens that bar with a row for replacing on it.** The editor's alone, and not for a side that is `readOnly`. Replace writes over the match being read and moves to the one that takes its place, so pressing it again walks down the document, and Replace All writes over every one of them. Both go in through the browser's own editing command, so Ctrl+Z takes them back — and the caret follows the search, which means closing the bar leaves it on the match that was being read.
 
 - **`--diffine-selection` and `strings.placeholder` join the theming interface.** The selection colour has to be see-through, because the words under a selection are drawn behind the field; the placeholder is what an empty field says before anybody has typed into it.

@@ -7,7 +7,7 @@ import type { SearchMatch } from '../../internal/search.js';
 import type { VirtualWindow } from '../../internal/virtual.js';
 import { DiffineRows } from '../shared/DiffineRows.js';
 
-export interface DiffineViewerPaneProps {
+export interface TextDiffPaneProps {
   /** Which document this pane draws, for the region's name and the styling. */
   name: string;
   layout: PaneLayout;
@@ -29,8 +29,16 @@ export interface DiffineViewerPaneProps {
   side: string;
 }
 
-/** One scrolling column of lines — a side of a split view, or a unified one. */
-export function DiffineViewerPane({
+/**
+ * One scrolling column of lines that a reader reads — a side of a split view,
+ * or the single column of a unified one.
+ *
+ * The pane is what the keyboard lands on, so it is a named region with a tab
+ * stop of its own: a comparison is a document to read through, and a box a
+ * keyboard cannot reach is a document a keyboard cannot read. Where the same
+ * column can be typed into instead, `TextDiffField` draws it.
+ */
+export function TextDiffPane({
   name,
   layout,
   window: shown,
@@ -44,7 +52,7 @@ export function DiffineViewerPane({
   match,
   paneRef,
   side
-}: DiffineViewerPaneProps): React.JSX.Element {
+}: TextDiffPaneProps): React.JSX.Element {
   return (
     <div
       className="diffine-pane"
