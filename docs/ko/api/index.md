@@ -12,7 +12,8 @@ order: 1
 | import                     | 무엇이 들어 있는지                                        |
 | -------------------------- | --------------------------------------------------------- |
 | `diffine-react`            | 전부. 컴포넌트와 엔진과 타입.                             |
-| `diffine-react/diff`       | 비교 엔진만. 컴포넌트는 번들에 들어가지 않습니다.         |
+| `diffine-react/diff`       | 텍스트 비교 엔진만. 컴포넌트는 번들에 들어가지 않습니다.  |
+| `diffine-react/image`      | 이미지 비교 엔진만.                                       |
 | `diffine-react/types`      | 타입만. prop에 타입 이름을 쓰려는 애플리케이션을 위한 것. |
 | `diffine-react/styles.css` | 스타일시트.                                               |
 
@@ -198,6 +199,67 @@ interface DiffineToken {
 
 이것을 주면 `language`에 더해지는 것이 아니라 `language`를 대신합니다. 한 줄에는 구간이 한 벌뿐이고, 둘이 동시에 자르는 것에는 답이 없습니다.
 
+## `ImageDiff`
+
+```tsx
+<ImageDiff before={saved} after={rendered} />
+<ImageDiff mode="editor" view="wipe" />
+```
+
+### 이미지
+
+| Prop | 타입 | 기본값 | 무엇인지 |
+| --- | --- | --- | --- |
+| `mode` | `'viewer' \| 'editor'` | `'viewer'` | 이미지를 보기만 할지 고르기도 할지. |
+| `before` | `DiffineImageInput` | — | 왼쪽 이미지. |
+| `after` | `DiffineImageInput` | — | 오른쪽 이미지. |
+| `defaultBefore` | `DiffineImageInput` | — | 왼쪽이 처음에 들고 있을 것. 에디터 전용. |
+| `defaultAfter` | `DiffineImageInput` | — | 오른쪽이 처음에 들고 있을 것. 에디터 전용. |
+| `onBeforeChange` | `(value: File) => void` | — | 왼쪽에 이미지를 골랐을 때. |
+| `onAfterChange` | `(value: File) => void` | — | 오른쪽에 이미지를 골랐을 때. |
+| `onDiff` | `(result: DiffImageResult \| null) => void` | — | 비교를 다시 할 때마다 그 결과. |
+| `result` | `DiffImageResult` | — | 이미 계산해 둔 비교. 이미지는 그래도 그립니다. |
+| `diff` | `DiffImageOptions` | — | 어떻게 비교할지. [`diffImage`](#diffimage) 참고. |
+| `maxPixels` | `number` | `4000000` | 이미지를 몇 픽셀까지 해석할지. |
+
+`DiffineImageInput`은 이미지 자체이거나 이름을 붙인 이미지입니다. `Blob | ImageBitmap | DiffPixels`, 또는 그중 하나를 감싼 `{ content, label }`입니다. URL은 없습니다. 받아 오는 일은 애플리케이션의 몫이고, 여기 도착하는 것은 이미 손에 쥔 것입니다.
+
+`editor`에서는 늘 쓰는 한 쌍입니다. `defaultBefore`와 `defaultAfter`는 컴포넌트에 맡기고, `before`와 `after`는 애플리케이션이 쥡니다. `onBeforeChange`와 `onAfterChange`는 어느 쪽이든 호출됩니다.
+
+### 화면
+
+| Prop | 타입 | 기본값 | 무엇을 정하는지 |
+| --- | --- | --- | --- |
+| `view` | `'split' \| 'overlay' \| 'wipe' \| 'mask'` | `'split'` | 두 장을 어떻게 놓을지. |
+| `fade` | `number` | `0.5` | 두 번째 이미지를 얼마나 비칠지. overlay 전용. |
+| `onFadeChange` | `(fade: number) => void` | — | 겹침 정도가 바뀌었을 때. |
+| `wipe` | `number` | `0.5` | 두 장을 가르는 선의 위치. 0에서 1. wipe 전용. |
+| `onWipeChange` | `(wipe: number) => void` | — | 그 선이 움직였을 때. |
+| `marks` | `boolean` | `true` | 달라진 픽셀에 색을 깔지. |
+| `outlines` | `boolean` | `true` | 변경마다 상자를 두를지. |
+| `header` | `boolean` | `true` | 각 창 위에 이름을 쓸지. |
+| `navigation` | `boolean` | `true` | 변경 사이를 오가는 버튼을 그릴지. |
+| `zoom` | `boolean` | `true` | 확대 버튼을 그릴지. |
+| `summary` | `boolean` | `true` | 창 아래 막대를 그릴지. |
+| `colorScheme` | `'system' \| 'light' \| 'dark'` | `'system'` | 어느 팔레트로 그릴지. |
+| `locale` | `'en' \| 'ko'` | `'en'` | 컴포넌트가 쓰는 말의 언어. |
+| `strings` | `Partial<DiffineStrings>` | — | 로케일 대신 쓸 낱말. |
+
+`split`은 창을 둘 그리고 나머지 셋은 하나를 그리며, 그 위에 두 이름을 함께 씁니다. 표시하는 색은 prop이 아니라 [커스텀 속성](#색) 다섯 개입니다. 캔버스는 스타일이 아니라 칠하는 것이기 때문입니다.
+
+### 움직이기
+
+| Prop | 타입 | 기본값 | 무엇을 정하는지 |
+| --- | --- | --- | --- |
+| `viewport` | `DiffineImageViewport \| 'fit'` | — | 지금 보고 있는 자리. |
+| `defaultViewport` | `DiffineImageViewport \| 'fit'` | `'fit'` | 처음 보여 줄 자리. |
+| `onViewportChange` | `(viewport: DiffineImageViewport) => void` | — | 옮기거나 확대했을 때. |
+| `selected` | `number` | — | 몇 번째 변경으로 옮겨 갔는지. 없으면 -1. |
+| `defaultSelected` | `number` | `-1` | 어느 변경에서 시작할지. |
+| `onSelectedChange` | `(selected: number, region: DiffImageRegion \| null) => void` | — | 변경으로 옮겨 갔을 때. |
+
+`DiffineImageViewport`는 `{ scale, x, y }`입니다. 프레임의 한 픽셀을 화면 몇 픽셀로 그리는지, 그리고 창 한가운데가 보고 있는 프레임 위의 점입니다. 두 창에 같은 값을 주기 때문에 좌우 보기가 함께 움직입니다.
+
 ## `diffText`
 
 ```ts
@@ -314,6 +376,74 @@ interface DiffEdit {
 
 돌아온 편집 목록은 두 배열을 순서대로 빠짐없이 한 번씩 덮습니다.
 
+## `diffImage`
+
+```ts
+import { diffImage } from 'diffine-react/image';
+
+const result = diffImage(before, after, { align: 'shift' });
+```
+
+`(before: DiffPixels, after: DiffPixels, options?: DiffImageOptions) => DiffImageResult`
+
+두 이미지를 픽셀 단위로 비교합니다. 크기가 같을 필요는 없습니다. 한쪽만 덮는 자리는 오류가 아니라 `added`나 `removed`로 돌아옵니다.
+
+### `DiffPixels`
+
+| 필드 | 타입 | 무엇인지 |
+| --- | --- | --- |
+| `data` | `Uint8ClampedArray` | 빨강, 초록, 파랑, 알파를 1바이트씩. 길이는 `width * height * 4`. |
+| `width` | `number` |  |
+| `height` | `number` |  |
+
+`ImageData`와 같은 모양입니다. 캔버스가 돌려준 것을 그대로 넣으면 됩니다.
+
+### `DiffImageOptions`
+
+| 옵션 | 타입 | 기본값 | 무엇을 정하는지 |
+| --- | --- | --- | --- |
+| `tolerance` | `number` | `0.05` | 두 픽셀이 얼마나 달라야 차이로 셀지. 0에서 1. |
+| `ignoreAntialiasing` | `boolean` | `true` | 경계를 부드럽게 그린 탓에만 달라진 픽셀을 뺄지. |
+| `align` | `'none' \| 'shift'` | `'none'` | 비교 전에 두 이미지의 어긋남을 찾을지. |
+| `alignRadius` | `number` | `16` | 그 탐색이 몇 픽셀까지 갈지. |
+| `blockSize` | `number` | `16` | 달라진 픽셀을 묶는 격자가 얼마나 성긴지. |
+| `maxRegions` | `number` | `200` | 돌려줄 영역의 최대 개수. 넘으면 큰 것부터 남깁니다. |
+
+`DIFFINE_IMAGE_DEFAULTS`가 이 표를 객체로 담고 있습니다.
+
+### `DiffImageResult`
+
+| 필드       | 타입                | 무엇인지                                       |
+| ---------- | ------------------- | ---------------------------------------------- |
+| `width`    | `number`            | 두 이미지를 비교한 프레임.                     |
+| `height`   | `number`            |                                                |
+| `before`   | `DiffImageArea`     | 그 프레임에서 첫 번째 이미지가 놓인 자리.      |
+| `after`    | `DiffImageArea`     | 두 번째 이미지가 놓인 자리.                    |
+| `offset`   | `{ x, y }`          | 둘을 맞추려고 두 번째를 얼마나 옮겼는지.       |
+| `mask`     | `Uint8Array`        | 프레임의 픽셀마다 무슨 일이 있었는지, 한 줄씩. |
+| `regions`  | `DiffImageRegion[]` | 변경이 있는 자리. 읽는 순서대로.               |
+| `stats`    | `DiffImageStats`    | 프레임이 어느 쪽으로 얼마나 갔는지.            |
+| `complete` | `boolean`           | 영역 목록이 전부인지.                          |
+
+`mask`의 한 바이트는 `DIFF_PIXEL_KINDS`의 인덱스입니다. `['equal', 'changed', 'added', 'removed']`이므로 `0`이 그대로인 픽셀이고 나머지는 달라진 픽셀입니다.
+
+`offset`은 내용이 어디 있었는지가 아니라 어디로 옮겼는지입니다. 내용이 1픽셀 오른쪽에 그려진 이미지는 1픽셀 왼쪽으로 옮기므로 `x`는 `-1`입니다.
+
+### `DiffImageRegion`
+
+`{ x, y, width, height, pixels }`입니다. 달라진 픽셀 한 덩어리를 감싸는 가장 작은 사각형과, 그 안에 든 픽셀 수입니다. `DiffImageArea`는 개수가 빠진 같은 모양입니다.
+
+### `DiffImageStats`
+
+| 필드        | 무엇을 세는지                                       |
+| ----------- | --------------------------------------------------- |
+| `pixels`    | 프레임의 전체 픽셀 수.                              |
+| `unchanged` | 그대로인 픽셀.                                      |
+| `changed`   | 달라진 픽셀.                                        |
+| `added`     | 두 번째 이미지만 덮는 픽셀.                         |
+| `removed`   | 첫 번째 이미지만 덮는 픽셀.                         |
+| `ratio`     | `unchanged`가 아닌 전부가 프레임에서 차지하는 비율. |
+
 ## 커스텀 속성
 
 `.diffine`에 선언돼 있고, 같은 방식으로 덮어쓰면 됩니다.
@@ -338,6 +468,18 @@ interface DiffEdit {
 | `--diffine-search-current` | `#ffbd3d`   | `#8a5c0f`   |
 | `--diffine-blank`          | `#f0f3f7`   | `#151b23`   |
 | `--diffine-selection`      | `#0e7ffc33` | `#4c9dff40` |
+
+이미지 비교가 칠하는 다섯 색과, 그 뒤에 깔리는 두 색입니다.
+
+| 속성                      | 밝은 테마                | 어두운 테마               |
+| ------------------------- | ------------------------ | ------------------------- |
+| `--diffine-image-changed` | `rgb(232 62 140 / 0.55)` | `rgb(255 92 168 / 0.55)`  |
+| `--diffine-image-added`   | `rgb(26 127 75 / 0.5)`   | `rgb(63 190 122 / 0.5)`   |
+| `--diffine-image-removed` | `rgb(194 51 63 / 0.5)`   | `rgb(255 106 116 / 0.5)`  |
+| `--diffine-image-outline` | `rgb(20 28 40 / 0.4)`    | `rgb(228 233 240 / 0.35)` |
+| `--diffine-image-marker`  | `rgb(14 127 252 / 0.95)` | `rgb(76 157 255 / 0.95)`  |
+| `--diffine-image-ground`  | `#eaeef4`                | `#151b23`                 |
+| `--diffine-image-chequer` | `#dbe1ea`                | `#1e2530`                 |
 
 `-line` 쪽이 줄 전체에 옅게 깔리는 색이고, `-piece` 쪽이 그 위에서 바뀐 부분을 짚는 색입니다. `-text` 쪽은 같은 두 색을 글자로 읽을 만큼 진하게 만든 것으로, 뒤에 깔린 것이 여백뿐인 아래쪽 상태 표시줄의 집계에 씁니다. `--diffine-search` 짝은 찾기가 짚는 색입니다. 앞은 찾은 자리 전부, 뒤는 지금 보고 있는 자리입니다. 강조색 대신 세 번째 색을 쓰는 이유는, 찾은 자리가 이미 초록이나 빨강으로 물든 줄에 놓일 수 있고 그 세 바탕 모두에서 읽혀야 하기 때문입니다. `--diffine-selection`은 에디터만 쓰고, 반투명해야 합니다. 선택 영역 아래의 글자는 입력란 뒤에서 그리기 때문입니다.
 

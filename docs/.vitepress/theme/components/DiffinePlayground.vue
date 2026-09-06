@@ -20,18 +20,23 @@
 import { computed, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue';
 import { useData } from 'vitepress';
 import { createElement } from 'react';
-import { TextDiff } from 'diffine-react';
-import type { DiffInlineMode } from 'diffine-react';
+import { ImageDiff, TextDiff } from 'diffine-react';
+import type { DiffInlineMode, DiffineImageView } from 'diffine-react';
 import 'diffine-react/styles.css';
 import { useReactIsland } from '../island';
 import { SAMPLES } from '../samples';
+import { pairOf, type PictureName, type PicturePair } from '../pictures';
 
-type Mode = 'editor' | 'viewer';
+type Mode = 'editor' | 'viewer' | 'pictures';
 /** A pair of documents to start from. `blank` is the one with nothing in it. */
 type Pick = 'code' | 'prose' | 'config' | 'korean' | 'blank';
+/** A pair of pictures, or nothing and a pane to drop your own on. */
+type Shot = PictureName | 'blank';
 
-const MODES: readonly Mode[] = ['editor', 'viewer'];
+const MODES: readonly Mode[] = ['editor', 'viewer', 'pictures'];
 const PICKS: readonly Pick[] = ['code', 'prose', 'config', 'korean', 'blank'];
+const SHOTS: readonly Shot[] = ['retouched', 'moved', 'saved', 'badge', 'blank'];
+const VIEWS: readonly DiffineImageView[] = ['split', 'overlay', 'wipe', 'mask'];
 const DETAILS: readonly DiffInlineMode[] = ['word', 'character', 'none'];
 
 const WORDS = {
@@ -39,6 +44,7 @@ const WORDS = {
     mode: 'What to try',
     editor: 'Editor',
     viewer: 'Viewer',
+    pictures: 'Pictures',
     sample: 'Documents',
     detail: 'Compare by',
     reset: 'Start over',
@@ -56,12 +62,28 @@ const WORDS = {
     numbers: 'Numbers',
     align: 'Align',
     connectors: 'Connectors',
-    tab: 'Tab indents'
+    tab: 'Tab indents',
+    shot: 'Pictures',
+    shots: {
+      retouched: 'A photo, retouched',
+      moved: 'The same crop, a pixel over',
+      saved: 'Saved again as a worse JPEG',
+      badge: 'An icon with a badge on it',
+      blank: 'Nothing — choose your own'
+    },
+    view: 'Show them',
+    views: { split: 'Side by side', overlay: 'Faded', wipe: 'Wiped', mask: 'Only the marks' },
+    tolerance: 'Tolerance',
+    lineUp: 'Line them up',
+    smoothing: 'Ignore smoothing',
+    marks: 'Mark the pixels',
+    outlines: 'Box the changes'
   },
   ko: {
     mode: '무엇을 써 볼지',
     editor: '에디터',
     viewer: '뷰어',
+    pictures: '이미지',
     sample: '문서',
     detail: '비교 단위',
     reset: '처음으로',
@@ -79,7 +101,22 @@ const WORDS = {
     numbers: '줄 번호',
     align: '줄 맞추기',
     connectors: '연결선',
-    tab: 'Tab으로 들여쓰기'
+    tab: 'Tab으로 들여쓰기',
+    shot: '이미지',
+    shots: {
+      retouched: '한 곳을 고친 사진',
+      moved: '1픽셀 옮긴 같은 사진',
+      saved: '더 낮은 품질로 다시 저장',
+      badge: '배지를 그려 넣은 아이콘',
+      blank: '빈 화면 — 직접 넣기'
+    },
+    view: '보는 방식',
+    views: { split: '나란히', overlay: '겹쳐서', wipe: '가르며', mask: '표시만' },
+    tolerance: '허용 오차',
+    lineUp: '위치 맞추기',
+    smoothing: '경계 보정 무시',
+    marks: '픽셀 표시',
+    outlines: '변경 영역 표시'
   }
 };
 
@@ -111,6 +148,51 @@ const options = ref({
 
 /** How many times the documents have been put back, so the editor is rebuilt. */
 const generation = ref(0);
+
+const shot = ref<Shot>('retouched');
+const pictures = ref({
+  view: 'split' as DiffineImageView,
+  /** Out of a hundred, because that is what a slider counts in. */
+  tolerance: 5,
+  align: false,
+  smoothing: true,
+  marks: true,
+  outlines: true
+});
+
+/**
+ * The two pictures, once they have been fetched and the second one drawn.
+ *
+ * Nothing is fetched until somebody asks for the pictures, which is what keeps
+ * a page about text from downloading a photograph. See `../pictures.ts` for
+ * what each pair is and how the second of it is made.
+ */
+const pair = ref<PicturePair | null>(null);
+
+watch(
+  [mode, shot],
+  async () => {
+    /*
+     * Whatever is on the screen is not the pair that was just asked for, and a
+     * component holding its own pictures will not take new ones — so it goes
+     * back to nothing first, and comes back as a new component when the pair
+     * it was asked for has been built.
+     */
+    pair.value = null;
+
+    if (mode.value !== 'pictures' || shot.value === 'blank') {
+      return;
+    }
+
+    const wanted = shot.value;
+    const loaded = await pairOf(wanted);
+
+    if (shot.value === wanted) {
+      pair.value = loaded;
+    }
+  },
+  { immediate: true }
+);
 
 /** What each sample is written in, so that choosing one sets the menu with it. */
 const LANGUAGES: Record<Pick, string> = {
@@ -165,7 +247,39 @@ watch(pick, restart);
 
 const host = ref<HTMLDivElement>();
 
+/** The picture comparison, on whichever pair has arrived. */
+function drawPictures() {
+  const loaded = pair.value;
+
+  return createElement(ImageDiff, {
+    /*
+     * A component that holds its own pictures is a component that keeps the
+     * first ones it was given, so a new pair — or the first pair arriving —
+     * is a new component rather than a prop it would be right to ignore.
+     */
+    key: `${shot.value}-${loaded ? 'ready' : 'waiting'}`,
+    mode: 'editor' as const,
+    defaultBefore: loaded ? { content: loaded.before, label: loaded.beforeLabel } : undefined,
+    defaultAfter: loaded ? { content: loaded.after, label: loaded.afterLabel } : undefined,
+    view: pictures.value.view,
+    diff: {
+      tolerance: pictures.value.tolerance / 100,
+      align: pictures.value.align ? ('shift' as const) : ('none' as const),
+      ignoreAntialiasing: pictures.value.smoothing
+    },
+    marks: pictures.value.marks,
+    outlines: pictures.value.outlines,
+    colorScheme: isDark.value ? ('dark' as const) : ('light' as const),
+    locale: locale.value,
+    style: { height: `${height.value}px` }
+  });
+}
+
 function draw() {
+  if (mode.value === 'pictures') {
+    return drawPictures();
+  }
+
   const shared = {
     wrap: options.value.wrap,
     lineNumbers: options.value.numbers,
@@ -253,7 +367,7 @@ onMounted(() => {
 onBeforeUnmount(() => window.removeEventListener('resize', measure));
 
 useReactIsland(host, draw, {
-  watch: [mode, pick, generation, options, isDark, locale, height, language]
+  watch: [mode, pick, generation, options, isDark, locale, height, language, shot, pictures, pair]
 });
 </script>
 
@@ -280,7 +394,45 @@ useReactIsland(host, draw, {
       </div>
     </div>
 
-    <div class="play-bar">
+    <div v-if="mode === 'pictures'" class="play-bar">
+      <label class="play-field">
+        <span>{{ words.shot }}</span>
+        <select v-model="shot">
+          <option v-for="name in SHOTS" :key="name" :value="name">{{ words.shots[name] }}</option>
+        </select>
+      </label>
+      <label class="play-field">
+        <span>{{ words.view }}</span>
+        <select v-model="pictures.view">
+          <option v-for="name in VIEWS" :key="name" :value="name">{{ words.views[name] }}</option>
+        </select>
+      </label>
+      <label class="play-field">
+        <span>{{ words.tolerance }}</span>
+        <input type="range" min="0" max="30" v-model.number="pictures.tolerance" />
+        <span class="play-value">{{ (pictures.tolerance / 100).toFixed(2) }}</span>
+      </label>
+      <div class="play-switches">
+        <label>
+          <input type="checkbox" v-model="pictures.align" />
+          {{ words.lineUp }}
+        </label>
+        <label>
+          <input type="checkbox" v-model="pictures.smoothing" />
+          {{ words.smoothing }}
+        </label>
+        <label>
+          <input type="checkbox" v-model="pictures.marks" />
+          {{ words.marks }}
+        </label>
+        <label>
+          <input type="checkbox" v-model="pictures.outlines" />
+          {{ words.outlines }}
+        </label>
+      </div>
+    </div>
+
+    <div v-else class="play-bar">
       <label class="play-field">
         <span>{{ words.sample }}</span>
         <select v-model="pick">
@@ -427,6 +579,16 @@ useReactIsland(host, draw, {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+}
+
+.play-value {
+  min-width: 2.25rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.play-field input[type='range'] {
+  width: 6rem;
+  accent-color: var(--vp-c-brand-1);
 }
 
 .play-field select {

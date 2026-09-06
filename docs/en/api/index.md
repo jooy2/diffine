@@ -12,7 +12,8 @@ Every export of `diffine-react`, in one place. The [guide](../guide/getting-star
 | Import                     | What it holds                                                    |
 | -------------------------- | ---------------------------------------------------------------- |
 | `diffine-react`            | Everything: the component, the engine and the types.             |
-| `diffine-react/diff`       | The comparison, with no component reaching the bundle.           |
+| `diffine-react/diff`       | The text comparison, with no component reaching the bundle.      |
+| `diffine-react/image`      | The picture comparison, on its own.                              |
 | `diffine-react/types`      | The types on their own, for an application naming one in a prop. |
 | `diffine-react/styles.css` | The stylesheet.                                                  |
 
@@ -198,6 +199,67 @@ The line is cut at the boundaries of both these runs and the comparison's, so a 
 
 Passing this replaces `language` rather than adding to it. A line has one set of runs, and two highlighters cutting it at once is not a question with an answer.
 
+## `ImageDiff`
+
+```tsx
+<ImageDiff before={saved} after={rendered} />
+<ImageDiff mode="editor" view="wipe" />
+```
+
+### The pictures
+
+| Prop | Type | Default | What it is |
+| --- | --- | --- | --- |
+| `mode` | `'viewer' \| 'editor'` | `'viewer'` | Whether the pictures are only looked at, or chosen as well. |
+| `before` | `DiffineImageInput` | — | The picture on the left. |
+| `after` | `DiffineImageInput` | — | The picture on the right. |
+| `defaultBefore` | `DiffineImageInput` | — | What the left side starts with. Editor only. |
+| `defaultAfter` | `DiffineImageInput` | — | What the right side starts with. Editor only. |
+| `onBeforeChange` | `(value: File) => void` | — | A picture was chosen for the left side. |
+| `onAfterChange` | `(value: File) => void` | — | A picture was chosen for the right side. |
+| `onDiff` | `(result: DiffImageResult \| null) => void` | — | The comparison, every time it is worked out again. |
+| `result` | `DiffImageResult` | — | A comparison already worked out. The pictures are still drawn. |
+| `diff` | `DiffImageOptions` | — | How the two are compared. See [`diffImage`](#diffimage). |
+| `maxPixels` | `number` | `4000000` | How many pixels a picture is decoded at, at most. |
+
+`DiffineImageInput` is a picture or a picture with a name on it: `Blob | ImageBitmap | DiffPixels`, or `{ content, label }` around one of those. A URL is not among them — fetching one is the application's to do, and what arrives here is what it already holds.
+
+`editor` mode is the usual React pair. `defaultBefore` and `defaultAfter` leave the pictures to the component; `before` and `after` make them the application's, and `onBeforeChange` and `onAfterChange` are called either way.
+
+### The view
+
+| Prop | Type | Default | What it decides |
+| --- | --- | --- | --- |
+| `view` | `'split' \| 'overlay' \| 'wipe' \| 'mask'` | `'split'` | How the two are laid out. |
+| `fade` | `number` | `0.5` | How much of the second picture is let through. Overlay only. |
+| `onFadeChange` | `(fade: number) => void` | — | The overlay was faded. |
+| `wipe` | `number` | `0.5` | Where the line between the two is, from 0 to 1. Wipe only. |
+| `onWipeChange` | `(wipe: number) => void` | — | The line was moved. |
+| `marks` | `boolean` | `true` | Whether the pixels that changed are tinted. |
+| `outlines` | `boolean` | `true` | Whether a box is drawn round each change. |
+| `header` | `boolean` | `true` | Whether each side is named above it. |
+| `navigation` | `boolean` | `true` | Whether the buttons for stepping through the changes are drawn. |
+| `zoom` | `boolean` | `true` | Whether the zoom controls are drawn. |
+| `summary` | `boolean` | `true` | Whether the bar under the panes is drawn. |
+| `colorScheme` | `'system' \| 'light' \| 'dark'` | `'system'` | Which palette to draw in. |
+| `locale` | `'en' \| 'ko'` | `'en'` | The language of the component's own words. |
+| `strings` | `Partial<DiffineStrings>` | — | Words to use instead of the locale's. |
+
+`split` draws two panes; the other three draw one, with both names over it. What the marks are drawn in is five [custom properties](#colours) rather than props, because a canvas is painted rather than styled.
+
+### Moving around
+
+| Prop | Type | Default | What it decides |
+| --- | --- | --- | --- |
+| `viewport` | `DiffineImageViewport \| 'fit'` | — | Where a reader is looking. |
+| `defaultViewport` | `DiffineImageViewport \| 'fit'` | `'fit'` | Where to start looking. |
+| `onViewportChange` | `(viewport: DiffineImageViewport) => void` | — | A reader moved or zoomed, or a button did. |
+| `selected` | `number` | — | Which change a reader has stepped to, or -1. |
+| `defaultSelected` | `number` | `-1` | Which change to start on. |
+| `onSelectedChange` | `(selected: number, region: DiffImageRegion \| null) => void` | — | A change was stepped to. |
+
+`DiffineImageViewport` is `{ scale, x, y }`: how many screen pixels one pixel of the frame is drawn as, and the point of the frame the middle of the pane is looking at. Both panes are given the same one, which is what makes a split view move together.
+
 ## `diffText`
 
 ```ts
@@ -314,6 +376,74 @@ interface DiffEdit {
 
 The edits cover both sequences exactly once, in order.
 
+## `diffImage`
+
+```ts
+import { diffImage } from 'diffine-react/image';
+
+const result = diffImage(before, after, { align: 'shift' });
+```
+
+`(before: DiffPixels, after: DiffPixels, options?: DiffImageOptions) => DiffImageResult`
+
+Compares two pictures pixel by pixel. Neither side has to be the same size as the other: what only one of them covers comes back as `added` or `removed` rather than as an error.
+
+### `DiffPixels`
+
+| Field | Type | What it is |
+| --- | --- | --- |
+| `data` | `Uint8ClampedArray` | Red, green, blue and alpha, a byte each, `width * height * 4` long. |
+| `width` | `number` |  |
+| `height` | `number` |  |
+
+The same shape as `ImageData`, so what a canvas hands back can be passed straight in.
+
+### `DiffImageOptions`
+
+| Option | Type | Default | What it decides |
+| --- | --- | --- | --- |
+| `tolerance` | `number` | `0.05` | How different two pixels have to be, from 0 to 1, before it counts. |
+| `ignoreAntialiasing` | `boolean` | `true` | Whether a pixel that only differs because an edge was drawn smooth is left out. |
+| `align` | `'none' \| 'shift'` | `'none'` | Whether an offset between the two is looked for first. |
+| `alignRadius` | `number` | `16` | How far that search goes, in pixels. |
+| `blockSize` | `number` | `16` | How coarse the grid is that changed pixels are grouped on. |
+| `maxRegions` | `number` | `200` | The most regions to return. Past this the largest are kept. |
+
+`DIFFINE_IMAGE_DEFAULTS` is that table as an object.
+
+### `DiffImageResult`
+
+| Field      | Type                | What it is                                            |
+| ---------- | ------------------- | ----------------------------------------------------- |
+| `width`    | `number`            | The frame both pictures were compared in.             |
+| `height`   | `number`            |                                                       |
+| `before`   | `DiffImageArea`     | Where the first picture sits in that frame.           |
+| `after`    | `DiffImageArea`     | Where the second one sits.                            |
+| `offset`   | `{ x, y }`          | How far the second was moved to line the two up.      |
+| `mask`     | `Uint8Array`        | What happened to each pixel of the frame, row by row. |
+| `regions`  | `DiffImageRegion[]` | Where the changes are, in reading order.              |
+| `stats`    | `DiffImageStats`    | How much of the frame ended up where.                 |
+| `complete` | `boolean`           | Whether the list of regions holds all of them.        |
+
+A byte of `mask` is an index into `DIFF_PIXEL_KINDS`, which is `['equal', 'changed', 'added', 'removed']` — so `0` is a pixel that did not change and anything else is a pixel that did.
+
+`offset` is where the move went rather than where the contents were: a picture drawn a pixel further to the right than the first is moved a pixel to the left, and `x` is `-1`.
+
+### `DiffImageRegion`
+
+`{ x, y, width, height, pixels }` — the smallest rectangle holding one run of changed pixels, and how many of them are inside it. `DiffImageArea` is the same without the count.
+
+### `DiffImageStats`
+
+| Field       | What it counts                                               |
+| ----------- | ------------------------------------------------------------ |
+| `pixels`    | How many pixels the frame holds.                             |
+| `unchanged` | Pixels that came out the same.                               |
+| `changed`   | Pixels that differ.                                          |
+| `added`     | Pixels only the second picture covers.                       |
+| `removed`   | Pixels only the first one covers.                            |
+| `ratio`     | Everything that is not `unchanged`, as a share of the frame. |
+
 ## Custom properties
 
 Declared on `.diffine`, and overridden the same way.
@@ -338,6 +468,18 @@ Declared on `.diffine`, and overridden the same way.
 | `--diffine-search-current` | `#ffbd3d`   | `#8a5c0f`   |
 | `--diffine-blank`          | `#f0f3f7`   | `#151b23`   |
 | `--diffine-selection`      | `#0e7ffc33` | `#4c9dff40` |
+
+The five a picture comparison paints with, and the two behind it:
+
+| Property                  | Light                    | Dark                      |
+| ------------------------- | ------------------------ | ------------------------- |
+| `--diffine-image-changed` | `rgb(232 62 140 / 0.55)` | `rgb(255 92 168 / 0.55)`  |
+| `--diffine-image-added`   | `rgb(26 127 75 / 0.5)`   | `rgb(63 190 122 / 0.5)`   |
+| `--diffine-image-removed` | `rgb(194 51 63 / 0.5)`   | `rgb(255 106 116 / 0.5)`  |
+| `--diffine-image-outline` | `rgb(20 28 40 / 0.4)`    | `rgb(228 233 240 / 0.35)` |
+| `--diffine-image-marker`  | `rgb(14 127 252 / 0.95)` | `rgb(76 157 255 / 0.95)`  |
+| `--diffine-image-ground`  | `#eaeef4`                | `#151b23`                 |
+| `--diffine-image-chequer` | `#dbe1ea`                | `#1e2530`                 |
 
 The `-line` pair tints a whole row; the `-piece` pair picks out what moved inside it, and only ever sits on top of the paler one. The `-text` pair is the same two colours dark enough to be read as text, for the counts in the bar under the panes, which have nothing behind them but the gutter. The `--diffine-search` pair is what a search marks: the first every match, the second the one a reader has been taken to. They are a third colour rather than the accent, because a match can land on a row that is already tinted green or red and it has to be legible on all three grounds. `--diffine-selection` is the editor's alone, and has to stay see-through: the words under a selection are drawn behind the field.
 
