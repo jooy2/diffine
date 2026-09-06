@@ -32,7 +32,7 @@ Every export of `diffine-react`, in one place. The [guide](../guide/getting-star
 
 One component draws both. `editor` lays a field over each pane, so the comparison is worked out again as somebody types into it; everything else — the rows, the tints, the marked words, the bands, the buttons, the search — is the same in both.
 
-Three props belong to `editor` and are ignored there rather than everywhere else: `view` and `alignLines` (a field cannot be a unified column and cannot be padded out with blanks somebody could type into), and `result` (a comparison worked out elsewhere is a comparison of documents nobody has typed into yet). `readOnly`, `indentWithTab`, `spellCheck`, `defaultBefore`, `defaultAfter` and `onLanguageChange` do nothing in `viewer` mode.
+Three props are ignored in `editor` mode: `view` and `alignLines`, because a field cannot be a unified column and cannot be padded out with blanks somebody could type into, and `result`, because a comparison worked out elsewhere is a comparison of documents nobody has typed into yet. Going the other way, `readOnly`, `indentWithTab`, `spellCheck`, `defaultBefore`, `defaultAfter` and `onLanguageChange` do nothing in `viewer` mode.
 
 ### The documents
 
@@ -78,6 +78,7 @@ A document nobody can type into is read from the props on every render. An edita
 | `font` | `DiffineFont` | — | The typeface the documents are drawn in. |
 | `locale` | `'en' \| 'ko'` | `'en'` | The language of the component's own words. |
 | `strings` | `Partial<DiffineStrings>` | — | Words to use instead of the locale's. |
+| `highlight` | `DiffineHighlight` | — | An application's own highlighter, in place of `language`. |
 
 `connectors` and `syncScroll` are about the space between two panes, so both are ignored in the unified view. `languageLabel` draws the name of the language in `viewer` mode and the menu it was chosen from in `editor` mode; `language`, `defaultLanguage` and `onLanguageChange` are the usual pair for that choice.
 
@@ -143,7 +144,27 @@ A pane whose search is open still draws only the lines a reader can see, so a ma
 | `replaceWith`    | `Replace with`                                                       |
 | `replaceAll`     | `Replace all`                                                        |
 
-`added`, `removed`, `changed`, `summary`, `documentSize`, `changePosition`, `searchPosition` and `searchEmpty` are read by a screen reader rather than shown. `searchIn` fills `{label}` with the name of the side the button opens, so two search buttons on one component are told apart. `summary` fills `{changes}`, `{inserted}` and `{deleted}` with the counts, and `documentSize` fills `{label}` with the name of a side and `{characters}` and `{size}` with numbers already written in the reader's own language. `placeholder` is what an empty field in the editor says.
+The last thirteen belong to `ImageDiff`. Everything above them is shared, and the two components read one set of strings.
+
+| Key            | English default                                      |
+| -------------- | ---------------------------------------------------- |
+| `language`     | `Syntax highlighting`                                |
+| `imageSize`    | `{label}: {width} × {height}, {size}`                |
+| `imageSummary` | `{regions} changed areas, {percent}% of the picture` |
+| `choose`       | `Choose an image`                                    |
+| `chooseIn`     | `Choose an image for {label}`                        |
+| `unsupported`  | `That file is not an image.`                         |
+| `loading`      | `Opening the picture`                                |
+| `zoomOut`      | `Zoom out`                                           |
+| `zoomIn`       | `Zoom in`                                            |
+| `zoomFit`      | `Fit to the pane`                                    |
+| `zoomLevel`    | `{percent}%`                                         |
+| `fade`         | `Fade between the two`                               |
+| `wipe`         | `Drag to wipe between the two`                       |
+
+`added`, `removed`, `changed`, `summary`, `documentSize`, `changePosition`, `searchPosition`, `searchEmpty` and `imageSummary` are read by a screen reader rather than shown. `language` names the editor's menu of languages to one.
+
+The placeholders are filled in as follows. `searchIn` and `chooseIn` fill `{label}` with the name of the side the button belongs to, so two of the same button on one component are told apart. `summary` fills `{changes}`, `{inserted}` and `{deleted}` with the counts. `documentSize` fills `{label}` with the name of a side and `{characters}` and `{size}` with numbers already written in the reader's own language, and `imageSize` fills `{width}`, `{height}` and `{size}` the same way. `imageSummary` takes `{regions}` and `{percent}`, and `zoomLevel` takes `{percent}`. `placeholder` is what an empty field in the editor says.
 
 ### `DiffineFont`
 
@@ -244,6 +265,7 @@ Passing this replaces `language` rather than adding to it. A line has one set of
 | `colorScheme` | `'system' \| 'light' \| 'dark'` | `'system'` | Which palette to draw in. |
 | `locale` | `'en' \| 'ko'` | `'en'` | The language of the component's own words. |
 | `strings` | `Partial<DiffineStrings>` | — | Words to use instead of the locale's. |
+| `highlight` | `DiffineHighlight` | — | An application's own highlighter, in place of `language`. |
 
 `split` draws two panes; the other three draw one, with both names over it. What the marks are drawn in is five [custom properties](#colours) rather than props, because a canvas is painted rather than styled.
 

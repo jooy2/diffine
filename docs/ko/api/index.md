@@ -32,7 +32,7 @@ order: 1
 
 컴포넌트 하나가 둘 다 그립니다. `editor`는 창마다 입력란을 한 겹 덮어서 글자를 칠 때마다 비교를 다시 계산하고, 나머지는 — 줄도, 깔리는 색도, 짚어 주는 단어도, 띠도, 버튼도, 찾기도 — 양쪽이 같습니다.
 
-`editor`에만 속하는 prop이 셋 있습니다. `view`와 `alignLines`는 입력란이 한 열이 될 수도, 커서를 놓을 수 있는 빈 칸으로 채워질 수도 없어서 무시되고, `result`는 아직 아무도 손대지 않은 문서의 비교라서 무시됩니다. 반대로 `readOnly`, `indentWithTab`, `spellCheck`, `defaultBefore`, `defaultAfter`, `onLanguageChange`는 `viewer`에서 하는 일이 없습니다.
+`editor`에서 무시되는 prop이 셋 있습니다. `view`와 `alignLines`는 입력란이 한 열이 될 수도, 커서를 놓을 수 있는 빈 칸으로 채워질 수도 없어서 무시되고, `result`는 아직 아무도 손대지 않은 문서의 비교라서 무시됩니다. 반대로 `readOnly`, `indentWithTab`, `spellCheck`, `defaultBefore`, `defaultAfter`, `onLanguageChange`는 `viewer`에서 하는 일이 없습니다.
 
 ### 문서
 
@@ -49,9 +49,9 @@ order: 1
 | `result` | `DiffResult` | — | 이미 계산된 비교 결과. 주면 `before`와 `after`는 무시됩니다. 뷰어 전용. |
 | `diff` | `DiffOptions` | — | 비교 방식. 아래 참고. |
 
-`DiffineSource`는 `{ content: string; label?: string }`입니다. `label`이 헤더에 표시되는 이름이고, 없으면 현재 로케일의 기본 단어가 들어갑니다.
+`DiffineSource`는 `{ content: string; label?: string }`입니다. `label`이 헤더에 표시되는 이름이고, 없으면 현재 로케일의 기본 낱말이 들어갑니다.
 
-고칠 수 없는 문서는 렌더할 때마다 prop에서 다시 읽습니다. 고칠 수 있는 문서는 늘 쓰는 한 쌍입니다. `before`나 `after`를 주면 그 문서는 애플리케이션의 것이 되고, `defaultBefore`나 `defaultAfter`를 주면 컴포넌트가 들고 있습니다. 둘 중 어느 쪽인지는 첫 렌더에서 정해지고, `onBeforeChange`와 `onAfterChange`는 어느 쪽이 들고 있든 호출됩니다.
+뷰어는 렌더할 때마다 prop에서 문서를 다시 읽습니다. 에디터는 제어 컴포넌트와 비제어 컴포넌트 양쪽을 지원합니다. `before`나 `after`를 주면 그 문서는 애플리케이션이 관리하고, `defaultBefore`나 `defaultAfter`를 주면 컴포넌트가 관리합니다. 어느 쪽인지는 첫 렌더에서 정해지고, `onBeforeChange`와 `onAfterChange`는 누가 관리하든 호출됩니다.
 
 ### 화면
 
@@ -70,7 +70,7 @@ order: 1
 | `summary` | `boolean` | `true` | 아래쪽 상태 표시줄을 그릴지. |
 | `virtualize` | `boolean` | `true` | 보이는 줄만 그릴지. |
 | `language` | `string` | `'plain'` | 문서가 어떤 언어인지. 그 언어로 색을 입힙니다. |
-| `defaultLanguage` | `string` | `'plain'` | 컴포넌트가 직접 들고 있을 때 처음 언어. |
+| `defaultLanguage` | `string` | `'plain'` | 컴포넌트가 직접 관리할 때의 처음 언어. |
 | `onLanguageChange` | `(language: string) => void` | — | 메뉴에서 언어를 골랐을 때. 에디터 전용. |
 | `languageLabel` | `boolean` | `true` | 그 언어를 위쪽 줄 오른쪽 끝에 그릴지. |
 | `tabSize` | `number` | `4` | 탭을 몇 칸으로 그릴지. |
@@ -78,8 +78,9 @@ order: 1
 | `font` | `DiffineFont` | — | 문서를 그리는 글꼴. |
 | `locale` | `'en' \| 'ko'` | `'en'` | 컴포넌트 자신이 쓰는 말의 언어. |
 | `strings` | `Partial<DiffineStrings>` | — | 로케일 대신 쓸 단어. |
+| `highlight` | `DiffineHighlight` | — | `language` 대신 쓸, 애플리케이션 자신의 강조기. |
 
-`connectors`와 `syncScroll`은 두 창 사이의 이야기라서 `unified`에서는 무시됩니다. `languageLabel`은 `viewer`에서 언어 이름을, `editor`에서 그 이름을 고르는 메뉴를 그립니다. 그 선택을 누가 들고 있는지는 `language`, `defaultLanguage`, `onLanguageChange`가 정합니다.
+`connectors`와 `syncScroll`은 두 창 사이의 이야기라서 `unified`에서는 무시됩니다. `languageLabel`은 `viewer`에서 언어 이름을, `editor`에서 그 이름을 고르는 메뉴를 그립니다. 그 선택을 누가 관리하는지는 `language`, `defaultLanguage`, `onLanguageChange`가 정합니다.
 
 그 밖에 넘긴 것은 전부 엘리먼트로 그대로 갑니다. `id`, `className`, `style`, `aria-*`는 `<div>`에서와 똑같이 동작합니다.
 
@@ -100,7 +101,7 @@ order: 1
 | `defaultSelected` | `number` | `-1` | 처음에 선택할 변경. |
 | `onSelectedChange` | `(selected: number, change: DiffChange \| null) => void` | — | 다른 변경으로 이동했을 때. |
 
-`selected`는 `changes`의 인덱스입니다. 값을 주면 애플리케이션이 들고 있는 것이 되고, 값을 바꾸면 버튼을 눌렀을 때와 똑같이 화면이 이동합니다. `onSelectedChange`는 둘 중 어느 쪽이 들고 있든 호출됩니다.
+`selected`는 `changes`의 인덱스입니다. 값을 주면 애플리케이션이 관리하는 것이 되고, 값을 바꾸면 버튼을 눌렀을 때와 똑같이 화면이 이동합니다. `onSelectedChange`는 누가 관리하든 호출됩니다.
 
 ### 창 안에서 찾기
 
@@ -143,7 +144,27 @@ order: 1
 | `replaceWith`    | `바꿀 내용`                                             |
 | `replaceAll`     | `모두 바꾸기`                                           |
 
-`added`, `removed`, `changed`, `summary`, `documentSize`, `changePosition`, `searchPosition`, `searchEmpty`는 화면에 나오지 않고 스크린 리더가 읽습니다. `searchIn`의 `{label}` 자리에는 버튼이 여는 쪽의 이름이 들어갑니다. 한 컴포넌트에 놓인 찾기 버튼 두 개는 이것으로 구분됩니다. `summary`의 `{changes}`, `{inserted}`, `{deleted}` 자리에 집계가 들어갑니다. `documentSize`의 `{label}` 자리에는 한쪽의 이름이, `{characters}`와 `{size}` 자리에는 읽는 사람의 언어로 이미 써 둔 수가 들어갑니다. `placeholder`는 에디터의 빈 입력란에 나오는 문구입니다.
+아래 열세 개는 `ImageDiff`의 것입니다. 그 위는 모두 공용이고, 두 컴포넌트가 같은 낱말 묶음을 씁니다.
+
+| 키             | 한국어 기본값                         |
+| -------------- | ------------------------------------- |
+| `language`     | `구문 강조`                           |
+| `imageSize`    | `{label}: {width} × {height}, {size}` |
+| `imageSummary` | `변경 {regions}곳, 전체의 {percent}%` |
+| `choose`       | `이미지 고르기`                       |
+| `chooseIn`     | `{label}에 넣을 이미지 고르기`        |
+| `unsupported`  | `이미지 파일이 아닙니다.`             |
+| `loading`      | `이미지를 읽는 중`                    |
+| `zoomOut`      | `축소`                                |
+| `zoomIn`       | `확대`                                |
+| `zoomFit`      | `창에 맞추기`                         |
+| `zoomLevel`    | `{percent}%`                          |
+| `fade`         | `두 이미지 겹쳐 보기`                 |
+| `wipe`         | `끌어서 나눠 보기`                    |
+
+`added`, `removed`, `changed`, `summary`, `documentSize`, `changePosition`, `searchPosition`, `searchEmpty`, `imageSummary`는 화면에 나오지 않고 스크린 리더가 읽습니다. `language`는 에디터의 언어 메뉴 이름으로 읽힙니다.
+
+자리 표시자는 이렇게 채워집니다. `searchIn`과 `chooseIn`의 `{label}` 자리에는 그 버튼이 맡은 쪽의 이름이 들어갑니다. 한 컴포넌트에 같은 버튼이 둘씩 놓이므로 이것으로 구분합니다. `summary`의 `{changes}`, `{inserted}`, `{deleted}` 자리에는 집계가 들어갑니다. `documentSize`의 `{label}` 자리에는 한쪽의 이름이, `{characters}`와 `{size}` 자리에는 읽는 사람의 언어로 이미 써 둔 수가 들어가고, `imageSize`의 `{width}`, `{height}`, `{size}`도 마찬가지입니다. `imageSummary`는 `{regions}`와 `{percent}`를, `zoomLevel`은 `{percent}`를 받습니다. `placeholder`는 에디터의 빈 입력란에 나오는 문구입니다.
 
 ### `DiffineFont`
 
@@ -156,7 +177,7 @@ interface DiffineFont {
 }
 ```
 
-`--diffine-font`, `--diffine-font-size`, `--diffine-line-height`, `--diffine-letter-spacing`와 같은 값 네 개입니다. 글꼴을 CSS가 아니라 자기 상태로 들고 있는 애플리케이션을 위한 것입니다. 빠뜨린 값은 스타일시트의 값을 그대로 씁니다. 수는 픽셀이고, 문자열은 CSS가 읽는 대로입니다.
+`--diffine-font`, `--diffine-font-size`, `--diffine-line-height`, `--diffine-letter-spacing`와 같은 값 네 개입니다. 글꼴을 CSS가 아니라 자기 상태로 관리하는 애플리케이션을 위한 것입니다. 빠뜨린 값은 스타일시트의 값을 그대로 씁니다. 수는 픽셀이고, 문자열은 CSS가 읽는 대로입니다.
 
 `family`는 고정폭 스택이어야 하고, `lineHeight`는 배수가 아니라 길이여야 합니다. 줄에 글자가 있든 없든 행의 높이가 그만큼이고, 에디터의 입력란이 그 행 위에 겹쳐지며, 긴 비교에서 그리지 않는 줄도 정확히 그만큼의 높이로 대신하기 때문입니다.
 
@@ -173,7 +194,7 @@ const DIFFINE_LANGUAGES: readonly DiffineLanguageOption[];
 
 `language`에 넣을 수 있는 언어 전부입니다. `plain`이 맨 앞이고 그 뒤로 highlight.js 식별자 서른네 개가 알파벳순으로 옵니다. `id`가 `language`에 넣는 값이고, `name`이 창 위에 쓰이는 이름입니다. 로케일과 상관없이 영어로 씁니다. `TypeScript`는 어느 언어에서나 `TypeScript`이기 때문입니다.
 
-에디터의 메뉴가 이 목록으로 만들어집니다. 다른 곳에 메뉴를 따로 만든다면 베껴 두지 말고 이 목록에서 만드는 편이 좋습니다.
+에디터의 메뉴가 이 목록으로 만들어집니다. 다른 곳에 메뉴를 따로 만든다면 목록을 복사해 두지 말고 이 값에서 만드세요. 언어가 늘어나도 따라옵니다.
 
 `highlight.js`와 문법 하나하나가 `import()` 뒤에 있습니다. `plain`이 아닌 언어를 요청하기 전까지는 아무것도 내려받지 않고, 요청하면 그 언어의 문법만 내려받습니다. 문법이 도착한 다음 프레임에 색이 입혀지고, 그 전까지는 문서 그대로 그려집니다.
 
@@ -213,8 +234,8 @@ interface DiffineToken {
 | `mode` | `'viewer' \| 'editor'` | `'viewer'` | 이미지를 보기만 할지 고르기도 할지. |
 | `before` | `DiffineImageInput` | — | 왼쪽 이미지. |
 | `after` | `DiffineImageInput` | — | 오른쪽 이미지. |
-| `defaultBefore` | `DiffineImageInput` | — | 왼쪽이 처음에 들고 있을 것. 에디터 전용. |
-| `defaultAfter` | `DiffineImageInput` | — | 오른쪽이 처음에 들고 있을 것. 에디터 전용. |
+| `defaultBefore` | `DiffineImageInput` | — | 왼쪽이 처음에 보여 줄 이미지. 에디터 전용. |
+| `defaultAfter` | `DiffineImageInput` | — | 오른쪽이 처음에 보여 줄 이미지. 에디터 전용. |
 | `onBeforeChange` | `(value: File) => void` | — | 왼쪽에 이미지를 골랐을 때. |
 | `onAfterChange` | `(value: File) => void` | — | 오른쪽에 이미지를 골랐을 때. |
 | `onDiff` | `(result: DiffImageResult \| null) => void` | — | 비교를 다시 할 때마다 그 결과. |
@@ -222,9 +243,9 @@ interface DiffineToken {
 | `diff` | `DiffImageOptions` | — | 어떻게 비교할지. [`diffImage`](#diffimage) 참고. |
 | `maxPixels` | `number` | `4000000` | 이미지를 몇 픽셀까지 해석할지. |
 
-`DiffineImageInput`은 이미지 자체이거나 이름을 붙인 이미지입니다. `Blob | ImageBitmap | DiffPixels`, 또는 그중 하나를 감싼 `{ content, label }`입니다. URL은 없습니다. 받아 오는 일은 애플리케이션의 몫이고, 여기 도착하는 것은 이미 손에 쥔 것입니다.
+`DiffineImageInput`은 이미지 자체이거나 이름을 붙인 이미지입니다. `Blob | ImageBitmap | DiffPixels`, 또는 그중 하나를 감싼 `{ content, label }`입니다. URL은 받지 않습니다. 받아 오는 일은 애플리케이션의 몫입니다.
 
-`editor`에서는 늘 쓰는 한 쌍입니다. `defaultBefore`와 `defaultAfter`는 컴포넌트에 맡기고, `before`와 `after`는 애플리케이션이 쥡니다. `onBeforeChange`와 `onAfterChange`는 어느 쪽이든 호출됩니다.
+`editor`도 제어 컴포넌트와 비제어 컴포넌트 양쪽을 지원합니다. `defaultBefore`와 `defaultAfter`는 컴포넌트에 맡기고, `before`와 `after`는 애플리케이션이 관리합니다. `onBeforeChange`와 `onAfterChange`는 누가 관리하든 호출됩니다.
 
 ### 화면
 
@@ -245,7 +266,7 @@ interface DiffineToken {
 | `locale` | `'en' \| 'ko'` | `'en'` | 컴포넌트가 쓰는 말의 언어. |
 | `strings` | `Partial<DiffineStrings>` | — | 로케일 대신 쓸 낱말. |
 
-`split`은 창을 둘 그리고 나머지 셋은 하나를 그리며, 그 위에 두 이름을 함께 씁니다. 표시하는 색은 prop이 아니라 [커스텀 속성](#색) 다섯 개입니다. 캔버스는 스타일이 아니라 칠하는 것이기 때문입니다.
+`split`은 창을 둘 그리고 나머지 셋은 하나를 그리며, 그 위에 두 이름을 함께 씁니다. 표시하는 색은 prop이 아니라 [커스텀 속성](#색) 다섯 개입니다. 캔버스에는 스타일을 입힐 수 없어서 값을 읽어 직접 칠하기 때문입니다.
 
 ### 움직이기
 
