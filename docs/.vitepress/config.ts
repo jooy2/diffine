@@ -40,6 +40,7 @@ const baseOf = (lang: string) => (lang === defaultLocale ? '/' : `/${lang}/`);
 interface Words {
   description: string;
   guide: string;
+  playground: string;
   api: string;
   overview: string;
   more: string;
@@ -50,6 +51,7 @@ const WORDS: Record<string, Words> = {
     description:
       'Compare two versions and show what changed — a diff engine and a side-by-side viewer in one package, with no dependencies underneath either.',
     guide: 'Guide',
+    playground: 'Playground',
     api: 'API',
     overview: 'Overview',
     more: 'Discover more'
@@ -58,14 +60,24 @@ const WORDS: Record<string, Words> = {
     description:
       '두 버전을 비교해 무엇이 달라졌는지 보여줍니다. 비교 엔진과 나란히 보는 뷰어가 한 패키지에 들어 있고, 둘 다 다른 라이브러리를 깔고 앉지 않습니다.',
     guide: '가이드',
+    playground: '직접 써보기',
     api: 'API',
     overview: '개요',
     more: '더 알아보기'
   }
 };
 
+/*
+ * The navbar: the guide, the page to try it on, and the reference.
+ *
+ * The playground is in the guide's sidebar as well, and it is here because it
+ * is the page somebody who has just landed on the site actually wants — a
+ * component they can type into beats a page describing one, and neither the
+ * sidebar nor the reading order puts it in front of them.
+ */
 const navFor = (lang: string) => [
   { text: WORDS[lang].guide, link: `${baseOf(lang)}guide/getting-started` },
+  { text: WORDS[lang].playground, link: `${baseOf(lang)}guide/playground` },
   { text: WORDS[lang].api, link: `${baseOf(lang)}api/` }
 ];
 
