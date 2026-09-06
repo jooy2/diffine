@@ -37,7 +37,9 @@ The site renders the library from `packages/react/src` rather than from a build,
 5. Update the documentation. The site is written in **English and Korean**, and both have to be updated. Write the second one in your own words rather than translating word for word, and if you cannot write one of them, say so in the pull request and it will be filled in.
 6. Add an entry to `packages/react/CHANGELOG.md` when a user of the package would notice the change. Behaviour, a public name, a default, a dependency, a supported version. A refactor that changes nothing needs no entry.
 7. Add or change tests where the change earns them: a new feature, a rewrite, a bug worth a regression test, or logic intricate enough that reading it is not enough to trust it. Confirm the existing tests still pass.
-8. Run `npm run lint`, `npm run typecheck` and `npm test` in `packages/react`, and `npm run lint`, `npm run typecheck` and `npm run build` in `docs` if you touched the site.
+8. Run `npm run lint`, `npm run typecheck` and `npm test` in `packages/react`, and `npm run lint`, `npm run typecheck`, `npm run build` and `npm run check-links` in `docs` if you touched the site.
+
+`check-links` reads the built site and fails on a link that goes nowhere, which covers the case neither the build nor the typecheck does: an anchor is what an author typed and an id is what VitePress made of a heading, and the two can differ without anything reporting it. Run `npm run build` first, since it reads `docs-dist/`.
 
 The tests run in Node with no DOM. Anything answered by measuring an element (how tall a wrapped row is, where the band between two panes goes) cannot be checked there and is checked in a browser instead. Say in the pull request what you looked at.
 

@@ -48,3 +48,9 @@ jobs:
         run: npm run typecheck
       - name: Build
         run: npm run build
+      # Over the built site rather than the Markdown, because a link breaks
+      # between the two: the anchor is what an author typed and the id is what
+      # VitePress generated from a heading, and neither the build nor the
+      # typecheck compares them.
+      - name: Check links
+        run: npm run check-links
