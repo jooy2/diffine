@@ -34,7 +34,7 @@ export const LANGUAGES: Record<string, LanguageEntry> = {
   dockerfile: { name: 'Dockerfile', load: () => import('highlight.js/lib/languages/dockerfile') },
   go: { name: 'Go', load: () => import('highlight.js/lib/languages/go') },
   graphql: { name: 'GraphQL', load: () => import('highlight.js/lib/languages/graphql') },
-  ini: { name: 'INI and TOML', load: () => import('highlight.js/lib/languages/ini') },
+  ini: { name: 'INI / TOML', load: () => import('highlight.js/lib/languages/ini') },
   java: { name: 'Java', load: () => import('highlight.js/lib/languages/java') },
   javascript: { name: 'JavaScript', load: () => import('highlight.js/lib/languages/javascript') },
   json: { name: 'JSON', load: () => import('highlight.js/lib/languages/json') },
@@ -56,7 +56,7 @@ export const LANGUAGES: Record<string, LanguageEntry> = {
   sql: { name: 'SQL', load: () => import('highlight.js/lib/languages/sql') },
   swift: { name: 'Swift', load: () => import('highlight.js/lib/languages/swift') },
   typescript: { name: 'TypeScript', load: () => import('highlight.js/lib/languages/typescript') },
-  xml: { name: 'HTML and XML', load: () => import('highlight.js/lib/languages/xml') },
+  xml: { name: 'HTML / XML', load: () => import('highlight.js/lib/languages/xml') },
   yaml: { name: 'YAML', load: () => import('highlight.js/lib/languages/yaml') }
 };
 
