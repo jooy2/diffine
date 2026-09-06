@@ -71,6 +71,49 @@ every thirty seconds and never gets in the way.
 Let us know what you think.
 `;
 
+const CONFIG_BEFORE = `name: deploy
+on:
+  push:
+    branches: [main]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm ci
+      - run: npm test
+`;
+
+const CONFIG_AFTER = `name: deploy
+on:
+  push:
+    branches: [main, release/*]
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+`;
+
+const KOREAN_BEFORE = `공원 이용 안내
+
+여름철 개장 시간은 오전 6시부터 오후 10시까지입니다.
+반려동물은 목줄을 채우면 들어올 수 있습니다.
+자전거는 동문 주차장에 세워 주세요.
+`;
+
+const KOREAN_AFTER = `공원 이용 안내
+
+여름철 개장 시간은 오전 5시부터 오후 11시까지입니다.
+반려동물은 목줄을 채우면 들어올 수 있습니다.
+자전거는 동문과 서문 주차장에 세워 주세요.
+드론은 날릴 수 없습니다.
+`;
+
 export const SAMPLES = {
   code: {
     before: CODE_BEFORE,
@@ -83,6 +126,18 @@ export const SAMPLES = {
     after: PROSE_AFTER,
     beforeLabel: 'Draft',
     afterLabel: 'Published'
+  },
+  config: {
+    before: CONFIG_BEFORE,
+    after: CONFIG_AFTER,
+    beforeLabel: 'deploy.yml @ v1',
+    afterLabel: 'deploy.yml @ v2'
+  },
+  korean: {
+    before: KOREAN_BEFORE,
+    after: KOREAN_AFTER,
+    beforeLabel: '지난해',
+    afterLabel: '올해'
   },
   whitespace: {
     before: 'const total = subtotal + tax;   \n  const rounded = round(total);\nreturn rounded;\n',

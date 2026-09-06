@@ -1,0 +1,42 @@
+/**
+ * What the site itself needs, on top of VitePress's own theme.
+ *
+ * One page here is not a page of prose, and everything below is that page
+ * asking for the room the default layout does not give it. Anything that
+ * belongs to a component is in that component's own `<style scoped>`.
+ */
+
+/* The playground's stage is measured down to the bottom of the window, so the
+   padding the layout leaves under an article would be a strip of background
+   below a component that already ended where it meant to. */
+.diffine-playground-page .VPDoc,
+.diffine-playground-page .VPDoc .content {
+  padding-bottom: 0;
+}
+
+/*
+ * From 1440px up the layout stops growing and centres itself, which is what a
+ * column of prose wants and the opposite of what this page wants: the stage is
+ * the page, and the cap buys a strip of empty background down each side of it.
+ * Above that width this page keeps the full-bleed layout every narrower window
+ * already has.
+ *
+ * One variable rather than a set of overrides, because the navbar is measured
+ * from the same one — a stage that reached the window's edge past a navbar that
+ * stopped short would be a page whose two halves disagreed about how wide it is.
+ */
+@media (min-width: 1440px) {
+  .diffine-playground-page {
+    --vp-layout-max-width: 100%;
+  }
+}
+
+/* A heading at document size spends sixty pixels saying a word the navbar and
+   the sidebar are both already saying. */
+.diffine-playground-page .vp-doc h1 {
+  margin: 0;
+  border: 0;
+  font-size: 22px;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+}

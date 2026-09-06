@@ -1,29 +1,29 @@
 <script setup lang="ts">
 /**
- * A real `DiffineViewer`, on a VitePress page.
+ * A real `DiffineViewer` or `DiffineEditor`, on a VitePress page.
  *
- * VitePress compiles Markdown to Vue, so a React component reaches a page only
- * as an island: this owns one `<div>` and hands it to `createRoot()`. Nothing
- * about it is a screenshot or a re-implementation — the alias in
- * `.vitepress/config.ts` points `diffine-react` at the package's source, so
- * what is drawn below is the component the reader would install.
+ * Nothing about it is a screenshot or a re-implementation — see `island.ts` for
+ * how a React component reaches a page here and why what is drawn below is the
+ * component a reader would install.
  *
  * The palette and the language follow the page rather than the component's own
  * defaults, because a demo that stayed light on a dark page, or English on a
  * Korean one, would be demonstrating the wrong thing.
  */
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, ref } from 'vue';
 import { useData } from 'vitepress';
 import { createElement } from 'react';
-import { createRoot, type Root } from 'react-dom/client';
-import { DiffineViewer } from 'diffine-react';
-import type { DiffInlineMode, DiffWhitespace, DiffineView } from 'diffine-react';
+import { DiffineEditor, DiffineViewer } from 'diffine-react';
+import type { DiffInlineMode, DiffWhitespace, DiffineSide, DiffineView } from 'diffine-react';
 import 'diffine-react/styles.css';
 import { highlight } from '../highlight';
+import { useReactIsland } from '../island';
 import { SAMPLES, type SampleName } from '../samples';
 
 const props = withDefaults(
   defineProps<{
+    /** Which of the two components the demo is of. */
+    component?: 'viewer' | 'editor';
     sample?: SampleName;
     view?: DiffineView;
     lineNumbers?: boolean;
@@ -38,6 +38,10 @@ const props = withDefaults(
     ignoreCase?: boolean;
     navigation?: boolean;
     virtualize?: boolean;
+    /** Editor only: which side cannot be typed into. */
+    readOnly?: boolean | DiffineSide;
+    /** Editor only: whether Tab types a tab. */
+    indentWithTab?: boolean;
     /** Whether the sample is drawn through the little highlighter beside this. */
     colour?: boolean;
     /** How many lines to pad the sample out to, for showing a long document. */
@@ -47,6 +51,7 @@ const props = withDefaults(
     controls?: boolean;
   }>(),
   {
+    component: 'viewer',
     sample: 'code',
     view: 'split',
     lineNumbers: true,
@@ -61,6 +66,8 @@ const props = withDefaults(
     ignoreCase: false,
     navigation: true,
     virtualize: true,
+    readOnly: false,
+    indentWithTab: false,
     colour: false,
     lines: 0,
     height: '20rem',
@@ -71,7 +78,6 @@ const props = withDefaults(
 const { isDark, lang } = useData();
 
 const host = ref<HTMLDivElement>();
-let root: Root | undefined;
 
 /** What the reader has turned on, starting from what the page asked for. */
 const chosen = ref({
@@ -100,62 +106,65 @@ function padded(source: string, lines: number): string {
 }
 
 function draw() {
-  if (!root) {
-    return;
+  const sample = SAMPLES[props.sample] ?? SAMPLES.code;
+  const before = {
+    content: props.lines ? padded(sample.before, props.lines) : sample.before,
+    label: sample.beforeLabel
+  };
+  const after = {
+    content: props.lines ? padded(sample.after, props.lines) : sample.after,
+    label: sample.afterLabel
+  };
+
+  const shared = {
+    wrap: chosen.value.wrap,
+    lineNumbers: chosen.value.lineNumbers,
+    markers: props.markers,
+    connectors: props.connectors,
+    header: props.header,
+    navigation: props.navigation,
+    summary: props.summary,
+    virtualize: props.virtualize,
+    highlight: props.colour ? highlight : undefined,
+    diff: {
+      inline: props.inline,
+      whitespace: props.whitespace,
+      ignoreCase: props.ignoreCase
+    },
+    colorScheme: isDark.value ? ('dark' as const) : ('light' as const),
+    locale: locale.value,
+    style: { height: props.height }
+  };
+
+  if (props.component === 'editor') {
+    return createElement(DiffineEditor, {
+      ...shared,
+      // The editor keeps the two documents itself, so a new sample is a new
+      // editor rather than a prop it would be right to ignore.
+      key: props.sample,
+      defaultBefore: before,
+      defaultAfter: after,
+      readOnly: props.readOnly,
+      indentWithTab: props.indentWithTab
+    });
   }
 
-  const sample = SAMPLES[props.sample] ?? SAMPLES.code;
-  const before = props.lines ? padded(sample.before, props.lines) : sample.before;
-  const after = props.lines ? padded(sample.after, props.lines) : sample.after;
-
-  root.render(
-    createElement(DiffineViewer, {
-      before: { content: before, label: sample.beforeLabel },
-      after: { content: after, label: sample.afterLabel },
-      view: chosen.value.view,
-      wrap: chosen.value.wrap,
-      alignLines: chosen.value.alignLines,
-      lineNumbers: chosen.value.lineNumbers,
-      markers: props.markers,
-      connectors: props.connectors,
-      header: props.header,
-      navigation: props.navigation,
-      summary: props.summary,
-      virtualize: props.virtualize,
-      highlight: props.colour ? highlight : undefined,
-      diff: {
-        inline: props.inline,
-        whitespace: props.whitespace,
-        ignoreCase: props.ignoreCase
-      },
-      colorScheme: isDark.value ? 'dark' : 'light',
-      locale: locale.value,
-      style: { height: props.height }
-    })
-  );
+  return createElement(DiffineViewer, {
+    ...shared,
+    before,
+    after,
+    view: chosen.value.view,
+    alignLines: chosen.value.alignLines
+  });
 }
 
-onMounted(() => {
-  root = createRoot(host.value!);
-  draw();
-});
-
-watch([chosen, isDark, locale, () => props.sample], draw, { deep: true });
-
-onBeforeUnmount(() => {
-  // On the next tick, because React refuses to tear a root down from inside the
-  // render that is unmounting it and says so in the console.
-  const going = root;
-
-  root = undefined;
-  queueMicrotask(() => going?.unmount());
-});
+useReactIsland(host, draw, { watch: [chosen, isDark, locale, () => props.sample] });
 </script>
 
 <template>
   <div class="diffine-demo">
     <div v-if="controls" class="diffine-demo-controls">
-      <label>
+      <label v-if="component === 'viewer'">
         <input
           type="checkbox"
           :checked="chosen.view === 'unified'"
@@ -167,7 +176,7 @@ onBeforeUnmount(() => {
         <input type="checkbox" v-model="chosen.wrap" />
         {{ labels.wrap }}
       </label>
-      <label>
+      <label v-if="component === 'viewer'">
         <input type="checkbox" v-model="chosen.alignLines" />
         {{ labels.align }}
       </label>
@@ -178,10 +187,10 @@ onBeforeUnmount(() => {
     </div>
     <!--
       Not wrapped in `<ClientOnly>`. That component renders its slot on the
-      render after it mounts, so the element would not exist yet when
-      `onMounted` below went looking for it. An empty `<div>` is the same on a
-      server and in a browser, which is all hydration asks for, and `onMounted`
-      is already the thing that never runs on a server.
+      render after it mounts, so the element would not exist yet when the island
+      below went looking for it. An empty `<div>` is the same on a server and in
+      a browser, which is all hydration asks for, and `onMounted` is already the
+      thing that never runs on a server.
     -->
     <div ref="host" />
   </div>
