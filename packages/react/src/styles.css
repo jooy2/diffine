@@ -619,13 +619,17 @@
   -webkit-text-fill-color: var(--diffine-muted);
 }
 
-/* `:focus-within` rather than `:focus-visible`: the pane is not what takes the
-   focus here, and a text field is worth outlining however it was reached —
-   which of the two documents is being typed into is worth saying out loud. */
-.diffine-editor .diffine-pane:focus-within {
-  outline: 2px solid var(--diffine-accent);
-  outline-offset: -2px;
-}
+/*
+ * No outline around a pane whose field has the focus.
+ *
+ * A pane is a scrolling box with a gutter down its left edge, and an outline
+ * drawn inside one covers the line numbers rather than framing them. What says
+ * where the focus is here is the caret: it is the field's own, it blinks in the
+ * document at the position the next character will go, and it is a stronger
+ * answer than a border around a box that fills half the component. The viewer's
+ * panes still take an outline, because there a pane really is what the keyboard
+ * moved to.
+ */
 
 /* A side that cannot be typed into still takes a selection, and still shows
    where the caret is while it is being moved through. Quietly. */
