@@ -137,8 +137,20 @@ export function useVirtualRows(
     );
   };
 
-  useMeasure(panes, measure, [...deps, wanted, ...counts]);
-  useScrollWatch(panes, measure, wanted, [...deps, ...counts]);
+  /*
+   * How long the documents are, as one value rather than as one each.
+   *
+   * A dependency list has to be the same length on every render, and the number
+   * of panes is not: a split view has two and a unified view has one. Spread,
+   * the counts made both lists below grow and shrink as a reader switched
+   * between the two views — which React refuses to compare, and says so.
+   * Joined, it is one entry that changes exactly when a count does, and when a
+   * pane arrives or leaves.
+   */
+  const sizes = counts.join();
+
+  useMeasure(panes, measure, [...deps, wanted, sizes]);
+  useScrollWatch(panes, measure, wanted, [...deps, sizes]);
 
   // Answered from the props rather than from the state, so that turning this
   // off draws the whole document on the same render rather than on the one
