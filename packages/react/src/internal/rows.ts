@@ -92,6 +92,44 @@ export function splitLayout(
 }
 
 /**
+ * One side of a split view, with the line the caret can reach at the end of it.
+ *
+ * A comparison has no line after the last newline, and it is right not to: two
+ * documents that both end in one have nothing there to compare. A field does —
+ * put the caret at the end of `one\ntwo\n` and it sits on a third line, and an
+ * empty document is one empty line rather than none.
+ *
+ * So the editor draws that line even though the comparison never mentions it.
+ * Without it the field would be exactly one line taller than the lines drawn
+ * behind it, which is the one thing that cannot differ: the text a reader types
+ * and the tint under it would come apart at the bottom of the document.
+ *
+ * It is appended, so nothing that points into `positions` moves.
+ */
+export function fieldLayout(
+  rows: readonly DiffRow[],
+  owner: Int32Array,
+  side: DiffineSide,
+  text: string
+): PaneLayout {
+  const layout = splitLayout(rows, owner, side, false);
+
+  if (text !== '' && !/[\n\r]$/.test(text)) {
+    return layout;
+  }
+
+  layout.lines.push({
+    kind: 'equal',
+    side,
+    line: { index: layout.lines.length, text: '', segments: [] },
+    numbers: [layout.lines.length + 1],
+    change: -1
+  });
+
+  return layout;
+}
+
+/**
  * The two documents in one column, with what went out above what came in.
  *
  * A change that edited three lines into two is drawn as three lines going out

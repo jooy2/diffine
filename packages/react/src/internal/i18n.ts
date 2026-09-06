@@ -1,11 +1,11 @@
 /**
- * The words the viewer puts on the screen.
+ * The words the components put on the screen.
  *
- * There are eleven of them, and there will not be many more: this component draws
- * two documents and everything else on it came out of those documents. What is
- * here is the frame around them — what each side is called, what is said when
- * there is nothing to show, and what a screen reader is told about a view whose
- * whole meaning is in its colours.
+ * There are twelve of them, and there will not be many more: what these draw is
+ * two documents, and everything else on the screen came out of those documents.
+ * What is here is the frame around them — what each side is called, what an
+ * empty field invites, what is said when there is nothing to show, and what a
+ * screen reader is told about a view whose whole meaning is in its colours.
  *
  * An application whose language is not on this list passes `strings` instead,
  * and one whose language is on it can still pass `strings` to change a word.
@@ -18,6 +18,7 @@ const LOCALES: Record<DiffineLocale, DiffineStrings> = {
     before: 'Before',
     after: 'After',
     empty: 'Nothing to compare yet.',
+    placeholder: 'Type or paste a document here.',
     identical: 'The two are the same.',
     added: 'Added',
     removed: 'Removed',
@@ -31,6 +32,7 @@ const LOCALES: Record<DiffineLocale, DiffineStrings> = {
     before: '이전',
     after: '이후',
     empty: '아직 비교할 내용이 없습니다.',
+    placeholder: '여기에 문서를 입력하거나 붙여 넣으세요.',
     identical: '두 문서가 같습니다.',
     added: '추가됨',
     removed: '삭제됨',

@@ -1,5 +1,5 @@
 /**
- * The viewer's stylesheet.
+ * The stylesheet, for both components.
  *
  * One file, imported once, and nothing in it reaches outside `.diffine`. Every
  * colour is a custom property declared on that element, so an application that
@@ -29,6 +29,11 @@
 
   /* The space opposite a line that has no counterpart. */
   --diffine-blank: #f0f3f7;
+
+  /* What a selection in an editable pane is drawn in. It has to be see-through:
+     the text under a selection is drawn by the lines behind the field, and an
+     opaque highlight would cover the words it is meant to be picking out. */
+  --diffine-selection: #0e7ffc33;
 
   /* ---- Measurements ------------------------------------------------------ */
   --diffine-height: 24rem;
@@ -89,6 +94,7 @@
     --diffine-delete-line: #351c20;
     --diffine-delete-piece: #7f303a;
     --diffine-blank: #151b23;
+    --diffine-selection: #4c9dff40;
   }
 }
 
@@ -104,6 +110,7 @@
   --diffine-delete-line: #351c20;
   --diffine-delete-piece: #7f303a;
   --diffine-blank: #151b23;
+  --diffine-selection: #4c9dff40;
 }
 
 /* ---- Resets --------------------------------------------------------------
@@ -441,4 +448,143 @@
   height: 0;
   overflow: hidden;
   visibility: hidden;
+}
+
+/* ---- The editor ----------------------------------------------------------
+ *
+ * A field laid over the lines, drawn so that the two cannot be told apart.
+ *
+ * Everything above draws a comparison, and the editor draws the same one — the
+ * rules are shared, and what is here is only what it takes to put a
+ * `<textarea>` on top of them without a reader ever noticing that there are two
+ * of anything. The field's own text is invisible and its caret is not, so the
+ * words on the screen are the ones behind it, which is the only way a tinted
+ * row or a marked word can be under text somebody is typing.
+ *
+ * That trick is worth exactly as much as the alignment underneath it. The field
+ * and the lines have to agree on the typeface, on how tall one line is, on how
+ * far in the text starts and on where a long line breaks — and every one of
+ * those agreements is written down here rather than measured, because a
+ * measurement is a frame of drift on every resize.
+ * ----------------------------------------------------------------------- */
+
+/*
+ * How far in the field's text has to start.
+ *
+ * Which is the gutter's width, and the gutter is whichever of its two columns
+ * were asked for plus the rule down its right-hand side. Both are drawn from
+ * custom properties the component already declares, so the two columns are the
+ * same width by construction rather than by agreement.
+ */
+.diffine-editor {
+  --diffine-field-indent: 0px;
+}
+
+.diffine-editor[data-numbers='true'] {
+  --diffine-field-indent: calc(var(--diffine-number-width) + 1px);
+}
+
+.diffine-editor[data-markers='true'] {
+  --diffine-field-indent: calc(1.25rem + 1px);
+}
+
+.diffine-editor[data-numbers='true'][data-markers='true'] {
+  --diffine-field-indent: calc(var(--diffine-number-width) + 1.25rem + 1px);
+}
+
+/*
+ * What the field is sized and placed against: the lines, at their full width
+ * and their full height, rather than the part of them a reader can see.
+ *
+ * Never shorter than the pane, so that a document of three lines in a box of
+ * forty is still a box of forty somebody can click into. Otherwise the field
+ * would end where the text does and the empty space under it would belong to
+ * nothing — which is most of an editor that has just been emptied to paste
+ * something into.
+ */
+.diffine-editor .diffine-lines {
+  position: relative;
+  min-height: 100%;
+}
+
+/*
+ * The lines, under the field.
+ *
+ * Nothing reaches them. A click goes through to the field, which puts the caret
+ * where it was aimed — including in the gutter, where the nearest place to aim
+ * at is the start of that line. And a selection is the field's alone, so what a
+ * reader copies is the document rather than two of it.
+ */
+.diffine-editor-backdrop {
+  pointer-events: none;
+  user-select: none;
+}
+
+/*
+ * Room at the end of the longest line, so the field never has to scroll itself.
+ *
+ * The field is as wide as the lines are, and if its own text came to more than
+ * that by a fraction of a pixel it would scroll to show the end of it — moving
+ * every line it holds sideways, away from the lines drawn behind them. A
+ * character of slack costs a little empty tint and settles the question.
+ *
+ * Only where a long line runs off the side. Where it wraps instead, the two
+ * have to break in the same places, and that means the same width to break in.
+ */
+.diffine-editor[data-wrap='false'] .diffine-text {
+  padding-inline-end: 1.5rem;
+}
+
+.diffine-editor-input {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  margin: 0;
+  padding: 0 0.5rem 0 calc(var(--diffine-field-indent) + 0.5rem);
+  border: 0;
+  outline: 0;
+  background: none;
+  /* Both, because one of the two browsers this has to be invisible in only
+     listens to the other one. */
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  caret-color: var(--diffine-text);
+  font: inherit;
+  letter-spacing: inherit;
+  tab-size: var(--diffine-tab-size);
+  white-space: pre;
+  resize: none;
+}
+
+.diffine-editor[data-wrap='true'] .diffine-editor-input {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* See-through, because the words under a selection are drawn by the lines
+   behind the field and an opaque highlight would be a blue rectangle where the
+   selected text used to be. */
+.diffine-editor-input::selection {
+  background: var(--diffine-selection);
+}
+
+/* The one thing in the field that is drawn rather than hidden. */
+.diffine-editor-input::placeholder {
+  opacity: 1;
+  color: var(--diffine-muted);
+  -webkit-text-fill-color: var(--diffine-muted);
+}
+
+/* `:focus-within` rather than `:focus-visible`: the pane is not what takes the
+   focus here, and a text field is worth outlining however it was reached —
+   which of the two documents is being typed into is worth saying out loud. */
+.diffine-editor .diffine-pane:focus-within {
+  outline: 2px solid var(--diffine-accent);
+  outline-offset: -2px;
+}
+
+/* A side that cannot be typed into still takes a selection, and still shows
+   where the caret is while it is being moved through. Quietly. */
+.diffine-pane[data-readonly] .diffine-editor-input {
+  caret-color: var(--diffine-muted);
 }

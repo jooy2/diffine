@@ -4,11 +4,11 @@
 
 [![license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/jooy2/diffine/blob/main/LICENSE) [![npm latest package](https://img.shields.io/npm/v/diffine-react/latest.svg)](https://www.npmjs.com/package/diffine-react) [![npm downloads](https://img.shields.io/npm/dm/diffine-react.svg)](https://www.npmjs.com/package/diffine-react)
 
-**Diffine works out what changed between two versions and puts it on the screen.** Two panes side by side, the matching lines held level with each other, and the words that actually moved marked inside the lines that carry them.
+**Diffine works out what changed between two versions and puts it on the screen.** Two panes side by side, the matching lines held level with each other, and the words that actually moved marked inside the lines that carry them — to read, or to type into.
 
 📘 **[diffine.cdget.com](https://diffine.cdget.com)** — guides and the full API, in English and Korean.
 
-> **`0.0.1`.** The comparison and the viewer are written and they run. The names are not settled yet, so treat every export as something that can still change shape until `1.0.0`.
+> **`0.0.1`.** The comparison, the viewer and the editor are written and they run. The names are not settled yet, so treat every export as something that can still change shape until `1.0.0`.
 
 ## Install
 
@@ -129,6 +129,36 @@ Every colour and measurement is a custom property on the `.diffine` element, so 
 }
 ```
 
+## The editor
+
+The same comparison with the two panes made editable, worked out again as somebody types into either side.
+
+```tsx
+import { DiffineEditor } from 'diffine-react';
+import 'diffine-react/styles.css';
+
+export function Compose({ saved }: { saved: string }) {
+  const [draft, setDraft] = useState(saved);
+
+  return <DiffineEditor before={saved} after={draft} onAfterChange={setDraft} readOnly="before" />;
+}
+```
+
+Leave `before` and `after` out and pass `defaultBefore` and `defaultAfter` instead to let the editor keep the documents itself. Either way `onBeforeChange` and `onAfterChange` report what was typed.
+
+Each pane draws its document twice: once as the lines you see, and once as a plain `<textarea>` over the top whose own text is invisible and whose caret is not. That is what lets a tinted row, a marked word and `highlight` sit under text somebody is editing, while the field goes on being a field — its undo stack, its input method, its selection and its accessibility all the browser's.
+
+The two sides are never held level, because a blank line put in to keep them in step would be a line somebody could put the caret in. The column between the panes says which part of one answers which part of the other.
+
+| Prop            | Default | What it decides                                      |
+| --------------- | ------- | ---------------------------------------------------- |
+| `readOnly`      | `false` | Which side cannot be typed into, or `true` for both. |
+| `indentWithTab` | `false` | Whether Tab types a tab instead of moving on.        |
+| `spellCheck`    | `false` | Whether the browser marks its own spelling mistakes. |
+| `onDiff`        | —       | The comparison, every time it is worked out again.   |
+
+Everything else the viewer takes, the editor takes too, except `view` and `alignLines`. With `indentWithTab` on there are two ways out of the field: Shift+Tab moves back a control, and Escape hands the next Tab to the browser.
+
 ## The comparison on its own
 
 `diffine-react/diff` is the engine with no React and no DOM in it, for a summary line, a count in a badge, or a comparison worked out in a worker and handed to the viewer as a value.
@@ -157,12 +187,12 @@ diffSequence(['a', 'b', 'c'], ['a', 'c']);
 
 ## Entry points
 
-| Import                     | What it is                                        |
-| -------------------------- | ------------------------------------------------- |
-| `diffine-react`            | Everything: the viewer, the engine and the types. |
-| `diffine-react/diff`       | The comparison, with no component in the bundle.  |
-| `diffine-react/types`      | The types on their own.                           |
-| `diffine-react/styles.css` | The viewer's stylesheet.                          |
+| Import                     | What it is                                            |
+| -------------------------- | ----------------------------------------------------- |
+| `diffine-react`            | Everything: the components, the engine and the types. |
+| `diffine-react/diff`       | The comparison, with no component in the bundle.      |
+| `diffine-react/types`      | The types on their own.                               |
+| `diffine-react/styles.css` | The stylesheet, for both components.                  |
 
 ## License
 

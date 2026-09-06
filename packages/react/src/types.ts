@@ -294,6 +294,8 @@ export interface DiffineStrings {
   after: string;
   /** What is said when there is nothing on either side yet. */
   empty: string;
+  /** What an empty field says before anybody has typed into it. */
+  placeholder: string;
   /** What is said when the two documents turned out to be the same. */
   identical: string;
   /** What a screen reader hears in front of a line that is only in `after`. */
