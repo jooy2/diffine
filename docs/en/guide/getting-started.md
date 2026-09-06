@@ -5,7 +5,7 @@ order: 1
 
 # Getting started
 
-Diffine ships as one package per framework. Today that is React, and this page is the whole of what it takes to put a comparison on a page.
+Diffine ships as one package per framework. Today that is React, and this page covers the install and the first component.
 
 ## Requirements
 
@@ -68,5 +68,6 @@ It is `24rem` tall by default and scrolls inside that. Give it a height of your 
 ## Where to go next
 
 - [**Text diff**](./text-diff) — every part of the view, the editing mode, and the prop that turns each one on or off.
+- [**Image diff**](./image-diff) — comparing two pictures pixel by pixel, and every way of reading that.
 - [**The comparison**](./diff) — what the engine returns, and how to read it without drawing anything.
 - [**API**](../api/) — every export, function and option, in one place.
