@@ -23,7 +23,7 @@ import 'diffine-react/styles.css';
 <ImageDiff mode="editor" />;
 ```
 
-`viewer` is the default and draws what it was given. `editor` adds every way of putting a picture in: an empty pane invites one, a full pane takes one dropped on it, and each side has a button in the bar for a reader who is not dragging anything. Drop a PNG on either half below.
+`viewer` is the default and draws what it was given. `editor` adds every way of putting a picture in: an empty pane invites one, a full pane takes one dropped on it, and each side has a button in the bar for a reader who is not dragging anything. A view that draws both pictures in one pane sends what is dropped on it to whichever side is empty, and to the second one when neither is. Drop a PNG on either half below.
 
 <DiffinePictures sample="badge" height="22rem" />
 
