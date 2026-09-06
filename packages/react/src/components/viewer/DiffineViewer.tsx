@@ -15,7 +15,7 @@ import type {
   DiffineView
 } from '../../types.js';
 import { diffText } from '../../diff.js';
-import { fill, stringsFor } from '../../internal/i18n.js';
+import { stringsFor } from '../../internal/i18n.js';
 import { useRowAlignment } from '../../internal/layout.js';
 import { useChangeNavigation } from '../../internal/navigate.js';
 import { changeOfRow, splitLayout, unifiedLayout } from '../../internal/rows.js';
@@ -24,6 +24,7 @@ import { sourceOf } from '../../internal/source.js';
 import { useVirtualRows } from '../../internal/virtual.js';
 import { DiffineLinks } from '../shared/DiffineLinks.js';
 import { DiffineNav } from '../shared/DiffineNav.js';
+import { DiffineSummary } from '../shared/DiffineSummary.js';
 import { DiffineViewerPane } from './DiffineViewerPane.js';
 
 export interface DiffineViewerProps extends Omit<
@@ -127,7 +128,8 @@ export interface DiffineViewerProps extends Omit<
   navigation?: boolean;
 
   /**
-   * Whether the counts are written under the view.
+   * Whether the bar under the view is drawn: what each document weighs, and how
+   * many changes there are between them.
    * @default true
    */
   summary?: boolean;
@@ -272,6 +274,24 @@ export function DiffineViewer({
   const split = view === 'split';
   const empty = beforeText === '' && afterText === '';
 
+  /*
+   * The two documents as text, for the sizes written under the panes.
+   *
+   * Normally that is what was passed in. An application that worked the
+   * comparison out elsewhere and handed over `result` alone has no `before` to
+   * pass, so the lines it holds are joined back into one — which is the only
+   * place in the component that copies a whole document, and it happens once
+   * per comparison rather than once per render.
+   */
+  const beforeMeasured = React.useMemo(
+    () => (beforeText === '' && result ? result.before.join('\n') : beforeText),
+    [beforeText, result]
+  );
+  const afterMeasured = React.useMemo(
+    () => (afterText === '' && result ? result.after.join('\n') : afterText),
+    [afterText, result]
+  );
+
   const owner = React.useMemo(
     () => changeOfRow(comparison.rows.length, comparison.changes),
     [comparison]
@@ -415,15 +435,18 @@ export function DiffineViewer({
       )}
 
       {summary && !empty ? (
-        <div className="diffine-summary" role="status">
-          {comparison.changes.length === 0
-            ? strings.identical
-            : fill(strings.summary, {
-                changes: comparison.changes.length,
-                inserted: comparison.stats.inserted + comparison.stats.changed,
-                deleted: comparison.stats.deleted + comparison.stats.changed
-              })}
-        </div>
+        <DiffineSummary
+          before={beforeMeasured}
+          after={afterMeasured}
+          beforeLabel={beforeSource.label}
+          afterLabel={afterSource.label}
+          changes={comparison.changes.length}
+          inserted={comparison.stats.inserted + comparison.stats.changed}
+          deleted={comparison.stats.deleted + comparison.stats.changed}
+          linked={split && connectors}
+          locale={locale}
+          strings={strings}
+        />
       ) : null}
     </div>
   );

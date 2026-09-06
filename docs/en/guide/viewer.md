@@ -108,7 +108,9 @@ Turn it off with `virtualize={false}` for a page where the browser's own find ha
 
 ## The frame around it
 
-`header` names each side above it, and `summary` writes the counts underneath. Both are on by default, and both come off for a viewer that is a piece of a page rather than the page.
+`header` names each side above it, and `summary` draws the bar underneath. Both are on by default, and both come off for a viewer that is a piece of a page rather than the page.
+
+The bar sits on the header's grid, so its left half is under the left pane and its right half under the right one — which is how each side's size can be written without a word saying whose it is. What it holds is that size, in characters and in bytes, and at the far right the counts as a `~`, a `+` and a `−` against three numbers. Those are the same three marks the gutter puts beside a line. A screen reader is told the sentence instead, and only that sentence is live: the sizes change on every keystroke in the editor, and reading them out as somebody typed would be unusable.
 
 ```tsx
 <DiffineViewer before={saved} after={draft} header={false} summary={false} />
@@ -116,7 +118,7 @@ Turn it off with `virtualize={false}` for a page where the browser's own find ha
 
 <DiffineDemo sample="prose" :header="false" :summary="false" height="14rem" />
 
-When the two documents turn out to be the same, the summary says so rather than reporting nought of everything.
+When the two documents turn out to be the same, the counts become a single tick rather than three noughts.
 
 ## Colours and words
 

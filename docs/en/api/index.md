@@ -45,7 +45,7 @@ Every export of `diffine-react`, in one place. The [guide](../guide/getting-star
 | `connectors` | `boolean` | `true` | Whether each change is drawn as a band between the panes. |
 | `syncScroll` | `boolean` | `true` | Whether scrolling one pane scrolls the other. |
 | `header` | `boolean` | `true` | Whether each side is named above it. |
-| `summary` | `boolean` | `true` | Whether the counts are written under the view. |
+| `summary` | `boolean` | `true` | Whether the bar under the view is drawn. |
 | `tabSize` | `number` | `4` | How wide a tab is drawn, in characters. |
 | `colorScheme` | `'system' \| 'light' \| 'dark'` | `'system'` | Which palette to draw in. |
 | `locale` | `'en' \| 'ko'` | `'en'` | The language of the viewer's own words. |
@@ -78,11 +78,12 @@ Anything else the component is given goes straight to the element, so `id`, `cla
 | `removed`        | `Removed`                                                            |
 | `changed`        | `Changed`                                                            |
 | `summary`        | `{changes} changes, {inserted} lines added, {deleted} lines removed` |
+| `documentSize`   | `{label}: {characters} characters, {size}`                           |
 | `previousChange` | `Previous change`                                                    |
 | `nextChange`     | `Next change`                                                        |
 | `changePosition` | `Change {position} of {total}`                                       |
 
-`added`, `removed`, `changed` and `changePosition` are read by a screen reader rather than shown. `summary` fills `{changes}`, `{inserted}` and `{deleted}` with the counts. `placeholder` is what an empty field in the editor says.
+`added`, `removed`, `changed`, `summary`, `documentSize` and `changePosition` are read by a screen reader rather than shown. `summary` fills `{changes}`, `{inserted}` and `{deleted}` with the counts, and `documentSize` fills `{label}` with the name of a side and `{characters}` and `{size}` with numbers already written in the reader's own language. `placeholder` is what an empty field in the editor says.
 
 ### `DiffineHighlight`
 
@@ -139,7 +140,7 @@ Passing `before` or `after` makes that document the application's, in the usual 
 | `syncScroll` | `boolean` | `true` | Whether scrolling one pane scrolls the other. |
 | `header` | `boolean` | `true` | Whether each side is named above it. |
 | `navigation` | `boolean` | `true` | Whether the buttons for moving between changes are drawn. |
-| `summary` | `boolean` | `true` | Whether the counts are written under the fields. |
+| `summary` | `boolean` | `true` | Whether the bar under the fields is drawn. |
 | `virtualize` | `boolean` | `true` | Whether only the lines a reader can see are drawn. |
 | `tabSize` | `number` | `4` | How wide a tab is drawn, in characters. |
 | `colorScheme` | `'system' \| 'light' \| 'dark'` | `'system'` | Which palette to draw in. |
@@ -292,20 +293,23 @@ Declared on `.diffine`, and overridden the same way.
 | `--diffine-insert-piece` | `#a5e9c1`   | `#206c42`   |
 | `--diffine-delete-line`  | `#fdecee`   | `#351c20`   |
 | `--diffine-delete-piece` | `#ffc3c8`   | `#7f303a`   |
+| `--diffine-insert-text`  | `#1a7f4b`   | `#5fd08a`   |
+| `--diffine-delete-text`  | `#c2333f`   | `#ff8b95`   |
 | `--diffine-blank`        | `#f0f3f7`   | `#151b23`   |
 | `--diffine-selection`    | `#0e7ffc33` | `#4c9dff40` |
 
-The `-line` pair tints a whole row; the `-piece` pair picks out what moved inside it, and only ever sits on top of the paler one. `--diffine-selection` is the editor's alone, and has to stay see-through: the words under a selection are drawn behind the field.
+The `-line` pair tints a whole row; the `-piece` pair picks out what moved inside it, and only ever sits on top of the paler one. The `-text` pair is the same two colours dark enough to be read as text, for the counts in the bar under the panes, which have nothing behind them but the gutter. `--diffine-selection` is the editor's alone, and has to stay see-through: the words under a selection are drawn behind the field.
 
 ### Measurements
 
-| Property                | Default           | What it is                                    |
-| ----------------------- | ----------------- | --------------------------------------------- |
-| `--diffine-height`      | `24rem`           | How tall the viewer is. `auto` grows with it. |
-| `--diffine-radius`      | `0.5rem`          | The corner radius of the frame.               |
-| `--diffine-font`        | A monospace stack | The typeface the documents are drawn in.      |
-| `--diffine-font-size`   | `0.8125rem`       | Its size.                                     |
-| `--diffine-line-height` | `1.5rem`          | The height of one unwrapped line.             |
-| `--diffine-links-width` | `3rem`            | The width of the column between the panes.    |
+| Property                 | Default           | What it is                                    |
+| ------------------------ | ----------------- | --------------------------------------------- |
+| `--diffine-height`       | `24rem`           | How tall the viewer is. `auto` grows with it. |
+| `--diffine-radius`       | `0.5rem`          | The corner radius of the frame.               |
+| `--diffine-font`         | A monospace stack | The typeface the documents are drawn in.      |
+| `--diffine-font-size`    | `0.8125rem`       | Its size.                                     |
+| `--diffine-line-height`  | `1.5rem`          | The height of one unwrapped line.             |
+| `--diffine-links-width`  | `3rem`            | The width of the column between the panes.    |
+| `--diffine-marker-width` | `1.25rem`         | The width of the `+`, `−` and `~` column.     |
 
-`--diffine-digits` and `--diffine-tab-size` are written onto the element by the component, from the longest document and from `tabSize`. Setting them by hand is overridden on the next render.
+`--diffine-digits` and `--diffine-tab-size` are written onto the element by the component, from the longest document and from `tabSize`. Setting them by hand is overridden on the next render. `--diffine-gutter-width`, `--diffine-gutter-numbers`, `--diffine-gutter-markers` and `--diffine-gutter-rule` are worked out from the two above and from which columns were asked for; they are what the gutter, the stripe that carries it past the last line, and the editor's field indent are all measured with.

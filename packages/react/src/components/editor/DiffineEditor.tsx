@@ -16,7 +16,7 @@ import type {
 } from '../../types.js';
 import { diffText } from '../../diff.js';
 import { useControlled } from '../../internal/controlled.js';
-import { fill, stringsFor } from '../../internal/i18n.js';
+import { stringsFor } from '../../internal/i18n.js';
 import { useIsomorphicLayoutEffect } from '../../internal/layout.js';
 import { useChangeNavigation } from '../../internal/navigate.js';
 import { changeOfRow, fieldLayout } from '../../internal/rows.js';
@@ -25,6 +25,7 @@ import { contentOf, sourceOf } from '../../internal/source.js';
 import { useVirtualRows } from '../../internal/virtual.js';
 import { DiffineLinks } from '../shared/DiffineLinks.js';
 import { DiffineNav } from '../shared/DiffineNav.js';
+import { DiffineSummary } from '../shared/DiffineSummary.js';
 import { DiffineEditorPane } from './DiffineEditorPane.js';
 
 export interface DiffineEditorProps extends Omit<
@@ -131,7 +132,8 @@ export interface DiffineEditorProps extends Omit<
   navigation?: boolean;
 
   /**
-   * Whether the counts are written under the fields.
+   * Whether the bar under the fields is drawn: what each document weighs, and
+   * how many changes there are between them.
    * @default true
    */
   summary?: boolean;
@@ -470,15 +472,18 @@ export function DiffineEditor({
       </div>
 
       {summary ? (
-        <div className="diffine-summary" role="status">
-          {comparison.changes.length === 0
-            ? strings.identical
-            : fill(strings.summary, {
-                changes: comparison.changes.length,
-                inserted: comparison.stats.inserted + comparison.stats.changed,
-                deleted: comparison.stats.deleted + comparison.stats.changed
-              })}
-        </div>
+        <DiffineSummary
+          before={beforeText}
+          after={afterText}
+          beforeLabel={beforeLabel}
+          afterLabel={afterLabel}
+          changes={comparison.changes.length}
+          inserted={comparison.stats.inserted + comparison.stats.changed}
+          deleted={comparison.stats.deleted + comparison.stats.changed}
+          linked={connectors}
+          locale={locale}
+          strings={strings}
+        />
       ) : null}
     </div>
   );

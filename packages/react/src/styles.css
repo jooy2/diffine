@@ -27,6 +27,12 @@
   --diffine-delete-line: #fdecee;
   --diffine-delete-piece: #ffc3c8;
 
+  /* The same two, dark enough to be read as text. The pieces above are tints
+     behind black text; these are the counts in the bar under the panes, which
+     have nothing behind them but the gutter. */
+  --diffine-insert-text: #1a7f4b;
+  --diffine-delete-text: #c2333f;
+
   /* The space opposite a line that has no counterpart. */
   --diffine-blank: #f0f3f7;
 
@@ -104,6 +110,8 @@
     --diffine-insert-piece: #206c42;
     --diffine-delete-line: #351c20;
     --diffine-delete-piece: #7f303a;
+    --diffine-insert-text: #5fd08a;
+    --diffine-delete-text: #ff8b95;
     --diffine-blank: #151b23;
     --diffine-selection: #4c9dff40;
   }
@@ -120,6 +128,8 @@
   --diffine-insert-piece: #206c42;
   --diffine-delete-line: #351c20;
   --diffine-delete-piece: #7f303a;
+  --diffine-insert-text: #5fd08a;
+  --diffine-delete-text: #ff8b95;
   --diffine-blank: #151b23;
   --diffine-selection: #4c9dff40;
 }
@@ -201,12 +211,84 @@
   text-overflow: ellipsis;
 }
 
+/*
+ * The bar under the panes, on the header's grid.
+ *
+ * Which is what lets each side's size be written without a word saying whose it
+ * is: the left half is under the left pane and the right half under the right
+ * one, exactly as the two names above them are.
+ */
+
 .diffine-summary {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   flex: 0 0 auto;
-  padding: 0.375rem 0.75rem;
   border-top: 1px solid var(--diffine-border);
   background: var(--diffine-gutter);
   color: var(--diffine-muted);
+}
+
+.diffine[data-linked='true'] .diffine-summary {
+  grid-template-columns: 1fr var(--diffine-links-width) 1fr;
+}
+
+.diffine-metrics {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  overflow: hidden;
+  min-height: 1.75rem;
+  padding: 0.1875rem 0.75rem;
+}
+
+.diffine-metric {
+  display: inline-flex;
+  align-items: center;
+  overflow: hidden;
+  gap: 0.3125rem;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.diffine-metric > [aria-hidden] {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3125rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* The counts, at the right end of the right half — where the buttons for moving
+   between changes sit in the bar above. */
+.diffine-tally {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.diffine-tally-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.1875rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.diffine-tally-item[data-kind='change'] {
+  color: var(--diffine-text);
+}
+
+.diffine-tally-item[data-kind='insert'] {
+  color: var(--diffine-insert-text);
+}
+
+.diffine-tally-item[data-kind='delete'] {
+  color: var(--diffine-delete-text);
+}
+
+.diffine-tally-icon {
+  flex: 0 0 auto;
 }
 
 .diffine-empty {

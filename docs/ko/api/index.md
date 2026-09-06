@@ -45,7 +45,7 @@ order: 1
 | `connectors` | `boolean` | `true` | 변경을 두 창 사이에 띠로 그릴지. |
 | `syncScroll` | `boolean` | `true` | 한쪽을 스크롤하면 다른 쪽도 따라갈지. |
 | `header` | `boolean` | `true` | 각 문서의 이름을 위에 쓸지. |
-| `summary` | `boolean` | `true` | 집계를 아래에 쓸지. |
+| `summary` | `boolean` | `true` | 아래쪽 상태 표시줄을 그릴지. |
 | `tabSize` | `number` | `4` | 탭을 몇 칸으로 그릴지. |
 | `colorScheme` | `'system' \| 'light' \| 'dark'` | `'system'` | 어떤 팔레트로 그릴지. |
 | `locale` | `'en' \| 'ko'` | `'en'` | 뷰어 자신이 쓰는 말의 언어. |
@@ -78,11 +78,12 @@ order: 1
 | `removed`        | `삭제됨`                                                |
 | `changed`        | `변경됨`                                                |
 | `summary`        | `변경 {changes}건, {inserted}줄 추가, {deleted}줄 삭제` |
+| `documentSize`   | `{label}: {characters}자, {size}`                       |
 | `previousChange` | `이전 변경`                                             |
 | `nextChange`     | `다음 변경`                                             |
 | `changePosition` | `변경 {total}건 중 {position}번째`                      |
 
-`added`, `removed`, `changed`, `changePosition`은 화면에 나오지 않고 스크린 리더가 읽습니다. `summary`의 `{changes}`, `{inserted}`, `{deleted}` 자리에 집계가 들어갑니다. `placeholder`는 에디터의 빈 입력란에 나오는 문구입니다.
+`added`, `removed`, `changed`, `summary`, `documentSize`, `changePosition`은 화면에 나오지 않고 스크린 리더가 읽습니다. `summary`의 `{changes}`, `{inserted}`, `{deleted}` 자리에 집계가 들어갑니다. `documentSize`의 `{label}` 자리에는 한쪽의 이름이, `{characters}`와 `{size}` 자리에는 읽는 사람의 언어로 이미 써 둔 수가 들어갑니다. `placeholder`는 에디터의 빈 입력란에 나오는 문구입니다.
 
 ### `DiffineHighlight`
 
@@ -139,7 +140,7 @@ interface DiffineToken {
 | `syncScroll` | `boolean` | `true` | 한쪽을 스크롤하면 다른 쪽도 따라갈지. |
 | `header` | `boolean` | `true` | 각 쪽 위에 이름을 쓸지. |
 | `navigation` | `boolean` | `true` | 변경 사이를 오가는 버튼을 그릴지. |
-| `summary` | `boolean` | `true` | 아래에 집계를 쓸지. |
+| `summary` | `boolean` | `true` | 아래쪽 상태 표시줄을 그릴지. |
 | `virtualize` | `boolean` | `true` | 보이는 줄만 그릴지. |
 | `tabSize` | `number` | `4` | 탭을 몇 글자 너비로 그릴지. |
 | `colorScheme` | `'system' \| 'light' \| 'dark'` | `'system'` | 어떤 색으로 그릴지. |
@@ -292,20 +293,23 @@ interface DiffEdit {
 | `--diffine-insert-piece` | `#a5e9c1`   | `#206c42`   |
 | `--diffine-delete-line`  | `#fdecee`   | `#351c20`   |
 | `--diffine-delete-piece` | `#ffc3c8`   | `#7f303a`   |
+| `--diffine-insert-text`  | `#1a7f4b`   | `#5fd08a`   |
+| `--diffine-delete-text`  | `#c2333f`   | `#ff8b95`   |
 | `--diffine-blank`        | `#f0f3f7`   | `#151b23`   |
 | `--diffine-selection`    | `#0e7ffc33` | `#4c9dff40` |
 
-`-line` 쪽이 줄 전체에 옅게 깔리는 색이고, `-piece` 쪽이 그 위에서 바뀐 부분을 짚는 색입니다. `--diffine-selection`은 에디터만 쓰고, 반투명해야 합니다. 선택 영역 아래의 글자는 입력란 뒤에서 그리기 때문입니다.
+`-line` 쪽이 줄 전체에 옅게 깔리는 색이고, `-piece` 쪽이 그 위에서 바뀐 부분을 짚는 색입니다. `-text` 쪽은 같은 두 색을 글자로 읽을 만큼 진하게 만든 것으로, 뒤에 깔린 것이 여백뿐인 아래쪽 상태 표시줄의 집계에 씁니다. `--diffine-selection`은 에디터만 쓰고, 반투명해야 합니다. 선택 영역 아래의 글자는 입력란 뒤에서 그리기 때문입니다.
 
 ### 치수
 
-| 속성                    | 기본값      | 무엇인지                                   |
-| ----------------------- | ----------- | ------------------------------------------ |
-| `--diffine-height`      | `24rem`     | 뷰어의 높이. `auto`면 내용만큼 늘어납니다. |
-| `--diffine-radius`      | `0.5rem`    | 테두리의 모서리 반지름.                    |
-| `--diffine-font`        | 고정폭 스택 | 문서를 그리는 서체.                        |
-| `--diffine-font-size`   | `0.8125rem` | 그 크기.                                   |
-| `--diffine-line-height` | `1.5rem`    | 접히지 않은 줄 하나의 높이.                |
-| `--diffine-links-width` | `3rem`      | 두 창 사이 열의 너비.                      |
+| 속성                     | 기본값      | 무엇인지                                   |
+| ------------------------ | ----------- | ------------------------------------------ |
+| `--diffine-height`       | `24rem`     | 뷰어의 높이. `auto`면 내용만큼 늘어납니다. |
+| `--diffine-radius`       | `0.5rem`    | 테두리의 모서리 반지름.                    |
+| `--diffine-font`         | 고정폭 스택 | 문서를 그리는 서체.                        |
+| `--diffine-font-size`    | `0.8125rem` | 그 크기.                                   |
+| `--diffine-line-height`  | `1.5rem`    | 접히지 않은 줄 하나의 높이.                |
+| `--diffine-links-width`  | `3rem`      | 두 창 사이 열의 너비.                      |
+| `--diffine-marker-width` | `1.25rem`   | `+`, `−`, `~` 열의 너비.                   |
 
-`--diffine-digits`와 `--diffine-tab-size`는 컴포넌트가 가장 긴 문서와 `tabSize`를 보고 엘리먼트에 직접 씁니다. 손으로 지정해도 다음 렌더에서 덮어씁니다.
+`--diffine-digits`와 `--diffine-tab-size`는 컴포넌트가 가장 긴 문서와 `tabSize`를 보고 엘리먼트에 직접 씁니다. 손으로 지정해도 다음 렌더에서 덮어씁니다. `--diffine-gutter-width`, `--diffine-gutter-numbers`, `--diffine-gutter-markers`, `--diffine-gutter-rule`은 위의 두 값과 어떤 열을 켰는지를 보고 계산합니다. 왼쪽 열과, 마지막 줄 아래로 그 열을 이어 그리는 띠와, 에디터 입력란의 들여쓰기가 모두 이 값으로 재어집니다.

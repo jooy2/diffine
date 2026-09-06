@@ -1,7 +1,7 @@
 /**
  * The words the components put on the screen.
  *
- * There are twelve of them, and there will not be many more: what these draw is
+ * There are thirteen of them, and there will not be many more: what these draw is
  * two documents, and everything else on the screen came out of those documents.
  * What is here is the frame around them — what each side is called, what an
  * empty field invites, what is said when there is nothing to show, and what a
@@ -24,6 +24,7 @@ const LOCALES: Record<DiffineLocale, DiffineStrings> = {
     removed: 'Removed',
     changed: 'Changed',
     summary: '{changes} changes, {inserted} lines added, {deleted} lines removed',
+    documentSize: '{label}: {characters} characters, {size}',
     previousChange: 'Previous change',
     nextChange: 'Next change',
     changePosition: 'Change {position} of {total}'
@@ -38,6 +39,7 @@ const LOCALES: Record<DiffineLocale, DiffineStrings> = {
     removed: '삭제됨',
     changed: '변경됨',
     summary: '변경 {changes}건, {inserted}줄 추가, {deleted}줄 삭제',
+    documentSize: '{label}: {characters}자, {size}',
     previousChange: '이전 변경',
     nextChange: '다음 변경',
     changePosition: '변경 {total}건 중 {position}번째'
@@ -54,8 +56,8 @@ export function stringsFor(
   return overrides ? { ...base, ...overrides } : base;
 }
 
-/** Fills `{name}` in a string with the number given for it. */
-export function fill(template: string, values: Record<string, number>): string {
+/** Fills `{name}` in a string with whatever was given for it. */
+export function fill(template: string, values: Record<string, string | number>): string {
   return template.replace(/\{(\w+)}/g, (whole, name: string) =>
     name in values ? String(values[name]) : whole
   );

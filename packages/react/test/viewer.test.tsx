@@ -130,6 +130,24 @@ describe('DiffineViewer', () => {
     expect(render({ before: BEFORE, after: BEFORE })).toContain('The two are the same.');
   });
 
+  it('writes what each document weighs under the pane it belongs to', () => {
+    // Seven characters and eleven bytes: an accented letter is two of them and
+    // the emoji is four, while both are one character to a reader.
+    const markup = render({ before: 'one', after: 'h\u00e9llo \ud83c\udf89' });
+
+    expect(markup).toContain('Before: 3 characters, 3 B');
+    expect(markup).toContain('After: 7 characters, 11 B');
+    expect(markup).toContain('3 \u00b7 3 B');
+    expect(markup).toContain('7 \u00b7 11 B');
+  });
+
+  it('writes a large document in the unit that leaves a number worth reading', () => {
+    const markup = render({ before: 'a'.repeat(2048), after: 'a'.repeat(1536) });
+
+    expect(markup).toContain('2,048 characters, 2 KB');
+    expect(markup).toContain('1,536 characters, 1.5 KB');
+  });
+
   it('says there is nothing to compare rather than drawing two empty panes', () => {
     const markup = render({});
 

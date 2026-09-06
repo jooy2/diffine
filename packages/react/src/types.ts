@@ -306,6 +306,12 @@ export interface DiffineStrings {
   changed: string;
   /** How the counts are read out: `{changes}`, `{inserted}` and `{deleted}`. */
   summary: string;
+  /**
+   * How one side's size is read out, under the pane it belongs to:
+   * `{label}` is what that side is called, `{characters}` and `{size}` are
+   * already written in the reader's own language.
+   */
+  documentSize: string;
   /** The name of the button that moves back a change. */
   previousChange: string;
   /** The name of the button that moves on a change. */
