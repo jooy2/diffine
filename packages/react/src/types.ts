@@ -235,6 +235,218 @@ export interface DiffResult {
 }
 
 /* ---------------------------------------------------------------------------
+ * The comparison, in two dimensions
+ *
+ * A picture has no lines in it, so none of the vocabulary above answers
+ * anything about one. What follows is the same two halves written again for
+ * pixels: what the engine found, and — further down, beside the rest of the
+ * view — how it is drawn.
+ * ------------------------------------------------------------------------- */
+
+/**
+ * A picture as the engine reads it: four bytes a pixel, row by row from the
+ * top-left corner.
+ *
+ * The same shape as `ImageData`, on purpose. What a canvas hands back can be
+ * passed straight in, and so can a buffer that never went near one. It is also
+ * the whole of what {@link DiffImageOptions} is given alongside: turning a file
+ * into pixels is decoding, and where that happens — a page, a worker, a server
+ * — is not the engine's business.
+ */
+export interface DiffPixels {
+  /** Red, green, blue and alpha, a byte each, `width * height * 4` long. */
+  data: Uint8ClampedArray;
+  width: number;
+  height: number;
+}
+
+/**
+ * What happened to one pixel.
+ *
+ * `added` and `removed` are the pixels only one of the two pictures covers,
+ * which is what a difference in size, or a shift, leaves behind. Everything
+ * inside both is `equal` or `changed`.
+ */
+export type DiffPixelKind = 'equal' | 'changed' | 'added' | 'removed';
+
+/**
+ * Whether the two pictures are lined up before they are compared.
+ *
+ * - `none` — they are not. Both start at the top-left corner, and a picture
+ *   moved a pixel to the right is a picture where every edge changed.
+ * - `shift` — a whole-pixel offset is looked for first, and the comparison is
+ *   run with the two held that far apart. This is what makes a screenshot taken
+ *   again, a scan fed in crooked, or a canvas cropped by a row of pixels
+ *   comparable at all.
+ *
+ * The offset that was used is on the result either way, and how far the search
+ * goes is {@link DiffImageOptions.alignRadius}.
+ */
+export type DiffImageAlign = 'none' | 'shift';
+
+/** How two pictures are compared. */
+export interface DiffImageOptions {
+  /**
+   * How different two pixels have to be, from 0 to 1, before the difference
+   * counts.
+   *
+   * Zero is exact: a photograph saved twice by the same encoder will light up
+   * across most of its area, because it is not the same file twice. What is
+   * being allowed for here is that kind of noise, and the number is a distance
+   * between two colours where 1 is black against white.
+   *
+   * @default 0.05
+   */
+  tolerance?: number;
+
+  /**
+   * Whether a pixel that only differs because an edge was drawn smooth is left
+   * out.
+   *
+   * Text and diagonals are drawn by putting part of a colour into the pixels
+   * either side of where the line really falls, and the part each one gets is
+   * decided by the renderer — so the same page drawn by two browsers, or by one
+   * browser on two machines, differs along every letter and every curve while
+   * showing the same thing. On, a differing pixel is dropped when it is a blend
+   * of what surrounds it rather than a colour of its own, and the change is no
+   * larger than the step in brightness it is sitting on.
+   *
+   * It is not free: the pixels that differ are each read again with their eight
+   * neighbours. It costs nothing on two pictures that are alike and a good deal
+   * on two that are not.
+   *
+   * @default true
+   */
+  ignoreAntialiasing?: boolean;
+
+  /**
+   * Whether an offset between the two pictures is looked for first.
+   * @default 'none'
+   */
+  align?: DiffImageAlign;
+
+  /**
+   * How far the search for that offset goes, in pixels of the larger picture.
+   *
+   * It is a radius, so `16` covers everything from sixteen pixels left to
+   * sixteen right and the same up and down. Widening it costs time and, past a
+   * point, honesty: a search wide enough to slide one picture across another
+   * will eventually find a corner that matches by accident.
+   *
+   * @default 16
+   */
+  alignRadius?: number;
+
+  /**
+   * How coarse the grid is that changed pixels are grouped on, in pixels.
+   *
+   * The mask says which pixels changed and {@link DiffImageResult.regions} says
+   * where the changes are, and this is the difference between the two: pixels
+   * are counted into squares this big, and the squares that touch each other
+   * become one region. Small squares split one change into several, large ones
+   * gather changes that have nothing to do with each other.
+   *
+   * @default 16
+   */
+  blockSize?: number;
+
+  /**
+   * The most regions the engine will return.
+   *
+   * Two photographs of the same scene differ nearly everywhere, and a list of
+   * forty thousand rectangles is not a list anybody steps through. Past this,
+   * the largest are kept, the rest are left on the mask where they still show,
+   * and {@link DiffImageResult.complete} is `false`.
+   *
+   * @default 200
+   */
+  maxRegions?: number;
+}
+
+/** A rectangle, in the frame's own pixels. */
+export interface DiffImageArea {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+/**
+ * A part of the frame where something changed, as the smallest rectangle that
+ * holds it.
+ *
+ * These are what a reader steps through, which is why they are rectangles
+ * rather than the outline of what actually changed: a box can be scrolled to,
+ * drawn around and counted, and the mask underneath is still there for anything
+ * that wants the exact shape.
+ */
+export interface DiffImageRegion extends DiffImageArea {
+  /** How many pixels inside it are not `equal`. */
+  pixels: number;
+}
+
+/** How much of the frame ended up where. */
+export interface DiffImageStats {
+  /** How many pixels the frame holds, which is what the rest are counted out of. */
+  pixels: number;
+  /**
+   * Pixels that came out the same — and, where an offset has left a corner of
+   * the frame that neither picture reaches, the pixels that are nothing at all.
+   */
+  unchanged: number;
+  changed: number;
+  /** Pixels only the second picture covers. */
+  added: number;
+  /** Pixels only the first one covers. */
+  removed: number;
+  /** Everything that is not `unchanged`, as a share of the frame, from 0 to 1. */
+  ratio: number;
+}
+
+/** Everything the engine worked out about two pictures. */
+export interface DiffImageResult {
+  /**
+   * The frame both pictures were compared in.
+   *
+   * As large as it has to be to hold both of them once the offset is applied,
+   * so two pictures of the same size compared without one give a frame of
+   * exactly that size, and everything else gives a frame with a margin where
+   * only one of the two reaches.
+   */
+  width: number;
+  height: number;
+  /** Where each picture sits in that frame. */
+  before: DiffImageArea;
+  after: DiffImageArea;
+  /**
+   * How far the second picture was moved to line the two up, in pixels — `{ x:
+   * 0, y: 0 }` unless {@link DiffImageOptions.align} asked for a search.
+   *
+   * It is where the move went rather than where the contents were: a picture
+   * drawn a pixel further to the right than the first is moved a pixel to the
+   * left, and `x` is `-1`.
+   */
+  offset: { x: number; y: number };
+  /**
+   * What happened to each pixel of the frame, one byte each, row by row.
+   *
+   * The byte is an index into {@link DIFF_PIXEL_KINDS}, so `0` is a pixel that
+   * did not change and anything else is a pixel that did. A byte a pixel rather
+   * than a picture, because what it is drawn in — a colour, a stipple, an
+   * outline, nothing at all — is the view's decision and not this one's.
+   */
+  mask: Uint8Array;
+  /** Where the changes are, in reading order. */
+  regions: readonly DiffImageRegion[];
+  stats: DiffImageStats;
+  /**
+   * Whether the list of regions holds all of them. See
+   * {@link DiffImageOptions.maxRegions}.
+   */
+  complete: boolean;
+}
+
+/* ---------------------------------------------------------------------------
  * The view
  *
  * Everything above is the comparison. What follows is how it is shown, and it
@@ -395,6 +607,33 @@ export interface DiffineStrings {
   replaceWith: string;
   /** The name of the button that writes over every match. */
   replaceAll: string;
+
+  /* The words the picture comparison adds. Everything above it uses as well. */
+
+  /** How one picture is written under the pane it belongs to: `{label}`, `{width}`, `{height}` and `{size}`. */
+  imageSize: string;
+  /** How the counts are read out: `{regions}` areas over `{percent}` of the frame. */
+  imageSummary: string;
+  /** What an empty pane invites, and what its button is called. */
+  choose: string;
+  /** What is said when a file that is not a picture is dropped on a pane. */
+  unsupported: string;
+  /** What is said while a picture is being decoded. */
+  loading: string;
+  /** The name of the button that draws the picture smaller. */
+  zoomOut: string;
+  /** The name of the button that draws it larger. */
+  zoomIn: string;
+  /** The name of the button that fits the whole frame in the pane. */
+  zoomFit: string;
+  /** How far in the view is, as a percentage: `{percent}`. */
+  zoomLevel: string;
+  /** The name of the slider that fades the second picture over the first. */
+  fade: string;
+  /** The name of the handle that wipes one picture across the other. */
+  wipe: string;
+  /** The name of the switch that marks what changed. */
+  showMask: string;
 }
 
 /**
@@ -443,3 +682,62 @@ export type DiffineHighlight = (
   line: DiffLine,
   side: DiffineSide
 ) => readonly DiffineToken[] | null | undefined;
+
+/**
+ * How the two pictures are laid out.
+ *
+ * - `split` — one either side, both moving together under one zoom.
+ * - `overlay` — one on top of the other, with a slider that fades between them.
+ * - `wipe` — one on top of the other, with a handle that draws the line where
+ *   the first stops and the second starts.
+ * - `mask` — neither of them: what changed, on its own, over a flat ground.
+ *
+ * The first is what a reader compares two pictures with. The other three are
+ * what they reach for once they have found the part that differs, and the
+ * reason all four are here rather than one is that no single one of them
+ * answers "did this move, or did it change colour" — a wipe does, an overlay
+ * does not, and the mask says where to point them.
+ */
+export type DiffineImageView = 'split' | 'overlay' | 'wipe' | 'mask';
+
+/**
+ * A picture, as an application hands one over.
+ *
+ * A `Blob` is the usual answer, which is what a `<input type="file">` gives and
+ * what a `fetch` can be asked for. `ImageBitmap` is what a page that has
+ * already decoded one holds, and {@link DiffPixels} is a buffer of pixels from
+ * anywhere at all.
+ *
+ * There is no URL on the list, and that is deliberate rather than missing. A
+ * picture fetched by the component would be a picture the application never saw
+ * — read from wherever the string pointed, sent through a canvas that a
+ * cross-origin response quietly poisons, and decoded from bytes nobody checked.
+ * Fetching it is the application's to do, and what arrives here is what it
+ * already holds.
+ */
+export type DiffineImageContent = Blob | ImageBitmap | DiffPixels;
+
+/** A picture, or a picture with a name on it. */
+export type DiffineImageInput = DiffineImageContent | DiffineImageSource;
+
+/** A picture with a name on it. */
+export interface DiffineImageSource {
+  content: DiffineImageContent;
+  /** What the header calls this side. Its default is the word for it. */
+  label?: string;
+}
+
+/**
+ * How far into a picture a reader is, and where.
+ *
+ * `scale` is what a pixel of the frame is drawn as: `1` is the picture at its
+ * own size, `4` is four screen pixels a pixel, and below `1` the frame has been
+ * shrunk to fit. `x` and `y` are the point of the frame the middle of the pane
+ * is looking at, in the frame's own pixels — a centre rather than a corner,
+ * because that is what stays still when a reader zooms.
+ */
+export interface DiffineImageViewport {
+  scale: number;
+  x: number;
+  y: number;
+}

@@ -42,7 +42,19 @@ const LOCALES: Record<DiffineLocale, DiffineStrings> = {
     regex: 'Regular expression',
     replace: 'Replace',
     replaceWith: 'Replace with',
-    replaceAll: 'Replace all'
+    replaceAll: 'Replace all',
+    imageSize: '{label}: {width} × {height}, {size}',
+    imageSummary: '{regions} changed areas, {percent}% of the picture',
+    choose: 'Choose an image',
+    unsupported: 'That file is not an image.',
+    loading: 'Opening the picture',
+    zoomOut: 'Zoom out',
+    zoomIn: 'Zoom in',
+    zoomFit: 'Fit to the pane',
+    zoomLevel: '{percent}%',
+    fade: 'Fade between the two',
+    wipe: 'Drag to wipe between the two',
+    showMask: 'Mark what changed'
   },
   ko: {
     before: '이전',
@@ -71,7 +83,19 @@ const LOCALES: Record<DiffineLocale, DiffineStrings> = {
     regex: '정규식',
     replace: '바꾸기',
     replaceWith: '바꿀 내용',
-    replaceAll: '모두 바꾸기'
+    replaceAll: '모두 바꾸기',
+    imageSize: '{label}: {width} × {height}, {size}',
+    imageSummary: '변경 {regions}곳, 전체의 {percent}%',
+    choose: '이미지 고르기',
+    unsupported: '이미지 파일이 아닙니다.',
+    loading: '이미지를 읽는 중',
+    zoomOut: '축소',
+    zoomIn: '확대',
+    zoomFit: '창에 맞추기',
+    zoomLevel: '{percent}%',
+    fade: '두 이미지 겹쳐 보기',
+    wipe: '끌어서 나눠 보기',
+    showMask: '변경 부분 표시'
   }
 };
 

@@ -15,6 +15,7 @@
     "paths": {
       "diffine-react": ["../src/index.ts"],
       "diffine-react/diff": ["../src/diff.ts"],
+      "diffine-react/image": ["../src/image.ts"],
       "diffine-react/types": ["../src/types.ts"]
     }
   },

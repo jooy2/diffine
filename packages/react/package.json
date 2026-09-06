@@ -44,6 +44,11 @@
       "module": "./dist/diff.js",
       "default": "./dist/diff.js"
     },
+    "./image": {
+      "types": "./dist/image.d.ts",
+      "module": "./dist/image.js",
+      "default": "./dist/image.js"
+    },
     "./types": {
       "types": "./dist/types.d.ts",
       "module": "./dist/types.js",
@@ -57,6 +62,9 @@
       "diff": [
         "dist/diff.d.ts"
       ],
+      "image": [
+        "dist/image.d.ts"
+      ],
       "types": [
         "dist/types.d.ts"
       ]
@@ -68,6 +76,9 @@
     "diff",
     "diff-viewer",
     "text-diff",
+    "image-diff",
+    "pixel-diff",
+    "visual-regression",
     "line-diff",
     "word-diff",
     "character-diff",
