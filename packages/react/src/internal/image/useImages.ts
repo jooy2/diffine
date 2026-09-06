@@ -79,6 +79,18 @@ export function usePicture(content: DiffineImageContent | undefined, maxPixels: 
     return () => {
       gone = true;
       releasePicture(held);
+
+      /*
+       * What was just closed cannot be left in state, because a closed bitmap
+       * still held is a bitmap something is about to try to draw. It happens
+       * whenever this runs without the picture having changed — a different
+       * `maxPixels`, or a module reloaded under a running page — and the
+       * functional form is what keeps it from clearing an answer that arrived
+       * in the meantime.
+       */
+      if (held) {
+        setDecoded((decoded) => (decoded?.picture === held ? null : decoded));
+      }
     };
   }, [content, maxPixels]);
 
@@ -159,13 +171,17 @@ const PROPERTIES = {
   added: '--diffine-image-added',
   removed: '--diffine-image-removed',
   outline: '--diffine-image-outline',
-  marker: '--diffine-image-marker'
+  marker: '--diffine-image-marker',
+  ground: '--diffine-image-ground',
+  chequer: '--diffine-image-chequer'
 } as const;
 
 /** What the mask and the boxes round the changes are drawn in. */
 export interface Palette extends MaskColours {
   outline: string;
   marker: string;
+  ground: string;
+  chequer: string;
 }
 
 /**

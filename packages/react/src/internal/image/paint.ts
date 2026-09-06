@@ -44,6 +44,47 @@ export interface MaskColours {
   removed: string;
 }
 
+/** How large one square of the transparency chequer is, in pane pixels. */
+const CHEQUER = 8;
+
+/** The chequers, built once a palette rather than once a frame. */
+const CHEQUERS = new Map<string, CanvasPattern | null>();
+
+/**
+ * The squares that say a picture is see-through, as a pattern to fill with.
+ *
+ * A pattern rather than a loop of rectangles: a pane four hundred squares
+ * across would be four hundred draw calls a frame, and a reader dragging a
+ * picture asks for sixty frames a second. It is kept between paints because the
+ * only thing it depends on is two colours.
+ */
+function chequerOf(
+  context: CanvasRenderingContext2D,
+  ground: string,
+  square: string
+): CanvasPattern | null {
+  const key = `${ground}|${square}`;
+  const held = CHEQUERS.get(key);
+
+  if (held !== undefined) {
+    return held;
+  }
+
+  const tile = surfaceOf(CHEQUER * 2, CHEQUER * 2);
+
+  tile.fillStyle = ground;
+  tile.fillRect(0, 0, CHEQUER * 2, CHEQUER * 2);
+  tile.fillStyle = square;
+  tile.fillRect(0, 0, CHEQUER, CHEQUER);
+  tile.fillRect(CHEQUER, CHEQUER, CHEQUER, CHEQUER);
+
+  const pattern = context.createPattern(tile.canvas, 'repeat');
+
+  CHEQUERS.set(key, pattern);
+
+  return pattern;
+}
+
 /**
  * The mask as a picture the size of the frame, ready to be drawn over either
  * side.
@@ -111,6 +152,9 @@ export interface PaintOptions {
   /** What a region is outlined in, and what the one being looked at is outlined in. */
   outline: string;
   marker: string;
+  /** The two colours the transparency chequer is made of. */
+  ground: string;
+  chequer: string;
 }
 
 /** Puts the frame's coordinates under the drawing commands that follow. */
@@ -132,10 +176,28 @@ export function paintPane({
   regions,
   current,
   outline,
-  marker
+  marker,
+  ground,
+  chequer
 }: PaintOptions): void {
   context.setTransform(ratio, 0, 0, ratio, 0, 0);
   context.clearRect(0, 0, pane.width, pane.height);
+
+  /*
+   * The frame, before anything is drawn in it.
+   *
+   * In the pane's own pixels rather than the frame's, so that the squares stay
+   * the size of squares however far a reader has zoomed in — what they are
+   * saying is "there is nothing here", and nothing does not have a resolution.
+   */
+  const topLeft = paneAt(viewport, pane, 0, 0);
+  const bottomRight = paneAt(viewport, pane, frame.width, frame.height);
+  const pattern = chequerOf(context, ground, chequer);
+
+  if (pattern && bottomRight.x > topLeft.x && bottomRight.y > topLeft.y) {
+    context.fillStyle = pattern;
+    context.fillRect(topLeft.x, topLeft.y, bottomRight.x - topLeft.x, bottomRight.y - topLeft.y);
+  }
 
   // Crisp above its own size and smooth below it. A reader who has zoomed in to
   // four hundred per cent is counting pixels, and interpolation is exactly what

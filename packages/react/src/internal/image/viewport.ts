@@ -145,13 +145,23 @@ export function panBy(
   );
 }
 
+/** How much of the pane a change has to fill for a reader to be looking at it. */
+const SMALLEST_SHOWN = 0.08;
+const LARGEST_SHOWN = 0.9;
+
 /**
- * The view moved onto a rectangle, and pulled in far enough to see it.
+ * The view moved onto a rectangle, at a scale that shows it.
  *
- * Only far enough, and never further out than the reader already was: stepping
- * to the next change should move the picture, not undo the zoom somebody set to
- * look at the last one. A change that is already comfortably in view therefore
- * only takes the centre with it.
+ * Which is not always a change of scale. A reader who has zoomed to four
+ * hundred per cent to look at one change and then steps to the next one wants
+ * the next one at four hundred per cent — undoing their zoom on every step
+ * would make the buttons useless for the thing they are for. So the scale is
+ * left alone whenever the change is already a comfortable size in the pane, and
+ * only a change too small to see or too large to fit moves it.
+ *
+ * Where it does move, it lands on the change with as much again around it. A
+ * box drawn tight against the edges of a pane is a box a reader cannot see the
+ * edges of.
  */
 export function viewportOn({
   viewport,
@@ -164,12 +174,19 @@ export function viewportOn({
   pane: Box;
   area: { x: number; y: number; width: number; height: number };
 }): DiffineImageViewport {
-  const around = Math.max(area.width, 1) * 2;
-  const enough = fitScale({ width: around, height: Math.max(area.height, 1) * 2 }, pane);
+  const enough = fitScale(
+    { width: Math.max(area.width, 1) * 2, height: Math.max(area.height, 1) * 2 },
+    pane
+  );
+  const shown = Math.max(
+    pane.width > 0 ? (area.width * viewport.scale) / pane.width : 0,
+    pane.height > 0 ? (area.height * viewport.scale) / pane.height : 0
+  );
+  const comfortable = shown >= SMALLEST_SHOWN && shown <= LARGEST_SHOWN;
 
   return clampViewport(
     {
-      scale: Math.min(viewport.scale, enough),
+      scale: comfortable ? viewport.scale : enough,
       x: area.x + area.width / 2,
       y: area.y + area.height / 2
     },

@@ -616,6 +616,8 @@ export interface DiffineStrings {
   imageSummary: string;
   /** What an empty pane invites, and what its button is called. */
   choose: string;
+  /** What the button in the bar above one pane is called: `{label}`. */
+  chooseIn: string;
   /** What is said when a file that is not a picture is dropped on a pane. */
   unsupported: string;
   /** What is said while a picture is being decoded. */

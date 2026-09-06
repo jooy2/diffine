@@ -1327,13 +1327,12 @@
 }
 
 /*
- * A pane, and the squares behind whatever is drawn in it.
+ * A pane.
  *
- * The squares are how a picture says it is see-through. A transparent PNG on a
- * flat ground is a picture with a white background as far as anybody can tell,
- * and the difference matters here more than it does anywhere else: the
- * comparison counts a change from nothing to white as a change, so a reader has
- * to be able to see which of the two they are looking at.
+ * The ground is flat and the squares that say where a picture is see-through
+ * are painted inside the frame rather than across the whole box — see
+ * `internal/image/paint.ts`. A pane covered in squares says the space around a
+ * photograph is transparent, which is not a thing space can be.
  *
  * `touch-action` hands the drag to the component. Without it a finger dragged
  * across a pane scrolls the page instead of moving the picture, and there is no
@@ -1346,23 +1345,6 @@
   overflow: hidden;
   touch-action: none;
   user-select: none;
-  background-image:
-    linear-gradient(
-      45deg,
-      var(--diffine-image-chequer) 25%,
-      transparent 25% 75%,
-      var(--diffine-image-chequer) 75%
-    ),
-    linear-gradient(
-      45deg,
-      var(--diffine-image-chequer) 25%,
-      transparent 25% 75%,
-      var(--diffine-image-chequer) 75%
-    );
-  background-position:
-    0 0,
-    0.5rem 0.5rem;
-  background-size: 1rem 1rem;
 }
 
 .diffine-image-pane[data-blank='false'] {

@@ -18,7 +18,7 @@ export interface ImageDiffSummaryProps {
   before: ImageMetrics | null;
   after: ImageMetrics | null;
   result: DiffImageResult | null;
-  /** Whether the panes are side by side, so the bar is laid out as they are. */
+  /** Whether the panes are side by side, so the bar is halved as they are. */
   split: boolean;
   locale: DiffineLocale;
   strings: DiffineStrings;
@@ -47,17 +47,21 @@ export function ImageDiffSummary({
   strings
 }: ImageDiffSummaryProps): React.JSX.Element {
   const changed = result ? result.stats.ratio : 0;
-  const sentence =
-    !result || changed === 0
+  // Nothing has been compared, so there is nothing to say about it — and
+  // "the two are the same" is not the thing to say about two panes that are
+  // still empty.
+  const sentence = !result
+    ? ''
+    : changed === 0
       ? strings.identical
       : fill(strings.imageSummary, {
           regions: formatCount(result.regions.length, locale),
           percent: formatNumber(changed * 100, locale)
         });
 
-  const tally = (
+  const tally = !result ? null : (
     <div className="diffine-tally" title={sentence} aria-hidden="true">
-      {!result || changed === 0 ? (
+      {changed === 0 ? (
         <span className="diffine-tally-item" data-kind="identical">
           <TallyIcon kind="identical" />
         </span>
@@ -103,7 +107,6 @@ export function ImageDiffSummary({
       <div className="diffine-metrics" data-side="before">
         <Metric picture={before} locale={locale} strings={strings} />
       </div>
-      <div className="diffine-summary-gap" aria-hidden="true" />
       <div className="diffine-metrics" data-side="after">
         <Metric picture={after} locale={locale} strings={strings} />
         {tally}

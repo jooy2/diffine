@@ -491,6 +491,8 @@ export function ImageDiff({
     current: selected,
     outline: palette?.outline ?? 'transparent',
     marker: palette?.marker ?? 'transparent',
+    ground: palette?.ground ?? 'transparent',
+    chequer: palette?.chequer ?? 'transparent',
     editable: editing,
     strings
   };
@@ -515,7 +517,11 @@ export function ImageDiff({
             ) : null}
             {editing && split ? (
               <div className="diffine-tools">
-                <Chooser onFile={(file) => take('before', file)} strings={strings} />
+                <Chooser
+                  label={beforeSource.label}
+                  onFile={(file) => take('before', file)}
+                  strings={strings}
+                />
               </div>
             ) : null}
             {!split && tools ? (
@@ -534,7 +540,9 @@ export function ImageDiff({
                   setFade(value);
                   onFadeChange?.(value);
                 }}
-                chooser={editing ? <Chooser onFile={bothTake} strings={strings} /> : null}
+                chooser={
+                  editing ? <Chooser label={bothLabel} onFile={bothTake} strings={strings} /> : null
+                }
                 locale={locale}
                 strings={strings}
               />
@@ -558,7 +566,11 @@ export function ImageDiff({
                   onFade={setFade}
                   chooser={
                     editing ? (
-                      <Chooser onFile={(file) => take('after', file)} strings={strings} />
+                      <Chooser
+                        label={afterSource.label}
+                        onFile={(file) => take('after', file)}
+                        strings={strings}
+                      />
                     ) : null
                   }
                   locale={locale}
@@ -750,17 +762,22 @@ function Tools({
  * browser's own dialog.
  */
 function Chooser({
+  label,
   onFile,
   strings
 }: {
+  label: string;
   onFile: (file: File) => void;
   strings: DiffineStrings;
 }): React.JSX.Element {
+  const said = fill(strings.chooseIn, { label });
+
   return (
-    <label className="diffine-image-choose" data-compact="true" title={strings.choose}>
+    <label className="diffine-image-choose" data-compact="true" title={said}>
       <input
         type="file"
         accept="image/*"
+        aria-label={said}
         onChange={(event) => {
           const file = event.target.files?.[0];
 

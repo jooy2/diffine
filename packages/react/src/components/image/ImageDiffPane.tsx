@@ -41,6 +41,9 @@ export interface ImageDiffPaneProps {
   /** What a box round a change is drawn in, and what the one being looked at is. */
   outline: string;
   marker: string;
+  /** The two colours of the squares behind a picture that is see-through. */
+  ground: string;
+  chequer: string;
   /** Whether a picture can be dropped on it, and what to do with one. */
   editable: boolean;
   onFile?: (file: File) => void;
@@ -69,6 +72,8 @@ export function ImageDiffPane({
   current,
   outline,
   marker,
+  ground,
+  chequer,
   editable,
   onFile,
   blank,
@@ -156,9 +161,11 @@ export function ImageDiffPane({
       regions,
       current,
       outline,
-      marker
+      marker,
+      ground,
+      chequer
     });
-  }, [box, frame, viewport, layers, mask, regions, current, outline, marker]);
+  }, [box, frame, viewport, layers, mask, regions, current, outline, marker, ground, chequer]);
 
   /**
    * The wheel, which does one of three things.
