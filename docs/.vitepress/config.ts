@@ -49,7 +49,7 @@ interface Words {
 const WORDS: Record<string, Words> = {
   en: {
     description:
-      'Compare two versions and show what changed — a diff engine and a side-by-side viewer in one package, with no dependencies underneath either.',
+      'Compare two versions and show what changed — a diff engine and a side-by-side viewer in one package, with syntax highlighting fetched only when a language is asked for.',
     guide: 'Guide',
     playground: 'Playground',
     api: 'API',
@@ -58,7 +58,7 @@ const WORDS: Record<string, Words> = {
   },
   ko: {
     description:
-      '두 버전을 비교해 무엇이 달라졌는지 보여줍니다. 비교 엔진과 나란히 보는 뷰어가 한 패키지에 들어 있고, 둘 다 다른 라이브러리를 깔고 앉지 않습니다.',
+      '두 버전을 비교해 무엇이 달라졌는지 보여줍니다. 비교 엔진과 나란히 보는 뷰어가 한 패키지에 들어 있고, 구문 강조는 언어를 고를 때만 내려받습니다.',
     guide: '가이드',
     playground: '직접 써보기',
     api: 'API',
