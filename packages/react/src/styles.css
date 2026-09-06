@@ -115,17 +115,18 @@
 
 /* ---- Resets --------------------------------------------------------------
  *
- * At zero specificity, every one of them. These are undoing what the page
- * around the viewer already says about a `<p>` or a `<mark>`, and a reset that
- * beats the application's own styling is worse than no reset at all.
+ * At zero specificity, both of them. These are undoing what the page around the
+ * viewer already says about a `<mark>`, and a reset that beats the
+ * application's own styling is worse than no reset at all.
+ *
+ * Which is also why nothing here is a `<p>`. A reset this weak cannot take a
+ * margin off one — `.vp-doc p` and every rule like it in a documentation theme
+ * is a class and an element, and it wins — so the two blocks of prose the
+ * components draw are `<div>`s, and the margin never arrives to be undone.
  * ----------------------------------------------------------------------- */
 
 :where(.diffine) * {
   box-sizing: border-box;
-}
-
-:where(.diffine) p {
-  margin: 0;
 }
 
 :where(.diffine) mark {

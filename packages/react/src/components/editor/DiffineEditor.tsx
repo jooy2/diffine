@@ -469,7 +469,7 @@ export function DiffineEditor({
       </div>
 
       {summary ? (
-        <p className="diffine-summary" role="status">
+        <div className="diffine-summary" role="status">
           {comparison.changes.length === 0
             ? strings.identical
             : fill(strings.summary, {
@@ -477,7 +477,7 @@ export function DiffineEditor({
                 inserted: comparison.stats.inserted + comparison.stats.changed,
                 deleted: comparison.stats.deleted + comparison.stats.changed
               })}
-        </p>
+        </div>
       ) : null}
     </div>
   );

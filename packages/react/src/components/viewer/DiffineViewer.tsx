@@ -363,7 +363,7 @@ export function DiffineViewer({
       ) : null}
 
       {empty ? (
-        <p className="diffine-empty">{strings.empty}</p>
+        <div className="diffine-empty">{strings.empty}</div>
       ) : (
         <div className="diffine-body">
           <DiffineViewerPane
@@ -410,7 +410,7 @@ export function DiffineViewer({
       )}
 
       {summary && !empty ? (
-        <p className="diffine-summary" role="status">
+        <div className="diffine-summary" role="status">
           {comparison.changes.length === 0
             ? strings.identical
             : fill(strings.summary, {
@@ -418,7 +418,7 @@ export function DiffineViewer({
                 inserted: comparison.stats.inserted + comparison.stats.changed,
                 deleted: comparison.stats.deleted + comparison.stats.changed
               })}
-        </p>
+        </div>
       ) : null}
     </div>
   );
