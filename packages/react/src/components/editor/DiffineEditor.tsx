@@ -375,9 +375,10 @@ export function DiffineEditor({
       data-scheme={colorScheme}
       data-wrap={wrap}
       data-align={false}
-      // What the field has to be padded by to start where the lines behind it
-      // start. Both columns are drawn from the same custom properties, so the
-      // stylesheet can work the distance out from these two.
+      // Which columns the gutter has. The stylesheet works its width out from
+      // these two, and both the padding that starts the field where the lines
+      // behind it start and the stripe that carries the gutter past the last
+      // line are measured from that one number.
       data-numbers={lineNumbers}
       data-markers={markers}
       style={

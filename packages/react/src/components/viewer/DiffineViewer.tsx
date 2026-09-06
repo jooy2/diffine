@@ -333,6 +333,11 @@ export function DiffineViewer({
       data-scheme={colorScheme}
       data-wrap={wrap}
       data-align={alignLines}
+      // Which columns the gutter has, so the stylesheet can work out how wide
+      // it is — for the stripe that carries it past the last line of a document
+      // shorter than the pane it is in.
+      data-numbers={lineNumbers}
+      data-markers={markers}
       style={
         {
           '--diffine-digits': digits,

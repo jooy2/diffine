@@ -50,6 +50,17 @@
      than a guess that is too narrow at a thousand lines. */
   --diffine-digits: 3;
   --diffine-number-width: calc(var(--diffine-digits) * 1ch + 1.25rem);
+  --diffine-marker-width: 1.25rem;
+
+  /* What the gutter down the left of a pane actually costs, which is whichever
+     of its two columns were asked for and the rule beside them. Both halves are
+     nought when the column they stand for is off, and the rule with them — so
+     everything measured from here comes out at zero for a pane with no gutter
+     at all, rather than at one stray pixel of border. */
+  --diffine-gutter-numbers: 0px;
+  --diffine-gutter-markers: 0px;
+  --diffine-gutter-rule: 0px;
+  --diffine-gutter-width: calc(var(--diffine-gutter-numbers) + var(--diffine-gutter-markers));
 
   display: flex;
   flex-direction: column;
@@ -111,6 +122,28 @@
   --diffine-delete-piece: #7f303a;
   --diffine-blank: #151b23;
   --diffine-selection: #4c9dff40;
+}
+
+/*
+ * How wide that gutter is, per view.
+ *
+ * A unified view puts both documents' numbers down the side, so its gutter is
+ * two number columns rather than one. Everything else is the same arithmetic in
+ * both views, which is why it is written once here rather than twice.
+ */
+
+.diffine[data-numbers='true'] {
+  --diffine-gutter-numbers: var(--diffine-number-width);
+  --diffine-gutter-rule: 1px;
+}
+
+.diffine[data-view='unified'][data-numbers='true'] {
+  --diffine-gutter-numbers: calc(2 * var(--diffine-number-width));
+}
+
+.diffine[data-markers='true'] {
+  --diffine-gutter-markers: var(--diffine-marker-width);
+  --diffine-gutter-rule: 1px;
 }
 
 /* ---- Resets --------------------------------------------------------------
@@ -193,12 +226,34 @@
   min-height: 0;
 }
 
+/*
+ * The gutter, continued to the bottom of the pane.
+ *
+ * A gutter is drawn by each line, so it stops where the document does — and a
+ * pane is nearly always taller than the document in it, which left the column a
+ * reader reads line numbers down ending two thirds of the way down the box. The
+ * stripe below is that column with no lines on it: the same width worked out
+ * from the same properties, the same rule down its right-hand side, painted by
+ * the pane rather than by anything in it.
+ *
+ * It is the pane's own background rather than the lines', which is what keeps
+ * it still while a long line is scrolled past it. A background on the element
+ * that scrolls does not move with what it is scrolling, and the lines above are
+ * opaque, so this is only ever seen where there is nothing else.
+ */
 .diffine-pane {
   position: relative;
   flex: 1 1 0;
   min-width: 0;
   overflow: auto;
   overscroll-behavior: contain;
+  background-image: linear-gradient(
+    to right,
+    var(--diffine-gutter) 0 var(--diffine-gutter-width),
+    var(--diffine-border) var(--diffine-gutter-width)
+      calc(var(--diffine-gutter-width) + var(--diffine-gutter-rule)),
+    transparent calc(var(--diffine-gutter-width) + var(--diffine-gutter-rule))
+  );
 }
 
 .diffine-pane:focus-visible {
@@ -250,7 +305,7 @@
 }
 
 .diffine-marker {
-  width: 1.25rem;
+  width: var(--diffine-marker-width);
   text-align: center;
 }
 
@@ -472,25 +527,13 @@
 /*
  * How far in the field's text has to start.
  *
- * Which is the gutter's width, and the gutter is whichever of its two columns
- * were asked for plus the rule down its right-hand side. Both are drawn from
- * custom properties the component already declares, so the two columns are the
- * same width by construction rather than by agreement.
+ * Which is the gutter, rule and all — the same measurement the stripe down an
+ * empty pane is painted with, and the same one the columns themselves are sized
+ * from. One property rather than three agreeing numbers is the only version of
+ * this that cannot drift.
  */
 .diffine-editor {
-  --diffine-field-indent: 0px;
-}
-
-.diffine-editor[data-numbers='true'] {
-  --diffine-field-indent: calc(var(--diffine-number-width) + 1px);
-}
-
-.diffine-editor[data-markers='true'] {
-  --diffine-field-indent: calc(1.25rem + 1px);
-}
-
-.diffine-editor[data-numbers='true'][data-markers='true'] {
-  --diffine-field-indent: calc(var(--diffine-number-width) + 1.25rem + 1px);
+  --diffine-field-indent: calc(var(--diffine-gutter-width) + var(--diffine-gutter-rule));
 }
 
 /*
