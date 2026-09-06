@@ -46,6 +46,8 @@ order: 1
 | `syncScroll` | `boolean` | `true` | 한쪽을 스크롤하면 다른 쪽도 따라갈지. |
 | `header` | `boolean` | `true` | 각 문서의 이름을 위에 쓸지. |
 | `summary` | `boolean` | `true` | 아래쪽 상태 표시줄을 그릴지. |
+| `language` | `string` | `'plain'` | 문서가 어떤 언어인지. 그 언어로 색을 입힙니다. |
+| `languageLabel` | `boolean` | `true` | 그 언어 이름을 위쪽 줄 오른쪽 끝에 쓸지. |
 | `tabSize` | `number` | `4` | 탭을 몇 칸으로 그릴지. |
 | `colorScheme` | `'system' \| 'light' \| 'dark'` | `'system'` | 어떤 팔레트로 그릴지. |
 | `locale` | `'en' \| 'ko'` | `'en'` | 뷰어 자신이 쓰는 말의 언어. |
@@ -85,6 +87,23 @@ order: 1
 
 `added`, `removed`, `changed`, `summary`, `documentSize`, `changePosition`은 화면에 나오지 않고 스크린 리더가 읽습니다. `summary`의 `{changes}`, `{inserted}`, `{deleted}` 자리에 집계가 들어갑니다. `documentSize`의 `{label}` 자리에는 한쪽의 이름이, `{characters}`와 `{size}` 자리에는 읽는 사람의 언어로 이미 써 둔 수가 들어갑니다. `placeholder`는 에디터의 빈 입력란에 나오는 문구입니다.
 
+### `DIFFINE_LANGUAGES`
+
+```ts
+interface DiffineLanguageOption {
+  id: string;
+  name: string;
+}
+
+const DIFFINE_LANGUAGES: readonly DiffineLanguageOption[];
+```
+
+`language`에 넣을 수 있는 언어 전부입니다. `plain`이 맨 앞이고 그 뒤로 highlight.js 식별자 서른네 개가 알파벳순으로 옵니다. `id`가 `language`에 넣는 값이고, `name`이 창 위에 쓰이는 이름입니다. 로케일과 상관없이 영어로 씁니다. `TypeScript`는 어느 언어에서나 `TypeScript`이기 때문입니다.
+
+에디터의 메뉴가 이 목록으로 만들어집니다. 다른 곳에 메뉴를 따로 만든다면 베껴 두지 말고 이 목록에서 만드는 편이 좋습니다.
+
+`highlight.js`와 문법 하나하나가 `import()` 뒤에 있습니다. `plain`이 아닌 언어를 요청하기 전까지는 아무것도 내려받지 않고, 요청하면 그 언어의 문법만 내려받습니다. 문법이 도착한 다음 프레임에 색이 입혀지고, 그 전까지는 문서 그대로 그려집니다.
+
 ### `DiffineHighlight`
 
 ```ts
@@ -104,6 +123,8 @@ interface DiffineToken {
 두 컴포넌트가 그리는 줄마다, 줄 전체를 넘겨 호출합니다. 구간은 순서대로 읽고 사이의 빈 곳은 그냥 그리며, `null`이면 그 줄은 손대지 않습니다. `length`는 `String.prototype.slice`와 같은 단위로 셉니다.
 
 줄은 이 구간과 비교 결과의 경계를 모두 반영해 잘립니다. 문자열의 절반인 바뀐 단어는 문자열의 절반인 바뀐 단어로 그려집니다.
+
+이것을 주면 `language`에 더해지는 것이 아니라 `language`를 대신합니다. 한 줄에는 구간이 한 벌뿐이고, 둘이 동시에 자르는 것에는 답이 없습니다.
 
 ## `DiffineEditor`
 
@@ -141,6 +162,10 @@ interface DiffineToken {
 | `header` | `boolean` | `true` | 각 쪽 위에 이름을 쓸지. |
 | `navigation` | `boolean` | `true` | 변경 사이를 오가는 버튼을 그릴지. |
 | `summary` | `boolean` | `true` | 아래쪽 상태 표시줄을 그릴지. |
+| `language` | `string` | — | 문서가 어떤 언어인지. 애플리케이션이 들고 있습니다. |
+| `defaultLanguage` | `string` | `'plain'` | 에디터가 직접 들고 있을 때 처음 언어. |
+| `onLanguageChange` | `(language: string) => void` | — | 언어를 골랐을 때. |
+| `languagePicker` | `boolean` | `true` | 언어 메뉴를 위쪽 줄에 그릴지. |
 | `virtualize` | `boolean` | `true` | 보이는 줄만 그릴지. |
 | `tabSize` | `number` | `4` | 탭을 몇 글자 너비로 그릴지. |
 | `colorScheme` | `'system' \| 'light' \| 'dark'` | `'system'` | 어떤 색으로 그릴지. |

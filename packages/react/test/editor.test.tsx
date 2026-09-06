@@ -142,7 +142,8 @@ describe('DiffineEditor', () => {
       markers: false,
       header: false,
       navigation: false,
-      summary: false
+      summary: false,
+      languagePicker: false
     });
 
     expect(bare).not.toContain('diffine-number');
@@ -170,6 +171,19 @@ describe('DiffineEditor', () => {
     expect(render({ defaultBefore: BEFORE, defaultAfter: AFTER })).toContain(
       '2 changes, 2 lines added, 1 lines removed'
     );
+  });
+
+  it('offers every language it knows, and starts on the one it was given', () => {
+    const menu = render({ defaultBefore: BEFORE, defaultAfter: AFTER, defaultLanguage: 'python' });
+
+    expect(menu).toContain('class="diffine-language diffine-language-menu"');
+    expect(menu).toContain('<option value="plain">Plain</option>');
+    expect(menu).toContain('<option value="python" selected="">Python</option>');
+    expect(menu).toContain('<option value="typescript">TypeScript</option>');
+
+    expect(
+      render({ defaultBefore: BEFORE, defaultAfter: AFTER, languagePicker: false })
+    ).not.toContain('diffine-language');
   });
 
   it('says the same things in the language it was asked for', () => {

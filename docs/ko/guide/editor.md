@@ -118,7 +118,17 @@ const [draft, setDraft] = useState(saved);
 
 ## 글자에 색 입히기
 
-`highlight`가 여기서도 되는 이유는 색이 깔리는 이유와 같습니다. 읽는 사람이 보는 글자는 입력란 뒤의 줄이 그리고, 강조기는 거기에 닿을 수 있습니다.
+`language`를 주면 두 문서를 그 언어로 칠하고, 에디터는 언어 목록을 위쪽 줄 오른쪽 끝에 메뉴로 그립니다. 두 컴포넌트가 여기서 갈리는 지점입니다. 뷰어는 애플리케이션에서 문서를 받으니 그게 무엇인지 알고 있지만, 에디터가 받는 것은 누군가 붙여 넣은 문서입니다.
+
+```tsx
+<DiffineEditor defaultBefore={saved} defaultAfter={draft} defaultLanguage="python" />
+```
+
+`language`, `defaultLanguage`, `onLanguageChange`는 늘 쓰는 한 쌍이고 알려 주는 방식도 같습니다. `language`를 주면 애플리케이션이 들고 있고, `defaultLanguage`를 주면 에디터가 들고 있습니다. 언어를 다른 데서 정하는 페이지라면 `languagePicker`로 메뉴를 뺄 수 있습니다.
+
+`plain`이 아닌 언어를 고르기 전에는 아무것도 내려받지 않습니다. 고른 뒤에 무엇이 오는지와, 색을 정하는 커스텀 속성 여덟 개는 [뷰어](./viewer#글자에-색-입히기)에 있습니다.
+
+`highlight`가 여기서도 되는 이유는 색이 깔리는 이유와 같습니다. 읽는 사람이 보는 글자는 입력란 뒤의 줄이 그리고, 강조기는 거기에 닿을 수 있습니다. 이것은 `language`에 더해지는 것이 아니라 `language`를 대신하므로, `highlight`를 넘기는 에디터는 보통 `languagePicker`도 함께 끕니다.
 
 ```tsx
 <DiffineEditor

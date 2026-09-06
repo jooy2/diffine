@@ -137,7 +137,19 @@ const [index, setIndex] = useState(-1);
 
 ## 글자에 색 입히기
 
-`highlight`가 문법 강조기를 붙이는 자리입니다. 줄 하나를 통째로 받아서, 다르게 그리고 싶은 구간을 돌려줍니다.
+`language`에 두 문서가 어떤 언어인지 적으면 그 언어로 색을 입힙니다.
+
+```tsx
+<DiffineViewer before={saved} after={draft} language="typescript" />
+```
+
+highlight.js 식별자를 넣거나, 코드가 아닌 문서라면 `plain`을 넣습니다. `DIFFINE_LANGUAGES`가 언어 전부와 그 옆에 쓸 이름을 담은 목록이고, 창 위쪽 줄의 오른쪽 끝에 그 이름이 나옵니다. `languageLabel`로 끌 수 있습니다.
+
+`plain`이 아닌 언어를 요청하기 전에는 아무것도 내려받지 않습니다. 라이브러리도 문법도 `import()` 뒤에 있어서, 뷰어가 전부 `plain`인 페이지는 하나도 내려받지 않고 파이썬을 요청한 페이지는 파이썬만 내려받습니다. 문법이 도착한 다음 프레임에 색이 입혀지고, 그 전까지는 문서 그대로 나옵니다.
+
+색은 `--diffine-code-keyword`, `--diffine-code-string`처럼 커스텀 속성 여덟 개로 정합니다. highlight.js가 내놓는 클래스가 전부 이 여덟 개 중 하나로 이어집니다. 팔레트를 따로 쓰는 애플리케이션은 이 여덟 개만 덮어쓰면 됩니다.
+
+강조기를 이미 갖고 있다면 `highlight`가 그 통로입니다. 줄 하나를 통째로 받아서 다르게 그리고 싶은 구간을 돌려주고, `language`에 더해지는 것이 아니라 `language`를 대신합니다.
 
 ```tsx
 <DiffineViewer

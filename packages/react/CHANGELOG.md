@@ -20,6 +20,8 @@ The first published version.
 
 - **`diffine-react/diff` is an entry of its own**, for an application that wants the comparison without the component.
 
+- **`highlight.js` is the package's one dependency**, and it is never loaded until a `language` other than `plain` is asked for. `react` and `react-dom` remain peer dependencies.
+
 - **`DiffineViewer` draws two documents side by side.** The matching lines are held level with each other, a line with no counterpart gets a blank opposite it, and the column between the panes draws each change as a band from where it left to where it arrived. Scrolling one pane scrolls the other, and a line that wraps takes its counterpart's row down with it so the two documents never fall out of step.
 
 - **Every part of the view is a prop with a default.** Line numbers, the `+` and `−` markers, wrapping, holding the two sides level, the connectors, the synchronised scrolling, the header, the summary, the tab width, the palette and the language — each one on its own, so the component goes from a full side-by-side down to a bare column of lines without a stylesheet being touched.
@@ -27,6 +29,12 @@ The first published version.
 - **`view="unified"` puts what went out above what came in**, in one column, with both documents' line numbers down the side. It is the same comparison read a second way rather than a second comparison.
 
 - **The viewer takes a comparison instead of two documents.** `result` is for an application that worked one out in a worker, on a server, or once for a list of viewers.
+
+- **`language` colours the two documents as whatever they are written in.** A highlight.js identifier, or `plain` for a document that is not code, with `DIFFINE_LANGUAGES` as the whole list and the name written at the right end of the bar above the panes. The editor draws that list as a menu instead, because a document somebody pasted is a document nobody knew the language of — `defaultLanguage` and `onLanguageChange` are the usual pair for holding the choice.
+
+  The library and each grammar sit behind an `import()`, so a viewer left on `plain` fetches none of it and one asking for Python fetches Python. The colours are eight custom properties, `--diffine-code-keyword` and the rest, that every class highlight.js emits is mapped onto.
+
+  `highlight` still takes an application's own highlighter, and replaces `language` rather than adding to it.
 
 - **The bar under the panes says what each document weighs and what happened between them.** It sits on the header's grid, so the left half is under the left pane and the right half under the right one, and each side carries its own character count and its size in bytes. The counts go at the far right as a `~`, a `+` and a `−` against three numbers — the same three marks the gutter puts beside a line — and a screen reader is told the sentence instead. `documentSize` is the string that sentence is written from.
 

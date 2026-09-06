@@ -68,7 +68,8 @@ describe('DiffineViewer', () => {
       markers: false,
       header: false,
       navigation: false,
-      summary: false
+      summary: false,
+      languageLabel: false
     });
 
     expect(bare).not.toContain('diffine-number');
@@ -146,6 +147,20 @@ describe('DiffineViewer', () => {
 
     expect(markup).toContain('2,048 characters, 2 KB');
     expect(markup).toContain('1,536 characters, 1.5 KB');
+  });
+
+  it('names what the documents are being coloured as, and calls nothing Plain', () => {
+    expect(render({ before: BEFORE, after: AFTER })).toContain('>Plain</span>');
+    expect(render({ before: BEFORE, after: AFTER, language: 'typescript' })).toContain(
+      '>TypeScript</span>'
+    );
+    // An identifier nobody knows is written as it was given rather than dropped.
+    expect(render({ before: BEFORE, after: AFTER, language: 'brainfuck' })).toContain(
+      '>brainfuck</span>'
+    );
+    expect(render({ before: BEFORE, after: AFTER, languageLabel: false })).not.toContain(
+      'diffine-language'
+    );
   });
 
   it('says there is nothing to compare rather than drawing two empty panes', () => {

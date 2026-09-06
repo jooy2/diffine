@@ -16,7 +16,7 @@
 npm install diffine-react
 ```
 
-`react` and `react-dom` are peer dependencies — React 18 or 19. Nothing else comes with the package.
+`react` and `react-dom` are peer dependencies — React 18 or 19. The one dependency is `highlight.js`, and it is behind an `import()`: a viewer left on `language="plain"` fetches none of it.
 
 ## The viewer
 
@@ -81,7 +81,21 @@ Setting `selected` scrolls the view, so an application with its own list of chan
 
 ### Colouring the text
 
-`highlight` is handed a whole line and returns the runs it wants drawn differently. The line is cut at the boundaries of both that and the comparison, so a changed word that is half a string literal is drawn as exactly that.
+`language` names what the documents are written in, and they are coloured as it.
+
+```tsx
+<DiffineViewer before={saved} after={draft} language="typescript" />
+```
+
+It takes a highlight.js identifier, or `plain` for a document that is not code. `DIFFINE_LANGUAGES` is the whole list with the name to write beside each one, and the bar above the panes writes that name at its right end. The editor draws the list as a menu instead, because a document somebody pasted is a document nobody knew the language of:
+
+```tsx
+<DiffineEditor defaultBefore={saved} defaultAfter={draft} defaultLanguage="python" />
+```
+
+`highlight.js` and each grammar are behind an `import()`, so nothing is fetched until a language other than `plain` is asked for, and what is fetched is that one grammar. The colours are eight custom properties — `--diffine-code-keyword` and the rest — and every class the library emits is mapped onto one of them.
+
+`highlight` is the way in for an application that already has a highlighter of its own. It is handed a whole line and returns the runs it wants drawn differently, and it replaces `language` rather than adding to it. The line is cut at the boundaries of both that and the comparison, so a changed word that is half a string literal is drawn as exactly that.
 
 ```tsx
 <DiffineViewer

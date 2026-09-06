@@ -112,6 +112,23 @@ const options = ref({
 /** How many times the documents have been put back, so the editor is rebuilt. */
 const generation = ref(0);
 
+/** What each sample is written in, so that choosing one sets the menu with it. */
+const LANGUAGES: Record<Pick, string> = {
+  code: 'javascript',
+  prose: 'plain',
+  config: 'yaml',
+  korean: 'plain',
+  blank: 'plain'
+};
+
+/**
+ * What the documents are being coloured as, shared by the two components.
+ *
+ * The editor's own menu is what changes it, and the viewer is given it — which
+ * is the difference between the two worth seeing on a page that shows both.
+ */
+const language = ref(LANGUAGES.code);
+
 /** What each side holds, and the name over it. */
 function pairFor(chosen: Pick) {
   if (chosen === 'blank') {
@@ -140,6 +157,7 @@ let documents = pairFor('code');
 
 function restart(chosen: Pick): void {
   documents = pairFor(chosen);
+  language.value = LANGUAGES[chosen];
   generation.value += 1;
 }
 
@@ -180,6 +198,13 @@ function draw() {
       },
       onAfterChange: (value: string) => {
         documents = { ...documents, after: value };
+      },
+      // The menu is the editor's, and what it lands on is the page's — so the
+      // viewer opens on the language the editor was left on rather than back
+      // at `Plain`.
+      language: language.value,
+      onLanguageChange: (chosen: string) => {
+        language.value = chosen;
       }
     });
   }
@@ -189,7 +214,8 @@ function draw() {
     before,
     after,
     view: options.value.unified ? 'unified' : 'split',
-    alignLines: options.value.align
+    alignLines: options.value.align,
+    language: language.value
   });
 }
 
@@ -226,7 +252,7 @@ onMounted(() => {
 onBeforeUnmount(() => window.removeEventListener('resize', measure));
 
 useReactIsland(host, draw, {
-  watch: [mode, pick, generation, options, isDark, locale, height]
+  watch: [mode, pick, generation, options, isDark, locale, height, language]
 });
 </script>
 

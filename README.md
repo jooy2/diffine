@@ -19,7 +19,7 @@ Guides and the full API, in English and Korean. This README is the map; each pac
 
 - **The comparison is a value, not a rendering.** `diffText` hands back rows, blocks and counts — a plain object with no React and no DOM in it. Draw it with the viewer, print it in a terminal, or send it somewhere else; the viewer is one consumer of that value rather than the only way to reach it.
 - **Two levels of detail, in one pass.** Lines are matched first, then the words or characters inside a pair of lines that were changed rather than replaced. That is the difference between "this line is different" and "this word is different", and a reader needs the second one.
-- **Nothing in the dependency list.** The engine, the alignment and the viewer are ours. There is no diff library underneath, no editor component, and no CSS framework.
+- **One dependency, and it is fetched rather than shipped.** The engine, the alignment and the viewer are ours: no diff library underneath, no editor component, no CSS framework. `highlight.js` is the exception, and it sits behind an `import()` along with each grammar — a page whose `language` is `plain` downloads none of it.
 - **The viewer is made of options.** Line numbers, wrapping, holding the two sides level, the connectors between them, the unified view: each one is a prop with a default, so the component can be cut down to what an application actually wants to show.
 - **The editor is the same view, made editable.** A field over each pane, and the comparison worked out again on every keystroke — with the browser's own undo, input method and selection left where they were.
 - **Types in the box.** TypeScript declarations ship with the package, so your editor knows the prop names and the values they take before you do.

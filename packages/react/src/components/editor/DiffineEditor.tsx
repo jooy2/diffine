@@ -20,9 +20,11 @@ import { stringsFor } from '../../internal/i18n.js';
 import { useIsomorphicLayoutEffect } from '../../internal/layout.js';
 import { useChangeNavigation } from '../../internal/navigate.js';
 import { changeOfRow, fieldLayout } from '../../internal/rows.js';
+import { useSyntaxHighlight } from '../../internal/highlight/useSyntax.js';
 import { useSyncedScroll } from '../../internal/scroll.js';
 import { contentOf, sourceOf } from '../../internal/source.js';
 import { useVirtualRows } from '../../internal/virtual.js';
+import { DiffineLanguagePicker } from '../shared/DiffineLanguage.js';
 import { DiffineLinks } from '../shared/DiffineLinks.js';
 import { DiffineNav } from '../shared/DiffineNav.js';
 import { DiffineSummary } from '../shared/DiffineSummary.js';
@@ -200,8 +202,41 @@ export interface DiffineEditorProps extends Omit<
   strings?: Partial<DiffineStrings>;
 
   /**
+   * What the two documents are written in, so that they are coloured as it.
+   *
+   * A highlight.js identifier — `typescript`, `python`, `xml` — or `plain` for
+   * a document that is not code. `DIFFINE_LANGUAGES` is the whole list, and it
+   * is the list the menu above the panes is built from.
+   *
+   * Passing it makes it the application's, in the usual React pair: the menu
+   * reports through `onLanguageChange` and does not change on its own. Leave it
+   * out and pass `defaultLanguage` to let the editor keep it, which is what a
+   * page where somebody pastes a document nobody knew about wants.
+   *
+   * The grammar is fetched when it is asked for and not before, so an editor
+   * left on `plain` downloads none of highlight.js.
+   */
+  language?: string;
+  /** Which language to start on, when the editor is to keep it. @default 'plain' */
+  defaultLanguage?: string;
+  /** A language was chosen, from the menu or by the application. */
+  onLanguageChange?: (language: string) => void;
+
+  /**
+   * Whether the menu of languages is drawn at the right end of the bar above
+   * the fields.
+   * @default true
+   */
+  languagePicker?: boolean;
+
+  /**
    * How a line is coloured beyond what the comparison says about it, which is
-   * where a syntax highlighter goes. See {@link DiffineHighlight}.
+   * where a syntax highlighter of the application's own goes. See
+   * {@link DiffineHighlight}.
+   *
+   * This replaces `language` rather than adding to it, and it leaves the menu
+   * showing a language nothing is being coloured as — so an editor that passes
+   * it usually turns `languagePicker` off as well.
    */
   highlight?: DiffineHighlight;
 }
@@ -264,6 +299,10 @@ export function DiffineEditor({
   colorScheme = 'system',
   locale = 'en',
   strings: overrides,
+  language: languageProp,
+  defaultLanguage = 'plain',
+  onLanguageChange,
+  languagePicker = true,
   highlight,
   className,
   style,
@@ -281,6 +320,7 @@ export function DiffineEditor({
     contentOf(defaultBefore) ?? ''
   );
   const [afterText, setAfterText] = useControlled(contentOf(after), contentOf(defaultAfter) ?? '');
+  const [language, setLanguage] = useControlled(languageProp, defaultLanguage);
 
   const beforePane = React.useRef<HTMLDivElement>(null);
   const afterPane = React.useRef<HTMLDivElement>(null);
@@ -367,7 +407,14 @@ export function DiffineEditor({
     onSelectedChange
   });
 
+  const syntax = useSyntaxHighlight(language, comparison.before, comparison.after);
+  // The application's own highlighter replaces the language rather than joining
+  // it. A line has one set of runs, and two of them cutting it at once is not a
+  // question with an answer.
+  const colour = highlight ?? syntax;
+
   const digits = String(Math.max(beforeLayout.lines.length, afterLayout.lines.length, 1)).length;
+  const tools = navigation || languagePicker;
 
   return (
     <div
@@ -392,7 +439,7 @@ export function DiffineEditor({
       }
       {...rest}
     >
-      {header || navigation ? (
+      {header || tools ? (
         <div className="diffine-header">
           <div className="diffine-title" data-side="before">
             {header ? <span className="diffine-label">{beforeLabel}</span> : null}
@@ -400,13 +447,27 @@ export function DiffineEditor({
           {connectors ? <div className="diffine-title-gap" aria-hidden="true" /> : null}
           <div className="diffine-title" data-side="after">
             {header ? <span className="diffine-label">{afterLabel}</span> : null}
-            {navigation ? (
-              <DiffineNav
-                total={comparison.changes.length}
-                current={current}
-                onStep={step}
-                strings={strings}
-              />
+            {tools ? (
+              <div className="diffine-tools">
+                {navigation ? (
+                  <DiffineNav
+                    total={comparison.changes.length}
+                    current={current}
+                    onStep={step}
+                    strings={strings}
+                  />
+                ) : null}
+                {languagePicker ? (
+                  <DiffineLanguagePicker
+                    language={language}
+                    onLanguageChange={(chosen) => {
+                      setLanguage(chosen);
+                      onLanguageChange?.(chosen);
+                    }}
+                    strings={strings}
+                  />
+                ) : null}
+              </div>
             ) : null}
           </div>
         </div>
@@ -432,7 +493,7 @@ export function DiffineEditor({
           lineNumbers={lineNumbers}
           markers={markers}
           strings={strings}
-          highlight={highlight}
+          highlight={colour}
           paneRef={beforePane}
         />
         {connectors ? (
@@ -466,7 +527,7 @@ export function DiffineEditor({
           lineNumbers={lineNumbers}
           markers={markers}
           strings={strings}
-          highlight={highlight}
+          highlight={colour}
           paneRef={afterPane}
         />
       </div>

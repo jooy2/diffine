@@ -20,8 +20,10 @@ import { useRowAlignment } from '../../internal/layout.js';
 import { useChangeNavigation } from '../../internal/navigate.js';
 import { changeOfRow, splitLayout, unifiedLayout } from '../../internal/rows.js';
 import { useSyncedScroll } from '../../internal/scroll.js';
+import { useSyntaxHighlight } from '../../internal/highlight/useSyntax.js';
 import { sourceOf } from '../../internal/source.js';
 import { useVirtualRows } from '../../internal/virtual.js';
+import { DiffineLanguageName } from '../shared/DiffineLanguage.js';
 import { DiffineLinks } from '../shared/DiffineLinks.js';
 import { DiffineNav } from '../shared/DiffineNav.js';
 import { DiffineSummary } from '../shared/DiffineSummary.js';
@@ -187,8 +189,32 @@ export interface DiffineViewerProps extends Omit<
   strings?: Partial<DiffineStrings>;
 
   /**
+   * What the two documents are written in, so that they are coloured as it.
+   *
+   * A highlight.js identifier — `typescript`, `python`, `xml` — or `plain` for
+   * a document that is not code. `DIFFINE_LANGUAGES` is the whole list, with
+   * the name to write beside each one.
+   *
+   * The grammar is fetched when it is asked for and not before, so a viewer
+   * left on `plain` downloads none of highlight.js. The first paint after one
+   * arrives is the document coloured; the one before it is the document.
+   *
+   * @default 'plain'
+   */
+  language?: string;
+
+  /**
+   * Whether the language is named at the right end of the bar above the panes.
+   * @default true
+   */
+  languageLabel?: boolean;
+
+  /**
    * How a line is coloured beyond what the comparison says about it, which is
-   * where a syntax highlighter goes. See {@link DiffineHighlight}.
+   * where a syntax highlighter of the application's own goes. See
+   * {@link DiffineHighlight}.
+   *
+   * This replaces `language` rather than adding to it.
    */
   highlight?: DiffineHighlight;
 }
@@ -231,6 +257,8 @@ export function DiffineViewer({
   colorScheme = 'system',
   locale = 'en',
   strings: overrides,
+  language = 'plain',
+  languageLabel = true,
   highlight,
   className,
   style,
@@ -342,8 +370,15 @@ export function DiffineViewer({
     onSelectedChange
   });
 
+  const syntax = useSyntaxHighlight(language, comparison.before, comparison.after);
+  // The application's own highlighter replaces the language rather than joining
+  // it. A line has one set of runs, and two of them cutting it at once is not a
+  // question with an answer.
+  const colour = highlight ?? syntax;
+
   const digits = String(Math.max(comparison.before.length, comparison.after.length, 1)).length;
-  const bar = header || (navigation && !empty);
+  const tools = (navigation && !empty) || languageLabel;
+  const bar = header || tools;
 
   return (
     <div
@@ -375,13 +410,20 @@ export function DiffineViewer({
           {split && connectors ? <div className="diffine-title-gap" aria-hidden="true" /> : null}
           <div className="diffine-title" data-side="after">
             {header ? <span className="diffine-label">{afterSource.label}</span> : null}
-            {navigation && !empty ? (
-              <DiffineNav
-                total={comparison.changes.length}
-                current={current}
-                onStep={step}
-                strings={strings}
-              />
+            {tools ? (
+              <div className="diffine-tools">
+                {navigation && !empty ? (
+                  <DiffineNav
+                    total={comparison.changes.length}
+                    current={current}
+                    onStep={step}
+                    strings={strings}
+                  />
+                ) : null}
+                {languageLabel ? (
+                  <DiffineLanguageName language={language} strings={strings} />
+                ) : null}
+              </div>
             ) : null}
           </div>
         </div>
@@ -401,7 +443,7 @@ export function DiffineViewer({
             lineNumbers={lineNumbers}
             markers={markers}
             strings={strings}
-            highlight={highlight}
+            highlight={colour}
             paneRef={firstPane}
           />
           {split && connectors ? (
@@ -427,7 +469,7 @@ export function DiffineViewer({
               lineNumbers={lineNumbers}
               markers={markers}
               strings={strings}
-              highlight={highlight}
+              highlight={colour}
               paneRef={secondPane}
             />
           ) : null}

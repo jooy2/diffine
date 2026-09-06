@@ -266,6 +266,20 @@ export type DiffineColorScheme = 'system' | 'light' | 'dark';
 export type DiffineLocale = 'en' | 'ko';
 
 /**
+ * A language the documents themselves can be coloured as, and what to call it.
+ *
+ * The whole list is `DIFFINE_LANGUAGES`, which is what the editor's menu is
+ * built from and what an application building a menu of its own should build
+ * from. The names are English: `TypeScript` is `TypeScript` in every locale.
+ */
+export interface DiffineLanguageOption {
+  /** What to pass as `language` — a highlight.js identifier, or `plain`. */
+  id: string;
+  /** Its full name, as the bar above the panes writes it. */
+  name: string;
+}
+
+/**
  * A document to compare, and what to call it.
  *
  * A bare string is the document, which is all most applications need. The
@@ -304,6 +318,8 @@ export interface DiffineStrings {
   removed: string;
   /** What it hears in front of a line that has a different counterpart. */
   changed: string;
+  /** What the editor's menu of languages is called to a screen reader. */
+  language: string;
   /** How the counts are read out: `{changes}`, `{inserted}` and `{deleted}`. */
   summary: string;
   /**
@@ -346,6 +362,10 @@ export interface DiffineToken {
  * Called for each line the viewer draws, so with the rows virtualised it is
  * called for what is on the screen rather than for the whole document. Return
  * `null` to leave a line as it is.
+ *
+ * Passing this replaces whatever `language` was doing rather than adding to it.
+ * A line has one set of runs, and two highlighters cutting it at once is not a
+ * thing that has an answer.
  *
  * ```tsx
  * <DiffineViewer

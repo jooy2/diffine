@@ -118,7 +118,17 @@ The comparison runs again on every keystroke rather than after a pause. An edit 
 
 ## Colouring the text
 
-`highlight` works here for the same reason the tints do: the text a reader sees is drawn by the lines behind the field, so a highlighter can reach it.
+`language` colours both documents as whatever they are written in, and the editor draws the list of languages as a menu at the right end of the bar above the panes. That is the difference between the two components here: a viewer is given its documents by the application, which knows what they are, and an editor is given a document somebody pasted.
+
+```tsx
+<DiffineEditor defaultBefore={saved} defaultAfter={draft} defaultLanguage="python" />
+```
+
+`language`, `defaultLanguage` and `onLanguageChange` are the usual pair with the usual reporting — pass `language` to hold the choice yourself, pass `defaultLanguage` to let the editor hold it. `languagePicker` takes the menu away for a page that decides the language elsewhere.
+
+Nothing is fetched until a language other than `plain` is chosen. See [the viewer](./viewer#colouring-the-text) for what arrives when it is, and for the eight custom properties the colours come from.
+
+`highlight` works here for the same reason the tints do: the text a reader sees is drawn by the lines behind the field, so a highlighter can reach it. It replaces `language` rather than adding to it, so an editor that passes it usually turns `languagePicker` off as well.
 
 ```tsx
 <DiffineEditor

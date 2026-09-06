@@ -1,7 +1,7 @@
 {
   "name": "diffine-react",
   "version": "0.0.1",
-  "description": "Compare two versions and show what changed — a diff engine and a side-by-side viewer in one package, with no dependencies underneath either.",
+  "description": "Compare two versions and show what changed — a diff engine and a side-by-side viewer in one package, with syntax highlighting fetched only when a language is asked for.",
   "type": "module",
   "types": "dist/index.d.ts",
   "sideEffects": [
@@ -86,10 +86,11 @@
     "typescript",
     "tsx",
     "esm",
-    "zero-dependency",
     "accessible",
     "accessibility",
     "a11y",
+    "syntax-highlighting",
+    "highlight-js",
     "dark-mode"
   ],
   "devDependencies": {
@@ -121,5 +122,8 @@
     "@types/react": {
       "optional": true
     }
+  },
+  "dependencies": {
+    "highlight.js": "^11.12.0"
   }
 }

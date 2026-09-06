@@ -46,6 +46,8 @@ Every export of `diffine-react`, in one place. The [guide](../guide/getting-star
 | `syncScroll` | `boolean` | `true` | Whether scrolling one pane scrolls the other. |
 | `header` | `boolean` | `true` | Whether each side is named above it. |
 | `summary` | `boolean` | `true` | Whether the bar under the view is drawn. |
+| `language` | `string` | `'plain'` | What the documents are written in, so they are coloured as it. |
+| `languageLabel` | `boolean` | `true` | Whether that language is named at the right end of the bar. |
 | `tabSize` | `number` | `4` | How wide a tab is drawn, in characters. |
 | `colorScheme` | `'system' \| 'light' \| 'dark'` | `'system'` | Which palette to draw in. |
 | `locale` | `'en' \| 'ko'` | `'en'` | The language of the viewer's own words. |
@@ -85,6 +87,23 @@ Anything else the component is given goes straight to the element, so `id`, `cla
 
 `added`, `removed`, `changed`, `summary`, `documentSize` and `changePosition` are read by a screen reader rather than shown. `summary` fills `{changes}`, `{inserted}` and `{deleted}` with the counts, and `documentSize` fills `{label}` with the name of a side and `{characters}` and `{size}` with numbers already written in the reader's own language. `placeholder` is what an empty field in the editor says.
 
+### `DIFFINE_LANGUAGES`
+
+```ts
+interface DiffineLanguageOption {
+  id: string;
+  name: string;
+}
+
+const DIFFINE_LANGUAGES: readonly DiffineLanguageOption[];
+```
+
+Every language `language` accepts, `plain` first and then thirty-four highlight.js identifiers in alphabetical order. `id` is what `language` takes and `name` is what the bar writes beside the panes — English in every locale, because `TypeScript` is `TypeScript` in all of them.
+
+The editor's own menu is built from this list, and an application building a menu somewhere else should build it from the same one rather than from a copy that goes stale.
+
+`highlight.js` and each grammar sit behind an `import()`. Nothing is fetched until a language other than `plain` is asked for, and what is fetched then is that one grammar. The first paint after it arrives is the document coloured; the one before it is the document.
+
 ### `DiffineHighlight`
 
 ```ts
@@ -104,6 +123,8 @@ interface DiffineToken {
 Called for each line either component draws, with the whole line. The runs come back in order; a gap between two of them is drawn plain, and `null` leaves the line alone. `length` counts the same units `String.prototype.slice` does.
 
 The line is cut at the boundaries of both these runs and the comparison's, so a changed word that is half a string literal is drawn as exactly that.
+
+Passing this replaces `language` rather than adding to it. A line has one set of runs, and two highlighters cutting it at once is not a question with an answer.
 
 ## `DiffineEditor`
 
@@ -141,6 +162,10 @@ Passing `before` or `after` makes that document the application's, in the usual 
 | `header` | `boolean` | `true` | Whether each side is named above it. |
 | `navigation` | `boolean` | `true` | Whether the buttons for moving between changes are drawn. |
 | `summary` | `boolean` | `true` | Whether the bar under the fields is drawn. |
+| `language` | `string` | — | What the documents are written in, held by the application. |
+| `defaultLanguage` | `string` | `'plain'` | Which one to start on, when the editor is to keep it. |
+| `onLanguageChange` | `(language: string) => void` | — | A language was chosen. |
+| `languagePicker` | `boolean` | `true` | Whether the menu of languages is drawn in the bar. |
 | `virtualize` | `boolean` | `true` | Whether only the lines a reader can see are drawn. |
 | `tabSize` | `number` | `4` | How wide a tab is drawn, in characters. |
 | `colorScheme` | `'system' \| 'light' \| 'dark'` | `'system'` | Which palette to draw in. |

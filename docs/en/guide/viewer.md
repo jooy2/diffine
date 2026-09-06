@@ -136,7 +136,19 @@ When the two documents turn out to be the same, the counts become a single tick 
 
 ## Colouring the text
 
-`highlight` is where a syntax highlighter goes. It is handed a whole line and returns the runs it wants drawn differently:
+`language` names what the two documents are written in, and they are coloured as it:
+
+```tsx
+<DiffineViewer before={saved} after={draft} language="typescript" />
+```
+
+It takes a highlight.js identifier, or `plain` for a document that is not code. `DIFFINE_LANGUAGES` is the whole list with the name to write beside each one, and the bar above the panes writes that name at its right end — `languageLabel` turns it off.
+
+Nothing is fetched until a language other than `plain` is asked for. Both the library and each grammar sit behind an `import()`, so a page whose viewers are all `plain` downloads none of it, and one that asks for Python downloads Python. The first paint after the grammar arrives is the document coloured; the one before it is the document.
+
+The colours are eight custom properties — `--diffine-code-keyword`, `--diffine-code-string`, and the rest — and every class highlight.js emits is mapped onto one of them. An application with a palette of its own sets those eight.
+
+`highlight` is the way in for an application that already has a highlighter. It is handed a whole line and returns the runs it wants drawn differently, and it replaces `language` rather than adding to it:
 
 ```tsx
 <DiffineViewer

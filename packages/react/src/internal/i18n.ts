@@ -1,7 +1,7 @@
 /**
  * The words the components put on the screen.
  *
- * There are thirteen of them, and there will not be many more: what these draw is
+ * There are fourteen of them, and there will not be many more: what these draw is
  * two documents, and everything else on the screen came out of those documents.
  * What is here is the frame around them — what each side is called, what an
  * empty field invites, what is said when there is nothing to show, and what a
@@ -23,6 +23,7 @@ const LOCALES: Record<DiffineLocale, DiffineStrings> = {
     added: 'Added',
     removed: 'Removed',
     changed: 'Changed',
+    language: 'Syntax highlighting',
     summary: '{changes} changes, {inserted} lines added, {deleted} lines removed',
     documentSize: '{label}: {characters} characters, {size}',
     previousChange: 'Previous change',
@@ -38,6 +39,7 @@ const LOCALES: Record<DiffineLocale, DiffineStrings> = {
     added: '추가됨',
     removed: '삭제됨',
     changed: '변경됨',
+    language: '구문 강조',
     summary: '변경 {changes}건, {inserted}줄 추가, {deleted}줄 삭제',
     documentSize: '{label}: {characters}자, {size}',
     previousChange: '이전 변경',
