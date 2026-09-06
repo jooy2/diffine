@@ -94,6 +94,16 @@ The buttons in the bar above the panes step through the changes one at a time, e
 
 The change they land on is marked down its left edge and its band is drawn in the accent colour, so where a reader is stays visible after the scrolling has stopped — and after they have carried on typing.
 
+## Searching and replacing
+
+Each field has a search of its own, exactly as each pane of the viewer does: a button in the bar above it, a bar of its own underneath it, and **Ctrl+F** for the field the caret is in. **Ctrl+R** opens the same bar with the row for replacing already on it.
+
+The caret follows the search. What it moved to is the field's own selection, so closing the bar with **Escape** leaves the caret on the match that was being read, and typing carries on from there.
+
+**Replace** writes over the match being read and moves to the one that takes its place, so pressing it again walks down the document. **Replace all** writes over every match at once. The replacement goes in as the text it is — `$1` is a dollar and a one — and it goes in through the browser's own editing command, so `Ctrl`/`Cmd`+`Z` takes it back along with everything else that was typed.
+
+A side that is `readOnly` gets the search without the row for replacing. `search={false}` turns both off and the shortcuts with them, which is what a page wants if **Ctrl+R** has to stay the browser's reload.
+
 ## Tab, and getting back out
 
 `indentWithTab` decides whether Tab types a tab or moves to the next control. It is **off** by default, because a control a keyboard cannot leave is a page a keyboard cannot leave, and an editor is rarely the only thing on a page.

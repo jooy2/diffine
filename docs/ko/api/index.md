@@ -45,6 +45,7 @@ order: 1
 | `connectors` | `boolean` | `true` | 변경을 두 창 사이에 띠로 그릴지. |
 | `syncScroll` | `boolean` | `true` | 한쪽을 스크롤하면 다른 쪽도 따라갈지. |
 | `header` | `boolean` | `true` | 각 문서의 이름을 위에 쓸지. |
+| `search` | `boolean` | `true` | 창 안에서 문서를 찾을 수 있게 할지. |
 | `summary` | `boolean` | `true` | 아래쪽 상태 표시줄을 그릴지. |
 | `language` | `string` | `'plain'` | 문서가 어떤 언어인지. 그 언어로 색을 입힙니다. |
 | `languageLabel` | `boolean` | `true` | 그 언어 이름을 위쪽 줄 오른쪽 끝에 쓸지. |
@@ -68,6 +69,16 @@ order: 1
 
 `selected`는 `changes`의 인덱스입니다. 값을 주면 애플리케이션이 들고 있는 것이 되고, 값을 바꾸면 버튼을 눌렀을 때와 똑같이 화면이 이동합니다. `onSelectedChange`는 둘 중 어느 쪽이 들고 있든 호출됩니다.
 
+### 창 안에서 찾기
+
+창은 각자 찾습니다. 위쪽 막대의 버튼이 그 창 아래에 막대를 열고, **Ctrl+F**(맥에서는 **Cmd+F**)는 키보드가 놓인 창의 막대를 엽니다. 양쪽은 질의도 개수도 막대도 각자여서, 한쪽을 닫아도 다른 쪽은 그대로입니다.
+
+입력하는 동안 찾은 자리가 표시되고 창은 지금 보고 있는 자리로 이동합니다. **Enter**와 **Shift+Enter**로 다음과 이전을 오갑니다. 입력란 안의 스위치 세 개는 각각 대소문자 구분, 단어 단위, 정규식입니다. **Escape**는 막대를 닫습니다.
+
+에디터에는 바꾸기 줄이 하나 더 붙고 **Ctrl+R**이 막대와 함께 그 줄을 엽니다. 이 키는 브라우저의 새로 고침이고, 키보드가 컴포넌트 안에 있는 동안은 에디터가 가져갑니다. 바꿀 내용은 적은 글자 그대로 들어갑니다. `$1`은 달러 기호와 숫자 1입니다. 브라우저 자신의 편집 명령으로 넣기 때문에 Ctrl+Z로 되돌립니다. `readOnly`인 쪽은 찾기만 되고 바꾸기는 되지 않습니다.
+
+찾기를 연 창도 보이는 줄만 그립니다. 9000번째 줄에서 찾은 자리는 그리로 스크롤한 다음 그려집니다. `search={false}`는 버튼과 단축키를 함께 끕니다. 그 키를 페이지의 다른 기능이 쓰고 있다면 이 값을 쓰세요.
+
 ### `DiffineStrings`
 
 | 키               | 한국어 기본값                                           |
@@ -85,8 +96,21 @@ order: 1
 | `previousChange` | `이전 변경`                                             |
 | `nextChange`     | `다음 변경`                                             |
 | `changePosition` | `변경 {total}건 중 {position}번째`                      |
+| `search`         | `찾기`                                                  |
+| `searchIn`       | `{label}에서 찾기`                                      |
+| `searchPrevious` | `이전 결과`                                             |
+| `searchNext`     | `다음 결과`                                             |
+| `searchClose`    | `찾기 닫기`                                             |
+| `searchPosition` | `결과 {total}건 중 {position}번째`                      |
+| `searchEmpty`    | `결과 없음`                                             |
+| `matchCase`      | `대소문자 구분`                                         |
+| `wholeWord`      | `단어 단위`                                             |
+| `regex`          | `정규식`                                                |
+| `replace`        | `바꾸기`                                                |
+| `replaceWith`    | `바꿀 내용`                                             |
+| `replaceAll`     | `모두 바꾸기`                                           |
 
-`added`, `removed`, `changed`, `summary`, `documentSize`, `changePosition`은 화면에 나오지 않고 스크린 리더가 읽습니다. `summary`의 `{changes}`, `{inserted}`, `{deleted}` 자리에 집계가 들어갑니다. `documentSize`의 `{label}` 자리에는 한쪽의 이름이, `{characters}`와 `{size}` 자리에는 읽는 사람의 언어로 이미 써 둔 수가 들어갑니다. `placeholder`는 에디터의 빈 입력란에 나오는 문구입니다.
+`added`, `removed`, `changed`, `summary`, `documentSize`, `changePosition`, `searchPosition`, `searchEmpty`는 화면에 나오지 않고 스크린 리더가 읽습니다. `searchIn`의 `{label}` 자리에는 버튼이 여는 쪽의 이름이 들어갑니다. 한 컴포넌트에 놓인 찾기 버튼 두 개는 이것으로 구분됩니다. `summary`의 `{changes}`, `{inserted}`, `{deleted}` 자리에 집계가 들어갑니다. `documentSize`의 `{label}` 자리에는 한쪽의 이름이, `{characters}`와 `{size}` 자리에는 읽는 사람의 언어로 이미 써 둔 수가 들어갑니다. `placeholder`는 에디터의 빈 입력란에 나오는 문구입니다.
 
 ### `DiffineFont`
 
@@ -177,6 +201,7 @@ interface DiffineToken {
 | `syncScroll` | `boolean` | `true` | 한쪽을 스크롤하면 다른 쪽도 따라갈지. |
 | `header` | `boolean` | `true` | 각 쪽 위에 이름을 쓸지. |
 | `navigation` | `boolean` | `true` | 변경 사이를 오가는 버튼을 그릴지. |
+| `search` | `boolean` | `true` | 입력란 안에서 문서를 찾을 수 있게 할지. |
 | `summary` | `boolean` | `true` | 아래쪽 상태 표시줄을 그릴지. |
 | `language` | `string` | — | 문서가 어떤 언어인지. 애플리케이션이 들고 있습니다. |
 | `defaultLanguage` | `string` | `'plain'` | 에디터가 직접 들고 있을 때 처음 언어. |
@@ -323,24 +348,26 @@ interface DiffEdit {
 
 ### 색
 
-| 속성                     | 밝은 테마   | 어두운 테마 |
-| ------------------------ | ----------- | ----------- |
-| `--diffine-surface`      | `#ffffff`   | `#1b222c`   |
-| `--diffine-text`         | `#1f2733`   | `#e4e9f0`   |
-| `--diffine-muted`        | `#6e798c`   | `#8d99ad`   |
-| `--diffine-border`       | `#d6dee9`   | `#2f3945`   |
-| `--diffine-gutter`       | `#f4f7fb`   | `#232b36`   |
-| `--diffine-accent`       | `#0e7ffc`   | `#4c9dff`   |
-| `--diffine-insert-line`  | `#e7f8ee`   | `#12301f`   |
-| `--diffine-insert-piece` | `#a5e9c1`   | `#206c42`   |
-| `--diffine-delete-line`  | `#fdecee`   | `#351c20`   |
-| `--diffine-delete-piece` | `#ffc3c8`   | `#7f303a`   |
-| `--diffine-insert-text`  | `#1a7f4b`   | `#5fd08a`   |
-| `--diffine-delete-text`  | `#c2333f`   | `#ff8b95`   |
-| `--diffine-blank`        | `#f0f3f7`   | `#151b23`   |
-| `--diffine-selection`    | `#0e7ffc33` | `#4c9dff40` |
+| 속성                       | 밝은 테마   | 어두운 테마 |
+| -------------------------- | ----------- | ----------- |
+| `--diffine-surface`        | `#ffffff`   | `#1b222c`   |
+| `--diffine-text`           | `#1f2733`   | `#e4e9f0`   |
+| `--diffine-muted`          | `#6e798c`   | `#8d99ad`   |
+| `--diffine-border`         | `#d6dee9`   | `#2f3945`   |
+| `--diffine-gutter`         | `#f4f7fb`   | `#232b36`   |
+| `--diffine-accent`         | `#0e7ffc`   | `#4c9dff`   |
+| `--diffine-insert-line`    | `#e7f8ee`   | `#12301f`   |
+| `--diffine-insert-piece`   | `#a5e9c1`   | `#206c42`   |
+| `--diffine-delete-line`    | `#fdecee`   | `#351c20`   |
+| `--diffine-delete-piece`   | `#ffc3c8`   | `#7f303a`   |
+| `--diffine-insert-text`    | `#1a7f4b`   | `#5fd08a`   |
+| `--diffine-delete-text`    | `#c2333f`   | `#ff8b95`   |
+| `--diffine-search`         | `#ffe9a8`   | `#5c4713`   |
+| `--diffine-search-current` | `#ffbd3d`   | `#8a5c0f`   |
+| `--diffine-blank`          | `#f0f3f7`   | `#151b23`   |
+| `--diffine-selection`      | `#0e7ffc33` | `#4c9dff40` |
 
-`-line` 쪽이 줄 전체에 옅게 깔리는 색이고, `-piece` 쪽이 그 위에서 바뀐 부분을 짚는 색입니다. `-text` 쪽은 같은 두 색을 글자로 읽을 만큼 진하게 만든 것으로, 뒤에 깔린 것이 여백뿐인 아래쪽 상태 표시줄의 집계에 씁니다. `--diffine-selection`은 에디터만 쓰고, 반투명해야 합니다. 선택 영역 아래의 글자는 입력란 뒤에서 그리기 때문입니다.
+`-line` 쪽이 줄 전체에 옅게 깔리는 색이고, `-piece` 쪽이 그 위에서 바뀐 부분을 짚는 색입니다. `-text` 쪽은 같은 두 색을 글자로 읽을 만큼 진하게 만든 것으로, 뒤에 깔린 것이 여백뿐인 아래쪽 상태 표시줄의 집계에 씁니다. `--diffine-search` 짝은 찾기가 짚는 색입니다. 앞은 찾은 자리 전부, 뒤는 지금 보고 있는 자리입니다. 강조색 대신 세 번째 색을 쓰는 이유는, 찾은 자리가 이미 초록이나 빨강으로 물든 줄에 놓일 수 있고 그 세 바탕 모두에서 읽혀야 하기 때문입니다. `--diffine-selection`은 에디터만 쓰고, 반투명해야 합니다. 선택 영역 아래의 글자는 입력란 뒤에서 그리기 때문입니다.
 
 ### 치수
 

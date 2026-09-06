@@ -94,6 +94,18 @@ Setting `selected` scrolls the view, exactly as pressing a button does, so an ap
 
 `navigation` turns the buttons off. The bar they sit in is drawn for them even when `header` is off, so a viewer can have the buttons without the names.
 
+## Searching
+
+Each pane has a search of its own. The button in the bar above it opens a bar under it, and **Ctrl+F** — **Cmd+F** where that is the modifier — opens the one for the pane the keyboard is in.
+
+One per pane rather than one per component, because a comparison is two documents: a name being chased through the version on the left is not a name being chased through the version on the right. The two have two queries, two counts and two bars, and closing one leaves the other where it was.
+
+Matches are marked as the query is typed, and the pane moves to the one being read. **Enter** steps on and **Shift+Enter** steps back, both wrapping at the ends the way the change buttons do. **Escape** closes the bar and puts the focus back in the pane.
+
+The three switches inside the box are what the query means: `Aa` tells `Title` from `title`, `ab` matches whole words only, and `.*` reads the query as a regular expression rather than as the text to look for. A half-written expression is not an error — the box says it has found nothing, and the moment the expression is finished it has matches.
+
+`search={false}` turns the button and the shortcut off together.
+
 ## Long documents
 
 `virtualize` is on by default, and it is why a comparison of twenty thousand lines opens at all. Twenty thousand lines is twenty thousand rows in the page; forty of them are on the screen. The rest are height and nothing else.
@@ -106,7 +118,7 @@ That demo is three thousand lines. Scroll it, or press the buttons above it, and
 
 It needs every line to be the same height, which is true of a pane that is not wrapping and of nothing else — a line that wraps three times is three lines tall and there is no knowing that without drawing it. So `wrap` turns this off and the whole document is drawn. It also leaves a short document alone, where the machinery would cost more than the rows it saved.
 
-Turn it off with `virtualize={false}` for a page where the browser's own find has to reach text that is scrolled out of view. Nothing that is not drawn can be found.
+Turn it off with `virtualize={false}` for a page where the browser's own find has to reach text that is scrolled out of view. Nothing that is not drawn can be found. The viewer's own search is the other answer to that, and the usual one: it reads the document rather than the page, so it finds a line on the nine thousandth row and scrolls to it.
 
 ## The frame around it
 
