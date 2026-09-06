@@ -6,11 +6,24 @@ import { readRows, useMeasure, type RowBox } from '../../internal/layout.js';
 import type { PaneLayout } from '../../internal/rows.js';
 import { useScrollWatch } from '../../internal/scroll.js';
 
-/** One change, drawn as the shape between where it left and where it arrived. */
+/**
+ * One change, drawn as the shape between where it left and where it arrived.
+ *
+ * Three paths rather than one. A single closed path stroked all the way round
+ * puts half of that stroke outside the column on the left-hand and right-hand
+ * edges, where it is clipped — so the two curves that carry the meaning come
+ * out thinner than the two edges that carry none. Drawn apart, the fill is a
+ * fill and the curves are the only thing with a line on them.
+ */
 interface Link {
   kind: DiffChangeKind;
   current: boolean;
-  d: string;
+  /** The whole band, closed and filled. */
+  area: string;
+  /** Its top curve, from where the run left to where it arrived. */
+  top: string;
+  /** Its bottom curve. */
+  bottom: string;
 }
 
 /** Where a change sits in one pane, in that pane's own coordinates. */
@@ -119,6 +132,16 @@ export function DiffineLinks({
   deps
 }: DiffineLinksProps): React.JSX.Element {
   const column = React.useRef<HTMLDivElement>(null);
+  /*
+   * What this component's own gradients are called.
+   *
+   * A page can hold more than one viewer, and two `<defs>` naming the same
+   * gradient is one gradient — whichever came second, drawn in whichever
+   * palette its component happened to have. `useId` is unique per instance and
+   * the same on the server as in the browser; the characters React puts round
+   * it are not legal in a URL fragment, so they come off.
+   */
+  const gradient = React.useId().replace(/[^\w-]/g, '');
   const geometry = React.useRef<[Map<number, RowBox>, Map<number, RowBox>]>([new Map(), new Map()]);
   const [links, setLinks] = React.useState<Link[]>([]);
 
@@ -155,21 +178,26 @@ export function DiffineLinks({
         continue;
       }
 
+      const top = `M0 ${leftTop}C${bend} ${leftTop} ${bend} ${rightTop} ${width} ${rightTop}`;
+      const bottom = `M0 ${leftBottom}C${bend} ${leftBottom} ${bend} ${rightBottom} ${width} ${rightBottom}`;
+
       next.push({
         kind: change.kind,
         current: index === current,
-        d:
-          `M0 ${leftTop}` +
-          `C${bend} ${leftTop} ${bend} ${rightTop} ${width} ${rightTop}` +
-          `L${width} ${rightBottom}` +
+        area:
+          `${top}L${width} ${rightBottom}` +
           `C${bend} ${rightBottom} ${bend} ${leftBottom} 0 ${leftBottom}` +
-          'Z'
+          'Z',
+        top,
+        bottom
       });
     }
 
     setLinks((held) =>
       held.length === next.length &&
-      held.every((link, index) => link.d === next[index].d && link.current === next[index].current)
+      held.every(
+        (link, index) => link.area === next[index].area && link.current === next[index].current
+      )
         ? held
         : next
     );
@@ -192,14 +220,52 @@ export function DiffineLinks({
   return (
     <div className="diffine-links" ref={column} aria-hidden="true">
       <svg className="diffine-links-canvas" focusable="false">
+        <defs>
+          {/*
+            An edit went out on one side and came in on the other, so its band
+            is not one colour. It is the colour it left as on the left-hand edge
+            and the colour it arrived as on the right, and the two run into each
+            other across the column — which says in one shape what a red band
+            with a green outline said in two contradictory ones.
+
+            The stops are custom properties, so this is themed with everything
+            else. The `fill` and `stroke` are written on the elements rather
+            than in the stylesheet because a rule there cannot name an
+            identifier this component made up; nothing in the stylesheet claims
+            either for a `replace`, so the attributes stand.
+          */}
+          <linearGradient id={`${gradient}-area`} x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stopColor="var(--diffine-delete-line)" />
+            <stop offset="1" stopColor="var(--diffine-insert-line)" />
+          </linearGradient>
+          <linearGradient id={`${gradient}-edge`} x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stopColor="var(--diffine-delete-text)" />
+            <stop offset="1" stopColor="var(--diffine-insert-text)" />
+          </linearGradient>
+        </defs>
         {links.map((link, index) => (
-          <path
+          <g
             key={index}
             className="diffine-link"
             data-kind={link.kind}
             data-current={link.current ? 'true' : undefined}
-            d={link.d}
-          />
+          >
+            <path
+              className="diffine-link-area"
+              d={link.area}
+              fill={link.kind === 'replace' ? `url(#${gradient}-area)` : undefined}
+            />
+            <path
+              className="diffine-link-edge"
+              d={link.top}
+              stroke={link.kind === 'replace' ? `url(#${gradient}-edge)` : undefined}
+            />
+            <path
+              className="diffine-link-edge"
+              d={link.bottom}
+              stroke={link.kind === 'replace' ? `url(#${gradient}-edge)` : undefined}
+            />
+          </g>
         ))}
       </svg>
     </div>

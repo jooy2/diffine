@@ -63,6 +63,8 @@ Turned off, each pane is only its own lines, ending where its own document ends.
 
 `connectors` draws each change as a band from where it left to where it arrived. With the sides held level the bands are straight, which is a quiet way of confirming what the alignment already did. With them not held level the bands bend, and they are the only thing saying where a run of lines went.
 
+A band that took lines out is drawn in the delete colours and one that brought lines in is drawn in the insert colours. A band for an edit runs from one to the other across the column, because that is what an edit did: it left on one side and arrived on the other.
+
 The geometry is read once per layout and kept, so scrolling moves shapes that were already measured rather than measuring them again a frame at a time.
 
 `syncScroll` is what keeps the two panes looking at the same part of the two documents. With the rows level they share one scroll position; without, the position becomes a fraction of the way down, because the same number would put a reader at the end of one document and the middle of the other.
@@ -71,7 +73,7 @@ The geometry is read once per layout and kept, so scrolling moves shapes that we
 
 The two buttons in the bar above the panes step through the changes one at a time, and the count between them says where a reader is. They wrap: a reader working down a file wants the next change rather than a button that stops at the bottom, and going from `4 / 4` to `1 / 4` says what happened.
 
-The change they land on is marked down its left edge, and its band between the panes is drawn in the accent colour — so where a reader is stays visible after the scrolling has stopped.
+The change they land on is marked down its left edge, and its band between the panes is drawn with a heavier line — so where a reader is stays visible after the scrolling has stopped.
 
 <DiffineDemo sample="code" height="18rem" />
 

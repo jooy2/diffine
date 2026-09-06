@@ -38,6 +38,8 @@ The first published version.
 
 - **The bar under the panes says what each document weighs and what happened between them.** It sits on the header's grid, so the left half is under the left pane and the right half under the right one, and each side carries its own character count and its size in bytes. The counts go at the far right as a `~`, a `+` and a `−` against three numbers — the same three marks the gutter puts beside a line — and a screen reader is told the sentence instead. `documentSize` is the string that sentence is written from.
 
+- **A band between the panes runs from the colour it left as to the colour it arrived as.** An edit went out on one side and came in on the other, and the band for one used to be a delete-coloured fill with an insert-coloured outline — two statements that contradicted each other. It is one gradient across the column now. The band is drawn as a fill with its two curves stroked separately, so the curves that carry the meaning are not thinned by the two vertical edges that carry none, and the column takes the surface colour rather than the gutter's so that a pale tint on it reads the way the same tint does inside a pane.
+
 - **`font` sets the typeface, its size, its line height and its letter spacing from props.** The same four custom properties, for an application that holds them in its own state rather than in its own CSS; anything left out keeps the stylesheet's value. `--diffine-letter-spacing` is new, and is the fourth of them.
 
 - **Every colour and measurement is a custom property.** An application with a palette of its own overrides `--diffine-*` on the element rather than writing rules that have to beat the package's.
@@ -46,7 +48,7 @@ The first published version.
 
 - **English and Korean, and any other language an application writes itself.** `locale` picks one of the two and `strings` replaces any word in either.
 
-- **Two buttons for reading a comparison one change at a time.** They sit in the bar above the panes, with the count beside them, and they wrap — a reader working down a file wants the next change rather than a button that stops at the bottom. The change they land on is marked down its left edge and its band between the panes is drawn in the accent colour, so where a reader is stays visible after the scrolling has stopped.
+- **Two buttons for reading a comparison one change at a time.** They sit in the bar above the panes, with the count beside them, and they wrap — a reader working down a file wants the next change rather than a button that stops at the bottom. The change they land on is marked down its left edge and its band between the panes is drawn with a heavier line, so where a reader is stays visible after the scrolling has stopped.
 
   `selected` and `onSelectedChange` make that an application's to hold, in the usual React pair, and setting `selected` scrolls the view the same way pressing a button does. `navigation` turns the buttons off; the bar they sit in is drawn for them even when `header` is not.
 

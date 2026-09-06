@@ -625,12 +625,21 @@
 
 /* ---- The column between the panes --------------------------------------- */
 
+/*
+ * The column between the panes, drawn on the same ground the panes are.
+ *
+ * It used to take the gutter's colour, which put a pale green band on a pale
+ * grey field and left the shapes hard to pick out. A row that changed is tinted
+ * against the surface inside a pane, and a band is that row carried across —
+ * so it is tinted against the surface here as well, and the two read as one
+ * thing rather than as two similar colours.
+ */
 .diffine-links {
   position: relative;
   flex: 0 0 var(--diffine-links-width);
   overflow: hidden;
   border-inline: 1px solid var(--diffine-border);
-  background: var(--diffine-gutter);
+  background: var(--diffine-surface);
 }
 
 .diffine-links-canvas {
@@ -640,27 +649,42 @@
   height: 100%;
 }
 
-.diffine-link {
+.diffine-link-area {
+  stroke: none;
+}
+
+/*
+ * The two curves, and nothing else with a line on it.
+ *
+ * They are what a band actually says — this run of lines up here answers that
+ * run of lines over there — and the two vertical edges say nothing, sit against
+ * the panes, and would have half their stroke clipped by the column anyway.
+ */
+.diffine-link-edge {
+  fill: none;
   stroke-width: 1;
+  vector-effect: non-scaling-stroke;
 }
 
-.diffine-link[data-kind='insert'] {
+.diffine-link[data-kind='insert'] .diffine-link-area {
   fill: var(--diffine-insert-line);
-  stroke: var(--diffine-insert-piece);
 }
 
-.diffine-link[data-kind='delete'] {
-  fill: var(--diffine-delete-line);
-  stroke: var(--diffine-delete-piece);
+.diffine-link[data-kind='insert'] .diffine-link-edge {
+  stroke: var(--diffine-insert-text);
 }
 
-/* An edit went out on one side and came in on the other, so its band is both
-   colours — the left edge the one it left and the right edge the one it
-   arrived as. */
-.diffine-link[data-kind='replace'] {
+.diffine-link[data-kind='delete'] .diffine-link-area {
   fill: var(--diffine-delete-line);
-  stroke: var(--diffine-insert-piece);
 }
+
+.diffine-link[data-kind='delete'] .diffine-link-edge {
+  stroke: var(--diffine-delete-text);
+}
+
+/* A `replace` is left to the gradient the component names on the elements
+   themselves, which runs from the colour it left as to the colour it arrived
+   as. Nothing is claimed for it here, or the rule would beat the attribute. */
 
 /* ---- Moving between changes ---------------------------------------------- */
 
@@ -722,9 +746,15 @@
   box-shadow: inset 2px 0 0 var(--diffine-accent);
 }
 
-.diffine-link[data-current='true'] {
-  stroke: var(--diffine-accent);
-  stroke-width: 1.5;
+/*
+ * The change a reader has moved to, said in weight rather than in colour.
+ *
+ * The accent would be a third colour in a column whose whole vocabulary is two,
+ * and a blue outline round a green band is a band that has stopped saying what
+ * happened to it. A heavier line says the same thing and says nothing else.
+ */
+.diffine-link[data-current='true'] .diffine-link-edge {
+  stroke-width: 2;
 }
 
 /* ---- The lines that are not drawn ---------------------------------------- */
