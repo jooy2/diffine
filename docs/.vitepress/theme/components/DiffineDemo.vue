@@ -95,6 +95,9 @@ const labels = computed(() =>
     : { view: 'Unified', wrap: 'Wrap', align: 'Align', numbers: 'Numbers' }
 );
 
+/** Whether a demo has a language to say anything about at all. */
+const coloured = () => !props.colour && Boolean(SAMPLES[props.sample]?.language);
+
 /** The sample with enough filler under it to be worth not drawing whole. */
 function padded(source: string, lines: number): string {
   const filler = Array.from(
@@ -129,8 +132,6 @@ function draw() {
     // showing what `highlight` is for — the two answer the same question, and
     // that page is about the second answer.
     language: props.colour ? undefined : sample.language,
-    languagePicker: false,
-    languageLabel: !props.colour && Boolean(sample.language),
     highlight: props.colour ? highlight : undefined,
     diff: {
       inline: props.inline,
@@ -151,7 +152,10 @@ function draw() {
       defaultBefore: before,
       defaultAfter: after,
       readOnly: props.readOnly,
-      indentWithTab: props.indentWithTab
+      indentWithTab: props.indentWithTab,
+      // Named on the two components under two names, because a viewer is told
+      // its language and an editor is asked for one.
+      languagePicker: coloured()
     });
   }
 
@@ -160,7 +164,8 @@ function draw() {
     before,
     after,
     view: chosen.value.view,
-    alignLines: chosen.value.alignLines
+    alignLines: chosen.value.alignLines,
+    languageLabel: coloured()
   });
 }
 
