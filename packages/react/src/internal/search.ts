@@ -277,6 +277,16 @@ export interface DocumentSearch {
 export interface DocumentSearchOptions {
   /** Whether this pane can be searched at all. */
   enabled: boolean;
+  /**
+   * Whether the bar is open, and how to open it.
+   *
+   * Held by the component rather than in here, because what the panes draw
+   * depends on it: a folded run is a run the search cannot reach, so the folds
+   * are suspended while a bar is open — and the layout this hook searches is
+   * worked out before this hook runs.
+   */
+  open: boolean;
+  setOpen: (open: boolean) => void;
   /** The lines the search runs over, which is one pane's worth of them. */
   layout: PaneLayout;
   pane: React.RefObject<HTMLElement | null>;
@@ -331,13 +341,14 @@ function bring(pane: HTMLElement | null, row: number, rowHeight: number): boolea
  */
 export function useDocumentSearch({
   enabled,
+  open,
+  setOpen,
   layout,
   pane,
   rowHeight,
   remeasure,
   onReveal
 }: DocumentSearchOptions): DocumentSearch {
-  const [open, setOpen] = React.useState(false);
   const [replacing, setReplacing] = React.useState(false);
   const [query, setText] = React.useState('');
   const [replacement, setReplacement] = React.useState('');

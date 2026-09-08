@@ -224,6 +224,22 @@ The tab is typed through the browser's own editing command, so `Ctrl`/`Cmd`+`Z` 
 
 In an editor the comparison runs again on every keystroke rather than after a pause. It costs the size of the documents multiplied by the number of edits between them, and a keystroke barely moves that number. `maxCost` is what bounds the other case; see [the comparison](./diff).
 
+## Folding what did not change
+
+Two versions of a file are mostly the part nobody edited. `collapse` draws each run of unchanged lines as a band saying how many it stands for, and keeps `context` of them either side of every change so that each one still sits in the file rather than on its own.
+
+```tsx
+<TextDiff before={saved} after={draft} collapse context={3} />
+```
+
+Pressing a band puts its lines back, and they stay back until the comparison changes. Three lines either side is what `diff` and `git` write; nothing is kept at the top and the bottom, where there is no change on that side to surround.
+
+Both panes fold the same runs, so a split view stays level. A band is exactly one line tall, which is what lets it live alongside `virtualize`.
+
+A search reaches the whole document rather than the part of it that is drawn, so opening one puts the folded runs back for as long as the bar is open. They come back when it closes.
+
+A band also appears where a comparison is missing lines rather than hiding them — between one hunk of a [patch](diff#patches) and the next. That one is drawn whatever `collapse` says, and it cannot be pressed, because nobody sent the lines it stands for.
+
 ## Long documents
 
 `virtualize` is on by default, and it is why a comparison of twenty thousand lines opens at all. Twenty thousand lines is twenty thousand rows in the page; forty of them are on the screen. The rest are height and nothing else.

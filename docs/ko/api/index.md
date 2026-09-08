@@ -33,7 +33,7 @@ order: 1
 
 컴포넌트 하나가 둘 다 그립니다. `editor`는 창마다 입력란을 한 겹 덮어서 글자를 칠 때마다 비교를 다시 계산하고, 나머지는 — 줄도, 깔리는 색도, 짚어 주는 단어도, 띠도, 버튼도, 찾기도 — 양쪽이 같습니다.
 
-`editor`에서 무시되는 prop이 셋 있습니다. `view`와 `alignLines`는 입력란이 한 열이 될 수도, 커서를 놓을 수 있는 빈 칸으로 채워질 수도 없어서 무시되고, `result`는 아직 아무도 손대지 않은 문서의 비교라서 무시됩니다. 반대로 `readOnly`, `indentWithTab`, `spellCheck`, `defaultBefore`, `defaultAfter`, `onLanguageChange`는 `viewer`에서 하는 일이 없습니다.
+`editor`에서 무시되는 prop이 몇 있습니다. `view`, `alignLines`, `collapse`, `context`는 입력란이 한 열이 될 수도, 커서를 놓을 수 있는 빈 칸으로 채워질 수도, 줄을 감출 수도 없어서 무시되고, `result`는 아직 아무도 손대지 않은 문서의 비교라서 무시됩니다. 반대로 `readOnly`, `indentWithTab`, `spellCheck`, `defaultBefore`, `defaultAfter`, `onLanguageChange`는 `viewer`에서 하는 일이 없습니다.
 
 ### 문서
 
@@ -63,6 +63,8 @@ order: 1
 | `markers` | `boolean` | `true` | 바뀐 줄에 `+`, `−`, `~`를 붙일지. |
 | `wrap` | `boolean` | `false` | 긴 줄을 접을지 옆으로 흘릴지. |
 | `alignLines` | `boolean` | `true` | 맞은편 줄과 높이를 맞출지. |
+| `collapse` | `boolean` | `false` | 변경에서 먼 그대로인 줄을 접을지. |
+| `context` | `number` | `3` | 변경 앞뒤로 남길 그대로인 줄 수. |
 | `connectors` | `boolean` | `true` | 변경을 두 창 사이에 띠로 그릴지. |
 | `syncScroll` | `boolean` | `true` | 한쪽을 스크롤하면 다른 쪽도 따라갈지. |
 | `header` | `boolean` | `true` | 각 문서의 이름을 위에 쓸지. |
@@ -81,7 +83,7 @@ order: 1
 | `strings` | `Partial<DiffineStrings>` | — | 로케일 대신 쓸 단어. |
 | `highlight` | `DiffineHighlight` | — | `language` 대신 쓸, 애플리케이션 자신의 강조기. |
 
-`connectors`와 `syncScroll`은 두 창 사이의 이야기라서 `unified`에서는 무시됩니다. `languageLabel`은 `viewer`에서 언어 이름을, `editor`에서 그 이름을 고르는 메뉴를 그립니다. 그 선택을 누가 관리하는지는 `language`, `defaultLanguage`, `onLanguageChange`가 정합니다.
+`collapse`와 `context`는 `viewer`의 것입니다. 에디터는 입력란이 문서 전체를 들고 있어서 아무것도 접지 않습니다. `connectors`와 `syncScroll`은 두 창 사이의 이야기라서 `unified`에서는 무시됩니다. `languageLabel`은 `viewer`에서 언어 이름을, `editor`에서 그 이름을 고르는 메뉴를 그립니다. 그 선택을 누가 관리하는지는 `language`, `defaultLanguage`, `onLanguageChange`가 정합니다.
 
 그 밖에 넘긴 것은 전부 엘리먼트로 그대로 갑니다. `id`, `className`, `style`, `aria-*`는 `<div>`에서와 똑같이 동작합니다.
 
@@ -126,6 +128,8 @@ order: 1
 | `added`          | `추가됨`                                                |
 | `removed`        | `삭제됨`                                                |
 | `changed`        | `변경됨`                                                |
+| `folded`         | `변경 없는 {lines}줄`                                   |
+| `expand`         | `변경 없는 {lines}줄 펼치기`                            |
 | `summary`        | `변경 {changes}건, {inserted}줄 추가, {deleted}줄 삭제` |
 | `documentSize`   | `{label}: {characters}자, {size}`                       |
 | `previousChange` | `이전 변경`                                             |

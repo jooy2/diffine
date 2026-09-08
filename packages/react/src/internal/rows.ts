@@ -19,6 +19,7 @@
  */
 
 import type { DiffChange, DiffLine, DiffRow, DiffRowKind, DiffineSide } from '../types.js';
+import type { FoldPlan, FoldRun } from './fold.js';
 
 /** One line as a pane draws it. */
 export interface PaneLine {
@@ -32,6 +33,14 @@ export interface PaneLine {
   numbers: readonly (number | null)[];
   /** Which change this belongs to, or -1 for a line that did not change. */
   change: number;
+  /**
+   * The run of rows this stands in for, for a band rather than a line.
+   *
+   * A band takes a line's place in the list and a line's height on the screen,
+   * so everything that counts lines or measures one of them carries on working
+   * without knowing this is here.
+   */
+  fold?: FoldRun;
 }
 
 /** Everything a pane needs to draw, and to be pointed at from outside. */
@@ -59,13 +68,29 @@ export function splitLayout(
   rows: readonly DiffRow[],
   owner: Int32Array,
   side: DiffineSide,
-  blanks: boolean
+  blanks: boolean,
+  plan: FoldPlan | null
 ): PaneLayout {
   const lines: PaneLine[] = [];
   const positions = new Int32Array(rows.length).fill(-1);
   let widest: PaneLine | null = null;
 
+  /** The band that stands in front of a row, where the plan puts one there. */
+  function band(row: number): void {
+    const fold = plan?.bands[row];
+
+    if (fold) {
+      lines.push({ kind: 'equal', side, line: null, numbers: [], change: -1, fold });
+    }
+  }
+
   for (const [row, entry] of rows.entries()) {
+    band(row);
+
+    if (plan?.hidden[row]) {
+      continue;
+    }
+
     const line = entry[side];
 
     if (!line && !blanks) {
@@ -87,6 +112,8 @@ export function splitLayout(
       widest = drawn;
     }
   }
+
+  band(rows.length);
 
   return { lines, positions, widest };
 }
@@ -112,7 +139,7 @@ export function fieldLayout(
   side: DiffineSide,
   text: string
 ): PaneLayout {
-  const layout = splitLayout(rows, owner, side, false);
+  const layout = splitLayout(rows, owner, side, false, null);
 
   if (text !== '' && !/[\n\r]$/.test(text)) {
     return layout;
@@ -145,7 +172,8 @@ export function fieldLayout(
 export function unifiedLayout(
   rows: readonly DiffRow[],
   changes: readonly DiffChange[],
-  owner: Int32Array
+  owner: Int32Array,
+  plan: FoldPlan | null
 ): PaneLayout {
   const lines: PaneLine[] = [];
   const positions = new Int32Array(rows.length).fill(-1);
@@ -172,8 +200,23 @@ export function unifiedLayout(
     }
   }
 
+  /** The band that stands in front of a row, where the plan puts one there. */
+  function band(row: number): void {
+    const fold = plan?.bands[row];
+
+    if (fold) {
+      lines.push({ kind: 'equal', side: 'before', line: null, numbers: [], change: -1, fold });
+    }
+  }
+
   function pushUnchanged(until: number): void {
     for (; cursor < until; cursor += 1) {
+      band(cursor);
+
+      if (plan?.hidden[cursor]) {
+        continue;
+      }
+
       const row = rows[cursor];
 
       if (row.before && row.after) {
@@ -184,6 +227,7 @@ export function unifiedLayout(
 
   for (const change of changes) {
     pushUnchanged(change.rowStart);
+    band(change.rowStart);
 
     for (let row = change.rowStart; row < change.rowEnd; row += 1) {
       const line = rows[row].before;
@@ -205,6 +249,7 @@ export function unifiedLayout(
   }
 
   pushUnchanged(rows.length);
+  band(rows.length);
 
   return { lines, positions, widest };
 }

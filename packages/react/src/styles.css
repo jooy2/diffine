@@ -657,6 +657,63 @@
   opacity: 0.6;
 }
 
+/* ---- A band where lines are not drawn -------------------------------------
+ *
+ * Two things end up here and they look the same on purpose: a run of unchanged
+ * lines `collapse` folded away, which a reader can press to open, and a run
+ * that is missing altogether — the lines between one hunk of a patch and the
+ * next, which nobody sent and nothing can open.
+ *
+ * It is exactly one line tall and it never grows. Everything above it is
+ * arithmetic over rows that are all the same height: the window a virtualised
+ * pane draws, the two sides held level with each other, and the row a search
+ * scrolls to. So there is no border here, and no padding down the sides of the
+ * row — a rule that added a pixel would move every line under it away from
+ * where the arithmetic says it is.
+ * ----------------------------------------------------------------------- */
+
+.diffine-line[data-kind='fold'] {
+  background: var(--diffine-gutter);
+  color: var(--diffine-muted);
+}
+
+.diffine-fold {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  height: var(--diffine-line-height);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-align: left;
+  user-select: none;
+}
+
+button.diffine-fold {
+  cursor: pointer;
+}
+
+button.diffine-fold:hover {
+  color: var(--diffine-accent);
+}
+
+button.diffine-fold:focus-visible {
+  outline: 2px solid var(--diffine-accent);
+  outline-offset: -2px;
+}
+
+/* Held against the left edge while a long line is scrolled past it, which is
+   what the gutter beside it does. */
+.diffine-fold-text {
+  position: sticky;
+  left: 0;
+  padding-inline: 0.75rem;
+}
+
 .diffine-piece {
   border-radius: 0.1875rem;
   padding-block: 0.0625rem;

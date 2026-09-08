@@ -153,7 +153,7 @@ file.result; // the same shape `diffText` returns
 
 One entry comes back per file the patch covers, in the order they appear, and the second argument is the same set of options `diffText` takes. A page that reads patches and a page that compares documents can be told to mark the same things.
 
-What the format does not carry, the reader does not invent. The lines between one hunk and the next are not in the patch, so the numbers jump there: a line's `index` is still its own number in the file it came from, while `result.before` holds only the lines that arrived. Anything around the hunks is skipped rather than read, including the `diff --git` line, the mode and index lines, and the marker for a file that does not end in a newline.
+What the format does not carry, the reader does not invent. The lines between one hunk and the next are not in the patch, so the numbers jump there: a line's `index` is still its own number in the file it came from, while `result.before` holds only the lines that arrived. The viewer draws that jump as a band saying how many lines are not there. Anything around the hunks is skipped rather than read, including the `diff --git` line, the mode and index lines, and the marker for a file that does not end in a newline.
 
 `formatPatch` is the way back out, for an export button or a comparison that has to be handed to another tool.
 

@@ -17,7 +17,6 @@
 
 import type {
   DiffChange,
-  DiffLine,
   DiffOptions,
   DiffPatchFile,
   DiffPatchOptions,
@@ -25,6 +24,7 @@ import type {
   DiffRow,
   DiffStats
 } from './types.js';
+import { follows } from './internal/diff/gap.js';
 import { changeRows, countRows, settleOptions } from './internal/diff/text.js';
 
 export type {
@@ -41,22 +41,6 @@ const CONTEXT = 3;
 
 /** The `@@ -1,4 +1,5 @@` that opens a hunk, with the count left off where it is one. */
 const HUNK = /^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/;
-
-/** Whether one line of a side comes straight after the other, with none missing. */
-function step(previous: DiffLine | null, next: DiffLine | null): boolean {
-  return !previous || !next || next.index === previous.index + 1;
-}
-
-/**
- * Whether a row carries straight on from the one before it.
- *
- * False is a gap: the rows are next to each other in the list and the lines
- * they hold are not next to each other in the document. Only a comparison read
- * back out of a patch has one, and it is where the next hunk has to start.
- */
-function follows(previous: DiffRow, next: DiffRow): boolean {
-  return step(previous.before, next.before) && step(previous.after, next.after);
-}
 
 /** A run of rows one hunk covers, as a half-open interval. */
 interface Hunk {

@@ -617,6 +617,10 @@ export interface DiffineStrings {
   removed: string;
   /** What it hears in front of a line that has a different counterpart. */
   changed: string;
+  /** What a band standing in for lines nobody is reading says: `{lines}`. */
+  folded: string;
+  /** The name of the button that opens one of those bands: `{lines}`. */
+  expand: string;
   /** What the editor's menu of languages is called to a screen reader. */
   language: string;
   /** How the counts are read out: `{changes}`, `{inserted}` and `{deleted}`. */

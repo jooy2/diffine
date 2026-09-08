@@ -6,6 +6,10 @@
 
 ### Added
 
+- **`collapse` folds away the runs of unchanged lines nobody is reading.** Two versions of a file are mostly the part nobody edited, and a reader who opened a comparison to see what changed scrolls past all of it. On, each run is drawn as a band saying how many lines it stands for, with `context` lines kept either side of every change — three by default, which is what `diff` and `git` write. Pressing a band puts its lines back. Both panes fold the same runs so a split view stays level, and a band is exactly one line tall, so `virtualize` carries on unchanged behind it.
+
+  A search reaches the whole document rather than the part of it that is drawn, so opening one puts the folded runs back until the bar is closed. A band is also drawn where a comparison is missing lines rather than hiding them — between one hunk of a patch and the next — whatever `collapse` says, and that one cannot be pressed, because nobody sent the lines it stands for. `strings.folded` and `strings.expand` are the two words it is written with.
+
 - **`parsePatch` reads a unified diff, and `formatPatch` writes one.** A service that already holds the comparison — a server, a build, a hook with `git diff` in its hands — can now send the patch instead of both documents, and what comes back is the same value `diffText` returns, down to the words marked inside a pair of changed lines. `parsePatch` gives one entry per file the patch covers, each with the names off the `---` and `+++` lines; `formatPatch` takes a comparison and a `context` and writes the format `git apply` and `patch` read.
 
   What the format does not carry, the reader does not invent. The lines between one hunk and the next are not in a patch, so the numbers jump there: a line's `index` is still its own number in the file it came from, and `result.before` holds the lines that arrived rather than the whole document. Both functions are also their own entry, `diffine-react/patch`, so nothing of the component reaches a bundle that only wanted them.

@@ -33,7 +33,7 @@ Every export of `diffine-react`, in one place. The [guide](../guide/getting-star
 
 One component draws both. `editor` lays a field over each pane, so the comparison is worked out again as somebody types into it; everything else — the rows, the tints, the marked words, the bands, the buttons, the search — is the same in both.
 
-Three props are ignored in `editor` mode: `view` and `alignLines`, because a field cannot be a unified column and cannot be padded out with blanks somebody could type into, and `result`, because a comparison worked out elsewhere is a comparison of documents nobody has typed into yet. Going the other way, `readOnly`, `indentWithTab`, `spellCheck`, `defaultBefore`, `defaultAfter` and `onLanguageChange` do nothing in `viewer` mode.
+Several props are ignored in `editor` mode: `view`, `alignLines`, `collapse` and `context`, because a field cannot be a unified column, cannot be padded out with blanks somebody could type into, and cannot hide the lines somebody is typing, and `result`, because a comparison worked out elsewhere is a comparison of documents nobody has typed into yet. Going the other way, `readOnly`, `indentWithTab`, `spellCheck`, `defaultBefore`, `defaultAfter` and `onLanguageChange` do nothing in `viewer` mode.
 
 ### The documents
 
@@ -63,6 +63,8 @@ A document nobody can type into is read from the props on every render. An edita
 | `markers` | `boolean` | `true` | Whether a changed line carries a `+`, `−` or `~`. |
 | `wrap` | `boolean` | `false` | Whether a long line wraps or runs off the side. |
 | `alignLines` | `boolean` | `true` | Whether a line is held level with its counterpart. |
+| `collapse` | `boolean` | `false` | Whether runs of unchanged lines far from a change are folded away. |
+| `context` | `number` | `3` | How many unchanged lines are kept either side of a change. |
 | `connectors` | `boolean` | `true` | Whether each change is drawn as a band between the panes. |
 | `syncScroll` | `boolean` | `true` | Whether scrolling one pane scrolls the other. |
 | `header` | `boolean` | `true` | Whether each side is named above it. |
@@ -81,7 +83,7 @@ A document nobody can type into is read from the props on every render. An edita
 | `strings` | `Partial<DiffineStrings>` | — | Words to use instead of the locale's. |
 | `highlight` | `DiffineHighlight` | — | An application's own highlighter, in place of `language`. |
 
-`connectors` and `syncScroll` are about the space between two panes, so both are ignored in the unified view. `languageLabel` draws the name of the language in `viewer` mode and the menu it was chosen from in `editor` mode; `language`, `defaultLanguage` and `onLanguageChange` are the usual pair for that choice.
+`collapse` and `context` are the viewer's; an editor holds whole documents in its fields and folds nothing. `connectors` and `syncScroll` are about the space between two panes, so both are ignored in the unified view. `languageLabel` draws the name of the language in `viewer` mode and the menu it was chosen from in `editor` mode; `language`, `defaultLanguage` and `onLanguageChange` are the usual pair for that choice.
 
 Anything else the component is given goes straight to the element, so `id`, `className`, `style` and the `aria-*` attributes behave as they would on a `<div>`.
 
@@ -126,6 +128,8 @@ A pane whose search is open still draws only the lines a reader can see, so a ma
 | `added`          | `Added`                                                              |
 | `removed`        | `Removed`                                                            |
 | `changed`        | `Changed`                                                            |
+| `folded`         | `{lines} unchanged lines`                                            |
+| `expand`         | `Show {lines} unchanged lines`                                       |
 | `summary`        | `{changes} changes, {inserted} lines added, {deleted} lines removed` |
 | `documentSize`   | `{label}: {characters} characters, {size}`                           |
 | `previousChange` | `Previous change`                                                    |

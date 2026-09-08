@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import type { DiffineHighlight, DiffineStrings } from '../../types.js';
+import type { FoldRun } from '../../internal/fold.js';
 import type { PaneLayout } from '../../internal/rows.js';
 import type { SearchMatch } from '../../internal/search.js';
 import type { VirtualWindow } from '../../internal/virtual.js';
@@ -27,6 +28,8 @@ export interface TextDiffPaneProps {
   match?: SearchMatch | null;
   paneRef: React.RefObject<HTMLDivElement | null>;
   side: string;
+  /** Opens a folded run. */
+  onExpand?: (fold: FoldRun) => void;
 }
 
 /**
@@ -51,7 +54,8 @@ export function TextDiffPane({
   matches,
   match,
   paneRef,
-  side
+  side,
+  onExpand
 }: TextDiffPaneProps): React.JSX.Element {
   return (
     <div
@@ -74,6 +78,7 @@ export function TextDiffPane({
           highlight={highlight}
           matches={matches}
           match={match}
+          onExpand={onExpand}
         />
       </div>
     </div>

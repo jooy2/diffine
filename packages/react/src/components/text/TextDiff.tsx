@@ -20,6 +20,7 @@ import type {
 import { diffText } from '../../diff.js';
 import { useControlled } from '../../internal/controlled.js';
 import { typeOver } from '../../internal/field.js';
+import { foldPlan, type FoldRun } from '../../internal/fold.js';
 import { fontVariables } from '../../internal/font.js';
 import { useSyntaxHighlight } from '../../internal/highlight/useSyntax.js';
 import { stringsFor } from '../../internal/i18n.js';
@@ -175,6 +176,43 @@ export interface TextDiffProps extends Omit<
    * @default true
    */
   alignLines?: boolean;
+
+  /**
+   * Whether runs of unchanged lines far from any change are folded away.
+   * Viewer only.
+   *
+   * A comparison of two versions of a file is mostly the part nobody edited,
+   * and a reader who opened it to see what changed scrolls past all of it. On,
+   * each run of unchanged lines is drawn as a band saying how many lines it
+   * stands for, with `context` of them kept either side of every change so that
+   * each one still sits in the file rather than on its own. Pressing a band
+   * puts the lines it holds back, and they stay back until the comparison
+   * changes.
+   *
+   * It is off by default, because a viewer handed two documents is a viewer
+   * asked to show two documents. Turning it on is what makes a long file read
+   * the way a patch does.
+   *
+   * A search reaches the whole document rather than the part of it that is
+   * drawn, so opening one puts the folded runs back for as long as the bar is
+   * open. A run that is missing altogether — the lines between one hunk of a
+   * patch and the next — is drawn as a band whatever this says, because there
+   * is nothing else honest to draw there.
+   *
+   * @default false
+   */
+  collapse?: boolean;
+
+  /**
+   * How many unchanged lines are kept either side of a change. Viewer only.
+   *
+   * Three is what `diff` and `git` write and what a reader of a patch is used
+   * to. Nothing is kept at the top and the bottom of the comparison, where
+   * there is no change on that side to surround.
+   *
+   * @default 3
+   */
+  context?: number;
 
   /**
    * Whether the column between the panes draws each change as a band from
@@ -368,6 +406,15 @@ export interface TextDiffProps extends Omit<
 /** No lines at all, for a layout the drawn view has no use for. */
 const NO_LINES: PaneLayout = { lines: [], positions: new Int32Array(0), widest: null };
 
+/** The folded runs a reader has opened, and the comparison they were opened against. */
+interface OpenedRuns {
+  of: DiffResult | null;
+  rows: ReadonlySet<number>;
+}
+
+/** Nothing opened yet, which is where every viewer starts. */
+const NOTHING_OPENED: OpenedRuns = { of: null, rows: new Set() };
+
 /**
  * Two documents, what happened between them, and — where it is asked for — a
  * way to type into either of them.
@@ -410,6 +457,8 @@ export function TextDiff({
   markers = true,
   wrap = false,
   alignLines = true,
+  collapse = false,
+  context = 3,
   connectors = true,
   syncScroll = true,
   header = true,
@@ -462,6 +511,22 @@ export function TextDiff({
   );
   const [afterHeld, setAfterHeld] = useControlled(contentOf(after), contentOf(defaultAfter) ?? '');
   const [languageHeld, setLanguage] = useControlled(languageProp, defaultLanguage);
+  /*
+   * Which folded runs a reader has opened, and which comparison they were
+   * opened against.
+   *
+   * Kept together so that a new comparison does not have to clear them: the
+   * runs were numbered against rows that are gone, so the entry is simply not
+   * the one being drawn, and the next reader to open a band replaces it.
+   */
+  const [opened, setOpened] = React.useState<OpenedRuns>(NOTHING_OPENED);
+  /*
+   * Whether each pane's search bar is open, held here rather than inside the
+   * search itself. The folds are suspended while one is, and the layout the
+   * search runs over is worked out before the search is.
+   */
+  const [beforeFinding, setBeforeFinding] = React.useState(false);
+  const [afterFinding, setAfterFinding] = React.useState(false);
 
   const beforeText = editing ? beforeHeld : beforeSource.content;
   const afterText = editing ? afterHeld : afterSource.content;
@@ -534,6 +599,14 @@ export function TextDiff({
    * is one empty line with a caret in it.
    */
   const empty = !editing && comparison.rows.length === 0;
+  const searchable = search && !empty;
+  /*
+   * Whether either pane is being searched, which is what suspends the folding.
+   * A pane that is no longer drawn cannot be the one being searched, so the
+   * flags are read through the same conditions the searches themselves are
+   * enabled by.
+   */
+  const searchOpen = searchable && (beforeFinding || (split && afterFinding));
 
   /*
    * The two documents as text, for the sizes written under the panes.
@@ -557,23 +630,43 @@ export function TextDiff({
     () => changeOfRow(comparison.rows.length, comparison.changes),
     [comparison]
   );
+  /*
+   * Which runs of rows the panes stand a band in for rather than drawing.
+   *
+   * Worked out from the rows rather than from either pane, so a split view
+   * folds the same runs on both sides and the two stay level. `null` is the
+   * usual answer — nothing folded, nothing missing — and every layout below
+   * takes the path it took before any of this existed.
+   */
+  const plan = React.useMemo(
+    () =>
+      editing || empty
+        ? null
+        : foldPlan(comparison.rows, {
+            collapse: collapse && !searchOpen,
+            context,
+            opened: opened.of === comparison ? opened.rows : NOTHING_OPENED.rows
+          }),
+    [editing, empty, comparison, collapse, searchOpen, context, opened]
+  );
+
   const beforeLayout = React.useMemo(
     () =>
       editing
         ? fieldLayout(comparison.rows, owner, 'before', beforeText)
-        : splitLayout(comparison.rows, owner, 'before', aligned),
-    [comparison, owner, editing, beforeText, aligned]
+        : splitLayout(comparison.rows, owner, 'before', aligned, plan),
+    [comparison, owner, editing, beforeText, aligned, plan]
   );
   const afterLayout = React.useMemo(
     () =>
       editing
         ? fieldLayout(comparison.rows, owner, 'after', afterText)
-        : splitLayout(comparison.rows, owner, 'after', aligned),
-    [comparison, owner, editing, afterText, aligned]
+        : splitLayout(comparison.rows, owner, 'after', aligned, plan),
+    [comparison, owner, editing, afterText, aligned, plan]
   );
   const oneColumn = React.useMemo(
-    () => (split ? NO_LINES : unifiedLayout(comparison.rows, comparison.changes, owner)),
-    [split, comparison, owner]
+    () => (split ? NO_LINES : unifiedLayout(comparison.rows, comparison.changes, owner, plan)),
+    [split, comparison, owner, plan]
   );
 
   const layouts = split ? [beforeLayout, afterLayout] : [oneColumn];
@@ -589,6 +682,7 @@ export function TextDiff({
     view,
     wrap,
     aligned,
+    plan,
     lineNumbers,
     markers,
     // A row's height and a character's width both follow the typeface, and
@@ -654,9 +748,10 @@ export function TextDiff({
    * behind a condition: a unified view has one pane, and the second search runs
    * over no lines until a split view puts a document back under it.
    */
-  const searchable = search && !empty;
   const firstSearch = useDocumentSearch({
     enabled: searchable,
+    open: beforeFinding,
+    setOpen: setBeforeFinding,
     layout: layouts[0],
     pane: firstPane,
     rowHeight,
@@ -665,12 +760,22 @@ export function TextDiff({
   });
   const secondSearch = useDocumentSearch({
     enabled: searchable && split,
+    open: afterFinding,
+    setOpen: setAfterFinding,
     layout: layouts[1] ?? NO_LINES,
     pane: secondPane,
     rowHeight,
     remeasure,
     onReveal: (match) => moveCaret('after', match)
   });
+
+  /** Puts back the lines a band was standing in for. */
+  function expand(fold: FoldRun): void {
+    setOpened((current) => ({
+      of: comparison,
+      rows: new Set(current.of === comparison ? current.rows : []).add(fold.start)
+    }));
+  }
 
   /**
    * Writes `text` over one range of a document.
@@ -917,6 +1022,7 @@ export function TextDiff({
               matches={firstSearch.rows}
               match={firstSearch.match}
               paneRef={firstPane}
+              onExpand={expand}
             />
           )}
           {split && connectors ? (
@@ -973,6 +1079,7 @@ export function TextDiff({
                 matches={secondSearch.rows}
                 match={secondSearch.match}
                 paneRef={secondPane}
+                onExpand={expand}
               />
             )
           ) : null}

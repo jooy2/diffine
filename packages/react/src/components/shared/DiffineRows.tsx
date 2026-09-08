@@ -2,9 +2,11 @@
 
 import * as React from 'react';
 import type { DiffineHighlight, DiffineStrings } from '../../types.js';
+import type { FoldRun } from '../../internal/fold.js';
 import type { PaneLayout } from '../../internal/rows.js';
 import type { SearchMatch } from '../../internal/search.js';
 import type { VirtualWindow } from '../../internal/virtual.js';
+import { DiffineFold } from './DiffineFold.js';
 import { DiffineLine } from './DiffineLine.js';
 
 export interface DiffineRowsProps {
@@ -23,6 +25,8 @@ export interface DiffineRowsProps {
   matches?: ReadonlyMap<number, readonly SearchMatch[]>;
   /** The match a reader is on, which is the one drawn differently from the rest. */
   match?: SearchMatch | null;
+  /** Opens a folded run. Left out where the lines cannot be opened at all. */
+  onExpand?: (fold: FoldRun) => void;
 }
 
 /**
@@ -44,7 +48,8 @@ export function DiffineRows({
   strings,
   highlight,
   matches,
-  match
+  match,
+  onExpand
 }: DiffineRowsProps): React.JSX.Element {
   const above = shown.start * rowHeight;
   const below = (layout.lines.length - shown.end) * rowHeight;
@@ -60,6 +65,19 @@ export function DiffineRows({
 
       {layout.lines.slice(shown.start, shown.end).map((drawn, offset) => {
         const row = shown.start + offset;
+
+        if (drawn.fold) {
+          return (
+            <DiffineFold
+              key={row}
+              row={row}
+              side={drawn.side}
+              fold={drawn.fold}
+              strings={strings}
+              onExpand={onExpand}
+            />
+          );
+        }
 
         return (
           <DiffineLine
