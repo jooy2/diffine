@@ -295,7 +295,9 @@ Nothing about the view changes. The scrollbar is the length of the document, the
 
 That demo is three thousand lines. Scroll it, or press the buttons above it, and count the rows in your inspector.
 
-It needs every line to be the same height, which is true of a pane that is not wrapping and of nothing else. A line that wraps three times is three lines tall and there is no knowing that without drawing it. So `wrap` turns this off and the whole document is drawn. It also leaves a short document alone, where the machinery would cost more than the rows it saved.
+With `wrap` on the rows are not all the same height, and where they are is a measurement rather than arithmetic. The rows that have been drawn are measured and kept, the rest stand at the average of those, and the pane is scrolled by however much the row under its top edge moved when a measurement replaced a guess — so a wrapped document is cut as well, and the words a reader is looking at stay where they were looking at them.
+
+Two things turn it off. `renderWidget`, because what an application draws under a line can grow at any moment for reasons nothing here would hear about, and a row standing in for one of those would be standing in the wrong place. And a wrapped editor, where the lines are drawn behind a field holding the whole document and the two have to break in the same places — a row standing in for the ones that are not drawn can only ever be close to as tall as the text behind it, and close is not the same place. It also leaves a short document alone, where the machinery would cost more than the rows it saved.
 
 Turn it off with `virtualize={false}` for a page where the browser's own find has to reach text that is scrolled out of view. Nothing that is not drawn can be found. The search built into the panes is the other answer to that, and usually the better one: it reads the document rather than the page, so it finds a line on the nine thousandth row and scrolls to it.
 
@@ -426,7 +428,7 @@ A comparison knows what changed and nothing else. Everything a review is made of
 
 The gutter column is the one part of a line a screen reader is meant to reach: the number and the marker beside it are the colours said again, and are hidden from one. Keep it the same width on every line, or the gutter stops lining up.
 
-A widget is as tall as it is, and two things follow. `virtualize` turns itself off, because the rows are no longer all the same height. And in a split view the line opposite is given the same height, so the two sides stay level. The measurement that does that runs whenever the function changes, so pass one that is memoised if the comparison is long.
+A widget is as tall as it is, and two things follow. `virtualize` turns itself off, because what an application draws can grow at any moment and a row standing in for one of those would be standing in the wrong place. And in a split view the line opposite is given the same height, so the two sides stay level. The measurement that does that runs whenever the function changes, so pass one that is memoised if the comparison is long.
 
 Both belong to `viewer` mode. An editor lays a field over its lines and the two have to agree line for line, so a column of unknown width beside them, or a box of unknown height under one, would put the caret in the wrong place.
 

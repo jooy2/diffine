@@ -6,6 +6,10 @@
 
 ### Added
 
+- **`virtualize` now cuts a wrapped document as well.** Where the rows are was arithmetic and could only be arithmetic, so `wrap` turned the whole thing off and a wrapped comparison of twenty thousand lines drew twenty thousand rows. Now the rows that have been drawn are measured and kept, the rest stand at the average of those, and the pane is scrolled by however much the row under its top edge moved when a measurement replaced a guess — so the words a reader is looking at stay where they were looking at them. Two panes held level share one table of heights, because two columns of different heights are two scrollbars that cannot both be right.
+
+  It stays off in two places, and both are cases where a row standing in for one that is not drawn would stand in the wrong place: under `renderWidget`, where what an application draws can grow at any moment, and in a wrapped editor, where the lines are drawn behind a field holding the whole document and the two have to break in the same places.
+
 - **What a reader copies out of a pane is the document, not the page.** The blanks that hold the two sides level are real empty lines in the page and are in neither file, so a document copied through them arrived with a gap wherever the other side was longer. The text is now built from the lines the pane is drawing: blanks and folded bands contribute nothing, the first and last lines are cut where the selection cuts them, and a selection that reaches outside the lines is left to the browser.
 
 - **`paintDiffImage` turns the mask into a picture of its own.** What changed, on a ground that is see-through, the size of the frame — which is the step between a comparison nobody can look at and a file attached to a build. It takes four bytes a colour rather than a CSS string, and writing the file stays the application's, exactly as reading one is. Together with `formatPatch`, a comparison of either kind can now leave the page in the form the rest of a toolchain reads.

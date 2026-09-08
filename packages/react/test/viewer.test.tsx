@@ -330,8 +330,17 @@ describe('drawing only what is in view', () => {
     expect(linesOf(render({ before: BEFORE, after: AFTER }), 'before')).toHaveLength(4);
   });
 
-  it('draws every line when the lines wrap, because their heights are not known', () => {
-    const markup = render({ before: LONG, after: EDITED, wrap: true });
+  it('cuts a wrapped document as well, and stands the rest at what it has measured', () => {
+    const drawn = linesOf(render({ before: LONG, after: EDITED, wrap: true }), 'before');
+
+    expect(drawn.length).toBeGreaterThan(0);
+    expect(drawn.length).toBeLessThan(400);
+  });
+
+  it('draws every line where the application draws under one of them', () => {
+    // A widget is the application's and can grow at any moment for reasons
+    // nothing here would hear about, so its rows are never stood in for.
+    const markup = render({ before: LONG, after: EDITED, renderWidget: () => null });
 
     expect(linesOf(markup, 'before')).toHaveLength(400);
   });

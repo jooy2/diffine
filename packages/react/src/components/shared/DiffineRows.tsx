@@ -3,6 +3,7 @@
 import * as React from 'react';
 import type { DiffineHighlight, DiffineRender, DiffineStrings } from '../../types.js';
 import type { FoldRun } from '../../internal/fold.js';
+import type { RowMetrics } from '../../internal/metrics.js';
 import type { PaneLayout } from '../../internal/rows.js';
 import type { SearchMatch } from '../../internal/search.js';
 import type { VirtualWindow } from '../../internal/virtual.js';
@@ -13,8 +14,8 @@ export interface DiffineRowsProps {
   layout: PaneLayout;
   /** The slice of `layout.lines` that is drawn. */
   window: VirtualWindow;
-  /** The height of one line, or `0` when every line is being drawn. */
-  rowHeight: number;
+  /** Where the rows of this pane are. */
+  metrics: RowMetrics;
   /** Which change a reader has moved to, or -1. */
   current: number;
   lineNumbers: boolean;
@@ -47,7 +48,7 @@ export interface DiffineRowsProps {
 export function DiffineRows({
   layout,
   window: shown,
-  rowHeight,
+  metrics,
   current,
   lineNumbers,
   markers,
@@ -60,8 +61,10 @@ export function DiffineRows({
   renderWidget,
   invisibles
 }: DiffineRowsProps): React.JSX.Element {
-  const above = shown.start * rowHeight;
-  const below = (layout.lines.length - shown.end) * rowHeight;
+  // Nothing to stand in for where every row is drawn, which is what a metrics
+  // that answers -1 is saying.
+  const above = Math.max(0, metrics.top(shown.start));
+  const below = Math.max(0, metrics.total - Math.max(0, metrics.top(shown.end)));
 
   return (
     <>
@@ -120,7 +123,7 @@ export function DiffineRows({
         grow and shrink as a reader scrolled down, and a reader who had scrolled
         sideways would be dragged back.
       */}
-      {rowHeight > 0 && layout.widest ? (
+      {metrics.total > 0 && layout.widest ? (
         <div className="diffine-measure" aria-hidden="true">
           <DiffineLine
             row={null}

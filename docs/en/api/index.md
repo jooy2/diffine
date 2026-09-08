@@ -217,7 +217,7 @@ The editor's own menu is built from this list, and an application building a men
 type DiffineRender = (line: DiffLine, side: DiffineSide) => React.ReactNode;
 ```
 
-What `renderGutter` and `renderWidget` take. Called once for each line a pane draws, so with the rows virtualised it is called for what is on the screen. A blank that holds the two sides level is not a line, and nothing is asked about it. `renderWidget` turns `virtualize` off, because a box under a line makes that row taller than the rest.
+What `renderGutter` and `renderWidget` take. Called once for each line a pane draws, so with the rows virtualised it is called for what is on the screen. A blank that holds the two sides level is not a line, and nothing is asked about it. `renderWidget` turns `virtualize` off, because what an application draws under a line can grow at any moment and a row standing in for one of those would be standing in the wrong place. `wrap` does not: a wrapped row's height follows the width of its pane and the typeface, and both are watched.
 
 ### `DiffineHighlight`
 

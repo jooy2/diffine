@@ -4,6 +4,7 @@ import * as React from 'react';
 import type { DiffChange, DiffChangeKind, DiffineSide, DiffineStrings } from '../../types.js';
 import { fill } from '../../internal/i18n.js';
 import { readRows, useMeasure, type RowBox } from '../../internal/layout.js';
+import type { RowMetrics } from '../../internal/metrics.js';
 import type { PaneLayout } from '../../internal/rows.js';
 import { useScrollWatch } from '../../internal/scroll.js';
 import { Arrow } from './DiffineIcons.js';
@@ -59,7 +60,7 @@ const MARGIN = 48;
 function bandFor(
   layout: PaneLayout,
   boxes: Map<number, RowBox>,
-  rowHeight: number,
+  metrics: RowMetrics,
   rowStart: number,
   rowEnd: number
 ): Band {
@@ -70,7 +71,9 @@ function bandFor(
       return undefined;
     }
 
-    return rowHeight > 0 ? { top: position * rowHeight, height: rowHeight } : boxes.get(position);
+    const top = metrics.top(position);
+
+    return top >= 0 ? { top, height: metrics.height(position) } : boxes.get(position);
   };
 
   let top = Number.POSITIVE_INFINITY;
@@ -106,8 +109,9 @@ export interface DiffineLinksProps {
   afterLayout: PaneLayout;
   before: React.RefObject<HTMLDivElement | null>;
   after: React.RefObject<HTMLDivElement | null>;
-  /** The height of one line, or `0` when the rows have to be measured. */
-  rowHeight: number;
+  /** Where the rows of each pane are. */
+  beforeMetrics: RowMetrics;
+  afterMetrics: RowMetrics;
   /** Which change a reader has moved to, or -1. */
   current: number;
   /** What has to change before the geometry is worth reading again. */
@@ -145,7 +149,8 @@ export function DiffineLinks({
   afterLayout,
   before,
   after,
-  rowHeight,
+  beforeMetrics,
+  afterMetrics,
   current,
   deps,
   onApply,
@@ -186,8 +191,14 @@ export function DiffineLinks({
     const next: Link[] = [];
 
     for (const [index, change] of changes.entries()) {
-      const left = bandFor(beforeLayout, beforeBoxes, rowHeight, change.rowStart, change.rowEnd);
-      const right = bandFor(afterLayout, afterBoxes, rowHeight, change.rowStart, change.rowEnd);
+      const left = bandFor(
+        beforeLayout,
+        beforeBoxes,
+        beforeMetrics,
+        change.rowStart,
+        change.rowEnd
+      );
+      const right = bandFor(afterLayout, afterBoxes, afterMetrics, change.rowStart, change.rowEnd);
       const leftTop = left.top - panes[0].scrollTop;
       const leftBottom = left.bottom - panes[0].scrollTop;
       const rightTop = right.top - panes[1].scrollTop;
@@ -234,14 +245,18 @@ export function DiffineLinks({
     // Only worth doing when the answer is not arithmetic. With every line the
     // same height there is nothing a measurement would add, and most of the
     // lines are not on the page to be measured anyway.
-    geometry.current =
-      rowHeight > 0 ? [new Map(), new Map()] : [readRows(before.current), readRows(after.current)];
+    // Only worth reading the page where the arithmetic cannot answer, which is
+    // a pane drawing every row it has.
+    geometry.current = [
+      beforeMetrics.total > 0 ? new Map() : readRows(before.current),
+      afterMetrics.total > 0 ? new Map() : readRows(after.current)
+    ];
     paint();
   };
 
   const watched = [column, before, after];
 
-  useMeasure(watched, measure, [...deps, rowHeight, current]);
+  useMeasure(watched, measure, [...deps, beforeMetrics, afterMetrics, current]);
   useScrollWatch(watched, paint, true, deps);
 
   /*

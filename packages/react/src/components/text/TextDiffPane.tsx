@@ -4,6 +4,7 @@ import * as React from 'react';
 import type { DiffineHighlight, DiffineRender, DiffineStrings } from '../../types.js';
 import { selectedText } from '../../internal/copy.js';
 import type { FoldRun } from '../../internal/fold.js';
+import type { RowMetrics } from '../../internal/metrics.js';
 import type { PaneLayout } from '../../internal/rows.js';
 import type { SearchMatch } from '../../internal/search.js';
 import type { VirtualWindow } from '../../internal/virtual.js';
@@ -15,8 +16,8 @@ export interface TextDiffPaneProps {
   layout: PaneLayout;
   /** The slice of `layout.lines` that is drawn. */
   window: VirtualWindow;
-  /** The height of one line, or `0` when every line is being drawn. */
-  rowHeight: number;
+  /** Where the rows of this pane are. */
+  metrics: RowMetrics;
   /** Which change a reader has moved to, or -1. */
   current: number;
   lineNumbers: boolean;
@@ -52,7 +53,7 @@ export function TextDiffPane({
   name,
   layout,
   window: shown,
-  rowHeight,
+  metrics,
   current,
   lineNumbers,
   markers,
@@ -95,7 +96,7 @@ export function TextDiffPane({
         <DiffineRows
           layout={layout}
           window={shown}
-          rowHeight={rowHeight}
+          metrics={metrics}
           current={current}
           lineNumbers={lineNumbers}
           markers={markers}

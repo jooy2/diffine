@@ -307,10 +307,16 @@ export interface TextDiffProps extends Omit<
    * holds the whole document either way — that part is the browser's — and this
    * is about the lines behind it, which are elements.
    *
-   * It needs every line to be the same height, which is true of a pane that is
-   * not wrapping and has nothing of the application's own under its lines — so
-   * `wrap` and `renderWidget` each turn it off. It also does nothing to a short
-   * document, where the machinery would cost more than the rows it saved.
+   * With `wrap` on the rows are no longer all the same height, and the ones that
+   * have been drawn are measured and kept while the rest stand at the average of
+   * them — so a wrapped document is cut as well, and the pane follows whatever
+   * a measurement moved. Two things turn it off. `renderWidget`, because what an
+   * application draws under a line can grow at any moment for reasons nothing
+   * here would hear about; and a wrapped editor, where the lines are drawn
+   * behind a field holding the whole document and a row standing in for the ones
+   * that are not drawn can only ever be close to as tall as the text behind it.
+   * It also does nothing to a short document, where the machinery would cost
+   * more than the rows it saved.
    *
    * @default true
    */
@@ -803,14 +809,37 @@ export function TextDiff({
     widgets
   ];
 
-  const { windows, rowHeight, remeasure } = useVirtualRows(
+  const { windows, metrics, remeasure } = useVirtualRows(
     panes,
     layouts.map((layout) => layout.lines.length),
-    virtualize && !wrap && !widgets && !empty,
+    /*
+     * A widget is the application's, and it can grow at any moment for reasons
+     * nothing here would hear about. Wrapping is not: a row's height follows the
+     * width of its pane and the typeface, and both are watched.
+     *
+     * A wrapped editor is the exception. The lines are drawn behind a field that
+     * holds the whole document, and the two have to break in the same places —
+     * so a row standing in for the ones that are not drawn would have to be
+     * exactly as tall as the text behind it is, and the best it can be is close.
+     */
+    virtualize && !widgets && !empty && !(editing && wrap),
+    !wrap,
+    split && aligned,
     layoutDeps
   );
 
-  useRowAlignment(firstPane, secondPane, split && aligned && Boolean(wrap || widgets), layoutDeps);
+  /*
+   * The two sides held level, which is a measurement of its own.
+   *
+   * The window is on its list because with wrapping and virtualising both on,
+   * the rows a reader scrolls to are drawn after the ones they scrolled from —
+   * and a pair that has not been levelled is a pair whose heights the
+   * virtualiser would then take as read.
+   */
+  useRowAlignment(firstPane, secondPane, split && aligned && Boolean(wrap || widgets), [
+    ...layoutDeps,
+    windows.map((window) => `${window.start}-${window.end}`).join()
+  ]);
   // `empty` is on the list because it decides whether the panes are on the page
   // at all: without it, a view that started with nothing and was then given two
   // documents would have listeners on the elements it no longer has.
@@ -820,7 +849,7 @@ export function TextDiff({
     changes: comparison.changes,
     panes,
     layouts,
-    rowHeight,
+    metrics,
     remeasure,
     selected: selectedProp,
     defaultSelected,
@@ -864,7 +893,7 @@ export function TextDiff({
     setOpen: setBeforeFinding,
     layout: layouts[0],
     pane: firstPane,
-    rowHeight,
+    metrics: metrics[0],
     remeasure,
     onReveal: (match) => moveCaret('before', match)
   });
@@ -874,7 +903,7 @@ export function TextDiff({
     setOpen: setAfterFinding,
     layout: layouts[1] ?? NO_LINES,
     pane: secondPane,
-    rowHeight,
+    metrics: metrics[1] ?? metrics[0],
     remeasure,
     onReveal: (match) => moveCaret('after', match)
   });
@@ -1114,7 +1143,7 @@ export function TextDiff({
               wrap={wrap}
               layout={beforeLayout}
               window={windows[0]}
-              rowHeight={rowHeight}
+              metrics={metrics[0]}
               current={current}
               lineNumbers={lineNumbers}
               markers={markers}
@@ -1132,7 +1161,7 @@ export function TextDiff({
               name={firstLabel}
               layout={layouts[0]}
               window={windows[0]}
-              rowHeight={rowHeight}
+              metrics={metrics[0]}
               current={current}
               lineNumbers={lineNumbers}
               markers={markers}
@@ -1154,7 +1183,8 @@ export function TextDiff({
               afterLayout={afterLayout}
               before={firstPane}
               after={secondPane}
-              rowHeight={rowHeight}
+              beforeMetrics={metrics[0]}
+              afterMetrics={metrics[1] ?? metrics[0]}
               current={current}
               deps={layoutDeps}
               onApply={editing && applyChanges ? apply : undefined}
@@ -1179,7 +1209,7 @@ export function TextDiff({
                 wrap={wrap}
                 layout={afterLayout}
                 window={windows[1]}
-                rowHeight={rowHeight}
+                metrics={metrics[1]}
                 current={current}
                 lineNumbers={lineNumbers}
                 markers={markers}
@@ -1197,7 +1227,7 @@ export function TextDiff({
                 name={afterSource.label}
                 layout={afterLayout}
                 window={windows[1]}
-                rowHeight={rowHeight}
+                metrics={metrics[1]}
                 current={current}
                 lineNumbers={lineNumbers}
                 markers={markers}

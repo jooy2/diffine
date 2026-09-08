@@ -4,6 +4,7 @@ import * as React from 'react';
 import type { DiffChange } from '../types.js';
 import { useControlled } from './controlled.js';
 import { useIsomorphicLayoutEffect } from './layout.js';
+import type { RowMetrics } from './metrics.js';
 import type { PaneLayout } from './rows.js';
 
 /** Where in a pane a change begins, or -1 for a pane that has no part of it. */
@@ -30,8 +31,8 @@ export interface ChangeNavigationOptions {
   /** The scrolling columns, in the order their layouts are given. */
   panes: readonly React.RefObject<HTMLElement | null>[];
   layouts: readonly PaneLayout[];
-  /** The height of one line, or `0` when a row's position has to be measured. */
-  rowHeight: number;
+  /** Where the rows of each pane are, in the order the layouts are given. */
+  metrics: readonly RowMetrics[];
   /** Works the drawn window out again, for a pane that has just been jumped. */
   remeasure: () => void;
   /** Which change the application is holding, or `undefined` to hold it here. */
@@ -63,7 +64,7 @@ export function useChangeNavigation({
   changes,
   panes,
   layouts,
-  rowHeight,
+  metrics,
   remeasure,
   selected,
   defaultSelected,
@@ -120,9 +121,10 @@ export function useChangeNavigation({
         continue;
       }
 
+      const known = metrics[side]?.top(position) ?? -1;
       const top =
-        rowHeight > 0
-          ? position * rowHeight
+        known >= 0
+          ? known
           : (element.querySelector<HTMLElement>(`[data-row="${position}"]`)?.offsetTop ?? -1);
 
       if (top >= 0) {

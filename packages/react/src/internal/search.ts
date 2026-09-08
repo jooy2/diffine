@@ -23,6 +23,7 @@
 
 import * as React from 'react';
 import { useIsomorphicLayoutEffect } from './layout.js';
+import type { RowMetrics } from './metrics.js';
 import type { PaneLayout, PaneLine } from './rows.js';
 
 /** How a query is read. */
@@ -290,8 +291,8 @@ export interface DocumentSearchOptions {
   /** The lines the search runs over, which is one pane's worth of them. */
   layout: PaneLayout;
   pane: React.RefObject<HTMLElement | null>;
-  /** The height of one line, or `0` when a row's position has to be measured. */
-  rowHeight: number;
+  /** Where the rows of this pane are. */
+  metrics: RowMetrics;
   /** Works the drawn window out again, for a pane that has just been jumped. */
   remeasure: () => void;
   /** Told where a reader moved to, for a pane that has a caret to move as well. */
@@ -299,14 +300,15 @@ export interface DocumentSearchOptions {
 }
 
 /** Puts a row on the screen, and leaves it where it is when it already is. */
-function bring(pane: HTMLElement | null, row: number, rowHeight: number): boolean {
+function bring(pane: HTMLElement | null, row: number, metrics: RowMetrics): boolean {
   if (!pane) {
     return false;
   }
 
-  const drawn = rowHeight > 0 ? null : pane.querySelector<HTMLElement>(`[data-row="${row}"]`);
-  const top = rowHeight > 0 ? row * rowHeight : (drawn?.offsetTop ?? -1);
-  const height = rowHeight > 0 ? rowHeight : (drawn?.offsetHeight ?? 0);
+  const known = metrics.top(row);
+  const drawn = known >= 0 ? null : pane.querySelector<HTMLElement>(`[data-row="${row}"]`);
+  const top = known >= 0 ? known : (drawn?.offsetTop ?? -1);
+  const height = known >= 0 ? metrics.height(row) : (drawn?.offsetHeight ?? 0);
 
   if (top < 0) {
     return false;
@@ -345,7 +347,7 @@ export function useDocumentSearch({
   setOpen,
   layout,
   pane,
-  rowHeight,
+  metrics,
   remeasure,
   onReveal
 }: DocumentSearchOptions): DocumentSearch {
@@ -410,7 +412,9 @@ export function useDocumentSearch({
       return match.row;
     }
 
-    return element && rowHeight > 0 ? Math.floor(element.scrollTop / rowHeight) : anchor;
+    const at = element ? metrics.at(element.scrollTop) : -1;
+
+    return at >= 0 ? at : anchor;
   }
 
   function restart(): void {
@@ -465,7 +469,7 @@ export function useDocumentSearch({
       return;
     }
 
-    if (!bring(pane.current, match.row, rowHeight)) {
+    if (!bring(pane.current, match.row, metrics)) {
       // A virtualised pane has not drawn the line yet and there is no height to
       // place it by. The pass after the first measurement has both.
       return;
