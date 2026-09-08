@@ -15,9 +15,10 @@ Guides and the full API, in English and Korean. This README is the map; each pac
 ## What you get
 
 - **Lines, then words.** Lines are matched first, then the words or characters inside a pair of lines that was edited rather than replaced.
+- **A patch is a comparison too.** `parsePatch` reads a unified diff into the same value `diffText` returns, so a service that already holds the comparison can send that instead of both documents, and `formatPatch` writes one back out for anything downstream that reads the format.
 - **The result is a plain object.** `diffText` returns rows, changes and counts; `diffImage` returns a byte a pixel, the changes as rectangles, and the counts. Both are plain objects with no React and no DOM in them, so a badge, a terminal and a worker can use the same call the viewer does.
 - **One dependency, fetched rather than shipped.** The engine, the alignment and the viewer are ours. `highlight.js` is the only dependency and it sits behind an `import()` with each grammar, so a page whose `language` is `plain` downloads none of it.
-- **Every part of the view is a prop.** Line numbers, wrapping, alignment, connectors, the unified view. Each one has a default, so `TextDiff` cuts down to what an application wants to show without a stylesheet being touched.
+- **Every part of the view is a prop.** Line numbers, wrapping, alignment, connectors, the unified view, folding away the lines nobody edited. Each one has a default, so `TextDiff` cuts down to what an application wants to show without a stylesheet being touched — and `renderGutter` and `renderWidget` are where a review comment or a coverage bar goes.
 - **Reading and writing in one component.** `mode="editor"` lays a field over each pane and works the comparison out again on every keystroke, with the browser's own undo, input method and selection left alone.
 - **Four ways of comparing two pictures.** Side by side, faded over each other, wiped across, or the mask on its own. `tolerance` sets how much of a difference counts, `ignoreAntialiasing` drops what a renderer's smoothing left behind, and `align` finds the offset between two shots that are not lined up.
 - **Types in the box.** TypeScript declarations ship with the package.

@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { diffText, formatPatch, parsePatch, type DiffResult, type DiffRow } from 'diffine-react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import {
+  TextDiff,
+  diffText,
+  formatPatch,
+  parsePatch,
+  type DiffResult,
+  type DiffRow
+} from 'diffine-react';
 
 /** A row written the way a reader would describe it, for readable assertions. */
 function shape(row: DiffRow): string {
@@ -228,5 +236,14 @@ describe('formatPatch and parsePatch together', () => {
     const patch = formatPatch(diffText(before, after));
 
     expect(formatPatch(parsePatch(patch)[0].result)).toBe(patch);
+  });
+});
+
+describe('a patch in the viewer', () => {
+  it('makes the gutter wide enough for the numbers the patch carries', () => {
+    const patch = ['--- a', '+++ b', '@@ -12000 +12000 @@', '-a', '+b', ''].join('\n');
+    const markup = renderToStaticMarkup(<TextDiff result={parsePatch(patch)[0].result} />);
+
+    expect(markup).toContain('--diffine-digits:5');
   });
 });

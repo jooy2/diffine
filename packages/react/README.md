@@ -38,25 +38,28 @@ Each side takes a string, or a string with a name on it:
 
 Every part of the view is a prop with a default, so the component goes from a full side-by-side down to a bare column of lines without a stylesheet being touched:
 
-| Prop          | Default    | What it decides                                                   |
-| ------------- | ---------- | ----------------------------------------------------------------- |
-| `mode`        | `'viewer'` | Whether the two documents are read or written (`'editor'`).       |
-| `view`        | `'split'`  | One document either side, or one column with both (`'unified'`).  |
-| `lineNumbers` | `true`     | Whether each line carries its number.                             |
-| `markers`     | `true`     | Whether a changed line carries a `+`, `−` or `~` beside it.       |
-| `wrap`        | `false`    | Whether a long line wraps or runs off the side.                   |
-| `alignLines`  | `true`     | Whether a line is held level with its counterpart.                |
-| `connectors`  | `true`     | Whether the column between the panes draws each change as a band. |
-| `syncScroll`  | `true`     | Whether scrolling one pane scrolls the other.                     |
-| `header`      | `true`     | Whether each side is named above it.                              |
-| `navigation`  | `true`     | Whether the buttons for moving between changes are drawn.         |
-| `search`      | `true`     | Whether a reader can search a pane from inside the component.     |
-| `summary`     | `true`     | Whether the counts are written under the view.                    |
-| `virtualize`  | `true`     | Whether only the lines a reader can see are drawn.                |
-| `tabSize`     | `4`        | How wide a tab is drawn.                                          |
-| `colorScheme` | `'system'` | `'light'`, `'dark'`, or the reader's own setting.                 |
-| `locale`      | `'en'`     | The language of the component's own words. `'ko'` is the other.   |
-| `strings`     | —          | Words to use instead of the locale's, for any of them.            |
+| Prop | Default | What it decides |
+| --- | --- | --- |
+| `mode` | `'viewer'` | Whether the two documents are read or written (`'editor'`). |
+| `view` | `'split'` | One document either side, or one column with both (`'unified'`). |
+| `lineNumbers` | `true` | Whether each line carries its number. |
+| `markers` | `true` | Whether a changed line carries a `+`, `−` or `~` beside it. |
+| `wrap` | `false` | Whether a long line wraps or runs off the side. |
+| `alignLines` | `true` | Whether a line is held level with its counterpart. |
+| `collapse` | `false` | Whether runs of unchanged lines far from a change are folded. |
+| `context` | `3` | How many unchanged lines are kept either side of a change. |
+| `connectors` | `true` | Whether the column between the panes draws each change as a band. |
+| `syncScroll` | `true` | Whether scrolling one pane scrolls the other. |
+| `header` | `true` | Whether each side is named above it. |
+| `navigation` | `true` | Whether the buttons for moving between changes are drawn. |
+| `search` | `true` | Whether a reader can search a pane from inside the component. |
+| `summary` | `true` | Whether the counts are written under the view. |
+| `virtualize` | `true` | Whether only the lines a reader can see are drawn. |
+| `showInvisibles` | `false` | Whether the spaces and tabs inside a line are drawn. |
+| `tabSize` | `4` | How wide a tab is drawn. |
+| `colorScheme` | `'system'` | `'light'`, `'dark'`, or the reader's own setting. |
+| `locale` | `'en'` | The language of the component's own words. `'ko'` is the other. |
+| `strings` | — | Words to use instead of the locale's, for any of them. |
 
 Anything else is passed straight to the element, so `id`, `className`, `style` and the `aria-*` attributes work as they would on a `<div>`.
 
@@ -87,7 +90,9 @@ In the editor, Ctrl+H opens the same bar with a row for replacing under it, and 
 
 ### Long documents
 
-`virtualize` is on by default: a comparison of twenty thousand lines draws the forty that are on the screen and leaves the rest as height. It needs every line to be the same height, so `wrap` turns it off, and it leaves a short document alone.
+`virtualize` is on by default: a comparison of twenty thousand lines draws the forty that are on the screen and leaves the rest as height. With `wrap` on the rows are not all the same height, so the ones that have been drawn are measured and kept and the rest stand at the average of those. It leaves a short document alone, and it stays off where `renderWidget` is given and in a wrapped editor.
+
+`collapse` is the other half of a long comparison: each run of unchanged lines becomes a band saying how many it stands for, with `context` of them kept either side of every change, and pressing a band puts its lines back.
 
 ### Colouring the text
 
@@ -120,6 +125,20 @@ It takes a highlight.js identifier, or `plain` for a document that is not code. 
 />
 ```
 
+### Drawing your own on a line
+
+A comparison knows what changed and nothing else. `renderGutter` adds a column to the gutter beside each line and `renderWidget` puts a box under one, which is where a review comment, a coverage bar or a lint warning goes. Both are called with the line and the side it is on, for the lines a pane draws rather than for the whole document.
+
+```tsx
+<TextDiff
+  before={saved}
+  after={draft}
+  renderWidget={(line, side) =>
+    side === 'after' && threads[line.index] ? <Thread of={threads[line.index]} /> : null
+  }
+/>
+```
+
 ### How the two are compared
 
 ```tsx
@@ -136,6 +155,7 @@ It takes a highlight.js identifier, or `plain` for a document that is not code. 
 | `whitespace` | `'exact'` | `'trailing'`, `'surrounding'`, `'amount'` or `'all'` to ignore some of it. |
 | `ignoreCase` | `false` | Whether `Title` and `title` are the same line. |
 | `inlineThreshold` | `0.3` | How alike a pair has to be before the words inside it are worth marking. |
+| `ignore` | `[]` | Patterns whose matches do not count, for a timestamp or an id that changes every time. |
 | `maxCost` | `5000` | The largest difference the engine works through before giving up. |
 
 Whatever the whitespace options ignore is still drawn. They change which lines count as equal, never what a reader sees.
@@ -182,14 +202,17 @@ Each pane draws its document twice: once as the lines you see, and once as a pla
 
 The two sides are never held level, because a blank line put in to keep them in step would be a line somebody could put the caret in. The column between the panes says which part of one answers which part of the other.
 
-| Prop            | Default | What it decides                                      |
-| --------------- | ------- | ---------------------------------------------------- |
-| `readOnly`      | `false` | Which side cannot be typed into, or `true` for both. |
-| `indentWithTab` | `false` | Whether Tab types a tab instead of moving on.        |
-| `spellCheck`    | `false` | Whether the browser marks its own spelling mistakes. |
-| `onDiff`        | —       | The comparison, every time it is worked out again.   |
+| Prop            | Default | What it decides                                           |
+| --------------- | ------- | --------------------------------------------------------- |
+| `readOnly`      | `false` | Which side cannot be typed into, or `true` for both.      |
+| `indentWithTab` | `false` | Whether Tab types a tab instead of moving on.             |
+| `spellCheck`    | `false` | Whether the browser marks its own spelling mistakes.      |
+| `onDiff`        | —       | The comparison, every time it is worked out again.        |
+| `applyChanges`  | `false` | Whether each change carries buttons for taking it across. |
 
-Every other prop means the same thing in both modes, except `view`, `alignLines` and `result`, which an editor ignores. With `indentWithTab` on there are two ways out of the field: Shift+Tab moves back a control, and Escape hands the next Tab to the browser.
+With `applyChanges` on, every change grows a pair of arrows in the column between the panes: the one pointing left writes the right-hand version over the left, and a `readOnly` side is never written into. The write goes through the browser's own editing command, so Ctrl+Z takes it back.
+
+Every other prop means the same thing in both modes, except `view`, `alignLines`, `collapse`, `context` and `result`, which an editor ignores. With `indentWithTab` on there are two ways out of the field: Shift+Tab moves back a control, and Escape hands the next Tab to the browser.
 
 ## Comparing two pictures
 
@@ -255,6 +278,22 @@ result.mask; // a byte a pixel: 0 unchanged, and 1, 2 or 3 for the rest
 
 Both sides are `ImageData`, or anything shaped like it. Opening a file is not part of it.
 
+## Patches
+
+`diffine-react/patch` reads a unified diff into the value `diffText` returns, and writes one back out. A service that already holds the comparison can send the patch instead of both documents.
+
+```ts
+import { formatPatch, parsePatch } from 'diffine-react/patch';
+
+const [file] = parsePatch(await response.text());
+
+<TextDiff result={file.result} before={file.before} after={file.after} />;
+
+formatPatch(result, { context: 3, before: 'a/src/index.ts', after: 'b/src/index.ts' });
+```
+
+The lines between one hunk and the next are not in a patch, so the numbers jump there and the viewer draws a band saying how many are missing. `paintDiffImage` does the same job for two pictures: the mask as a picture of its own, ready for a canvas and a PNG.
+
 ## Entry points
 
 | Import                     | What it is                                            |
@@ -262,6 +301,7 @@ Both sides are `ImageData`, or anything shaped like it. Opening a file is not pa
 | `diffine-react`            | Everything: the components, the engine and the types. |
 | `diffine-react/diff`       | The text comparison, with no component in the bundle. |
 | `diffine-react/image`      | The picture comparison, on its own.                   |
+| `diffine-react/patch`      | Reading and writing a unified diff.                   |
 | `diffine-react/types`      | The types on their own.                               |
 | `diffine-react/styles.css` | The stylesheet, for both components.                  |
 

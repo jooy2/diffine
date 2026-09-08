@@ -1033,10 +1033,25 @@ export function TextDiff({
   // question with an answer.
   const colour = highlight ?? syntax;
 
+  /*
+   * The widest line number the gutter has to hold.
+   *
+   * How many lines each document has, except where that is not the same thing:
+   * a comparison read out of a patch holds the lines the patch carried and
+   * numbers them where they sit in the file, so the last row's number is the
+   * larger of the two and the count would leave the column too narrow for it.
+   */
+  const lastRow = comparison.rows[comparison.rows.length - 1];
   const digits = String(
     editing
       ? Math.max(beforeLayout.lines.length, afterLayout.lines.length, 1)
-      : Math.max(comparison.before.length, comparison.after.length, 1)
+      : Math.max(
+          comparison.before.length,
+          comparison.after.length,
+          (lastRow?.before?.index ?? 0) + 1,
+          (lastRow?.after?.index ?? 0) + 1,
+          1
+        )
   ).length;
   const tools = (navigation && !empty) || languageLabel || searchable;
   const bar = header || tools;
