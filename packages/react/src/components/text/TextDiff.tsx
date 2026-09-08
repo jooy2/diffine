@@ -13,6 +13,7 @@ import type {
   DiffineInput,
   DiffineLocale,
   DiffineMode,
+  DiffineRender,
   DiffineSide,
   DiffineStrings,
   DiffineView
@@ -283,9 +284,9 @@ export interface TextDiffProps extends Omit<
    * is about the lines behind it, which are elements.
    *
    * It needs every line to be the same height, which is true of a pane that is
-   * not wrapping and of nothing else — so `wrap` turns it off. It also does
-   * nothing to a short document, where the machinery would cost more than the
-   * rows it saved.
+   * not wrapping and has nothing of the application's own under its lines — so
+   * `wrap` and `renderWidget` each turn it off. It also does nothing to a short
+   * document, where the machinery would cost more than the rows it saved.
    *
    * @default true
    */
@@ -401,6 +402,38 @@ export interface TextDiffProps extends Omit<
    * passes it usually turns `languageLabel` off as well.
    */
   highlight?: DiffineHighlight;
+
+  /**
+   * Something of the application's own, drawn in the gutter beside each line.
+   * Viewer only. See {@link DiffineRender}.
+   *
+   * It sits after the number and the marker, and it is the one part of a line
+   * a screen reader is meant to reach — the columns beside it are the colours
+   * said again, and are hidden from one. Keep it the same width on every line:
+   * a column that is wider on the lines that have something in it is a gutter
+   * whose text does not line up.
+   *
+   * It does not change how tall a line is, so it costs nothing else. Put
+   * anything that does in `renderWidget`.
+   */
+  renderGutter?: DiffineRender;
+
+  /**
+   * Something of the application's own, drawn under each line. Viewer only.
+   * See {@link DiffineRender}.
+   *
+   * This is where a review comment, a thread, or a form for adding one goes. It
+   * is as tall as it is, and two things follow from that: `virtualize` turns
+   * itself off, because the rows are no longer all the same height, and in a
+   * split view the line opposite is given the same height so that the two sides
+   * stay level.
+   *
+   * The measurement that keeps them level runs when this function changes, so
+   * an application that writes it inline is measured on every render. Passing
+   * one that is memoised, or one that is defined outside the component, is what
+   * a long comparison wants.
+   */
+  renderWidget?: DiffineRender;
 }
 
 /** No lines at all, for a layout the drawn view has no use for. */
@@ -481,6 +514,8 @@ export function TextDiff({
   onLanguageChange,
   languageLabel = true,
   highlight,
+  renderGutter,
+  renderWidget,
   className,
   style,
   onKeyDown: onKeyDownProp,
@@ -601,6 +636,14 @@ export function TextDiff({
   const empty = !editing && comparison.rows.length === 0;
   const searchable = search && !empty;
   /*
+   * What the application draws of its own, which is the viewer's alone. An
+   * editor lays a field over its lines and the two have to agree line for line,
+   * so a column of unknown width beside them, or a box of unknown height under
+   * one of them, is a caret in the wrong place.
+   */
+  const slots = editing ? undefined : renderGutter;
+  const widgets = editing ? undefined : renderWidget;
+  /*
    * Whether either pane is being searched, which is what suspends the folding.
    * A pane that is no longer drawn cannot be the one being searched, so the
    * flags are read through the same conditions the searches themselves are
@@ -690,17 +733,21 @@ export function TextDiff({
     font?.family,
     font?.size,
     font?.lineHeight,
-    font?.letterSpacing
+    font?.letterSpacing,
+    // What the application draws of its own changes how tall a row is, and the
+    // two sides are held level by measuring exactly that.
+    slots,
+    widgets
   ];
 
   const { windows, rowHeight, remeasure } = useVirtualRows(
     panes,
     layouts.map((layout) => layout.lines.length),
-    virtualize && !wrap && !empty,
+    virtualize && !wrap && !widgets && !empty,
     layoutDeps
   );
 
-  useRowAlignment(firstPane, secondPane, split && wrap && aligned, layoutDeps);
+  useRowAlignment(firstPane, secondPane, split && aligned && Boolean(wrap || widgets), layoutDeps);
   // `empty` is on the list because it decides whether the panes are on the page
   // at all: without it, a view that started with nothing and was then given two
   // documents would have listeners on the elements it no longer has.
@@ -1023,6 +1070,8 @@ export function TextDiff({
               match={firstSearch.match}
               paneRef={firstPane}
               onExpand={expand}
+              renderGutter={slots}
+              renderWidget={widgets}
             />
           )}
           {split && connectors ? (
@@ -1080,6 +1129,8 @@ export function TextDiff({
                 match={secondSearch.match}
                 paneRef={secondPane}
                 onExpand={expand}
+                renderGutter={slots}
+                renderWidget={widgets}
               />
             )
           ) : null}

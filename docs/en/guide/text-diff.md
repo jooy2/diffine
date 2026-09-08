@@ -335,6 +335,31 @@ The function is called for each line that is drawn, which with the rows virtuali
 
 One rule an editor adds: a run may change how the text **looks** but not how **wide** it is. Colour, weight, style and a background are all fine. In the monospace face the component ships with, a bold keyword takes exactly the room the plain one did. A font size, a different family or a letter-spacing is not, because it moves the words away from the caret that is supposed to be sitting in them.
 
+## Drawing your own on a line
+
+A comparison knows what changed and nothing else. Everything a review is made of — a comment, a thread, a coverage bar, a lint warning, a button for adding one — belongs to the application, and two props are where it goes.
+
+`renderGutter` adds a column to the gutter beside each line. `renderWidget` puts a box under one. Both are called with the line and the side it is on, and both return `null` for a line that gets nothing, which is most of them.
+
+```tsx
+<TextDiff
+  before={saved}
+  after={draft}
+  renderGutter={(line, side) => (side === 'after' ? <AddComment line={line.index} /> : null)}
+  renderWidget={(line, side) =>
+    side === 'after' && threads[line.index] ? <Thread of={threads[line.index]} /> : null
+  }
+/>
+```
+
+The gutter column is the one part of a line a screen reader is meant to reach: the number and the marker beside it are the colours said again, and are hidden from one. Keep it the same width on every line, or the gutter stops lining up.
+
+A widget is as tall as it is, and two things follow. `virtualize` turns itself off, because the rows are no longer all the same height. And in a split view the line opposite is given the same height, so the two sides stay level. The measurement that does that runs whenever the function changes, so pass one that is memoised if the comparison is long.
+
+Both belong to `viewer` mode. An editor lays a field over its lines and the two have to agree line for line, so a column of unknown width beside them, or a box of unknown height under one, would put the caret in the wrong place.
+
+Style them through `.diffine-slot` and `.diffine-widget`, which carry nothing but the space around what you returned.
+
 ## Styling
 
 Every colour and measurement is a custom property on the `.diffine` element. An application with a palette of its own overrides the properties rather than writing rules that have to win on specificity:

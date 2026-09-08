@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import type { DiffineHighlight, DiffineStrings } from '../../types.js';
+import type { DiffineHighlight, DiffineRender, DiffineStrings } from '../../types.js';
 import type { FoldRun } from '../../internal/fold.js';
 import type { PaneLayout } from '../../internal/rows.js';
 import type { SearchMatch } from '../../internal/search.js';
@@ -30,6 +30,10 @@ export interface TextDiffPaneProps {
   side: string;
   /** Opens a folded run. */
   onExpand?: (fold: FoldRun) => void;
+  /** Something of the application's own for the gutter of each line. */
+  renderGutter?: DiffineRender;
+  /** Something of the application's own for under each line. */
+  renderWidget?: DiffineRender;
 }
 
 /**
@@ -55,7 +59,9 @@ export function TextDiffPane({
   match,
   paneRef,
   side,
-  onExpand
+  onExpand,
+  renderGutter,
+  renderWidget
 }: TextDiffPaneProps): React.JSX.Element {
   return (
     <div
@@ -79,6 +85,8 @@ export function TextDiffPane({
           matches={matches}
           match={match}
           onExpand={onExpand}
+          renderGutter={renderGutter}
+          renderWidget={renderWidget}
         />
       </div>
     </div>

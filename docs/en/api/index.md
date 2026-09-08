@@ -82,6 +82,8 @@ A document nobody can type into is read from the props on every render. An edita
 | `locale` | `'en' \| 'ko'` | `'en'` | The language of the component's own words. |
 | `strings` | `Partial<DiffineStrings>` | — | Words to use instead of the locale's. |
 | `highlight` | `DiffineHighlight` | — | An application's own highlighter, in place of `language`. |
+| `renderGutter` | `DiffineRender` | — | Something of the application's own, in the gutter beside each line. |
+| `renderWidget` | `DiffineRender` | — | Something of the application's own, under each line. |
 
 `collapse` and `context` are the viewer's; an editor holds whole documents in its fields and folds nothing. `connectors` and `syncScroll` are about the space between two panes, so both are ignored in the unified view. `languageLabel` draws the name of the language in `viewer` mode and the menu it was chosen from in `editor` mode; `language`, `defaultLanguage` and `onLanguageChange` are the usual pair for that choice.
 
@@ -202,6 +204,14 @@ Every language `language` accepts, `plain` first and then thirty-four highlight.
 The editor's own menu is built from this list, and an application building a menu somewhere else should build it from the same one rather than from a copy that goes stale.
 
 `highlight.js` and each grammar sit behind an `import()`. Nothing is fetched until a language other than `plain` is asked for, and what is fetched then is that one grammar. The first paint after it arrives is the document coloured; the one before it is the document.
+
+### `DiffineRender`
+
+```ts
+type DiffineRender = (line: DiffLine, side: DiffineSide) => React.ReactNode;
+```
+
+What `renderGutter` and `renderWidget` take. Called once for each line a pane draws, so with the rows virtualised it is called for what is on the screen. A blank that holds the two sides level is not a line, and nothing is asked about it. `renderWidget` turns `virtualize` off, because a box under a line makes that row taller than the rest.
 
 ### `DiffineHighlight`
 

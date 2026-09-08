@@ -657,6 +657,37 @@
   opacity: 0.6;
 }
 
+/* ---- What the application draws of its own --------------------------------
+ *
+ * `renderGutter` adds a column to the gutter and changes nothing else.
+ * `renderWidget` puts a box under a line, which does change how tall the line
+ * is — so the line becomes a block with its own columns in a row of their own
+ * and the box under them, and the element the two sides are measured by is
+ * still the whole of both.
+ * ----------------------------------------------------------------------- */
+
+.diffine-line[data-widget='true'] {
+  display: block;
+}
+
+.diffine-row {
+  display: flex;
+  align-items: stretch;
+  min-height: var(--diffine-line-height);
+}
+
+.diffine-slot {
+  display: flex;
+  align-items: center;
+  padding-inline-end: 0.375rem;
+}
+
+.diffine-widget {
+  padding: 0.375rem 0.75rem;
+  border-top: 1px solid var(--diffine-border);
+  background: var(--diffine-surface);
+}
+
 /* ---- A band where lines are not drawn -------------------------------------
  *
  * Two things end up here and they look the same on purpose: a run of unchanged
@@ -969,7 +1000,8 @@ button.diffine-fold:focus-visible {
  * a shadow nobody sees. `:first-child` is that gutter when there is one and the
  * text itself when both columns are off.
  */
-.diffine-line[data-current='true'] > :first-child {
+.diffine-line[data-current='true'] > :first-child:not(.diffine-row),
+.diffine-line[data-current='true'] > .diffine-row > :first-child {
   box-shadow: inset 2px 0 0 var(--diffine-accent);
 }
 

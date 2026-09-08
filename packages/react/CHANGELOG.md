@@ -6,6 +6,10 @@
 
 ### Added
 
+- **`renderGutter` and `renderWidget` are where the application draws its own.** A comparison knows what changed and nothing else, and a review is made of everything else: a comment, a thread, a coverage bar, a lint warning, a button for adding one. The first adds a column to the gutter beside each line and the second puts a box under one. Both are called with the line and the side it is on, for the lines a pane draws rather than for the whole document, and both return `null` for a line that gets nothing.
+
+  A widget is as tall as it is, so `virtualize` turns itself off while one is being drawn and a split view gives the line opposite the same height to keep the two sides level. Both props belong to `viewer` mode: an editor lays a field over its lines, and a column of unknown width or a box of unknown height between them would put the caret in the wrong place. `.diffine-slot` and `.diffine-widget` are what they are styled through.
+
 - **`collapse` folds away the runs of unchanged lines nobody is reading.** Two versions of a file are mostly the part nobody edited, and a reader who opened a comparison to see what changed scrolls past all of it. On, each run is drawn as a band saying how many lines it stands for, with `context` lines kept either side of every change — three by default, which is what `diff` and `git` write. Pressing a band puts its lines back. Both panes fold the same runs so a split view stays level, and a band is exactly one line tall, so `virtualize` carries on unchanged behind it.
 
   A search reaches the whole document rather than the part of it that is drawn, so opening one puts the folded runs back until the bar is closed. A band is also drawn where a comparison is missing lines rather than hiding them — between one hunk of a patch and the next — whatever `collapse` says, and that one cannot be pressed, because nobody sent the lines it stands for. `strings.folded` and `strings.expand` are the two words it is written with.

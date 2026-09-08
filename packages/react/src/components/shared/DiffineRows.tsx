@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import type { DiffineHighlight, DiffineStrings } from '../../types.js';
+import type { DiffineHighlight, DiffineRender, DiffineStrings } from '../../types.js';
 import type { FoldRun } from '../../internal/fold.js';
 import type { PaneLayout } from '../../internal/rows.js';
 import type { SearchMatch } from '../../internal/search.js';
@@ -27,6 +27,10 @@ export interface DiffineRowsProps {
   match?: SearchMatch | null;
   /** Opens a folded run. Left out where the lines cannot be opened at all. */
   onExpand?: (fold: FoldRun) => void;
+  /** Something of the application's own for the gutter of each line. */
+  renderGutter?: DiffineRender;
+  /** Something of the application's own for under each line. */
+  renderWidget?: DiffineRender;
 }
 
 /**
@@ -49,7 +53,9 @@ export function DiffineRows({
   highlight,
   matches,
   match,
-  onExpand
+  onExpand,
+  renderGutter,
+  renderWidget
 }: DiffineRowsProps): React.JSX.Element {
   const above = shown.start * rowHeight;
   const below = (layout.lines.length - shown.end) * rowHeight;
@@ -95,6 +101,8 @@ export function DiffineRows({
             highlight={highlight}
             matches={matches?.get(row)}
             match={match}
+            renderGutter={renderGutter}
+            renderWidget={renderWidget}
           />
         );
       })}

@@ -5,6 +5,7 @@ import type {
   DiffLine,
   DiffRowKind,
   DiffineHighlight,
+  DiffineRender,
   DiffineSide,
   DiffineStrings
 } from '../../types.js';
@@ -64,6 +65,10 @@ export interface DiffineLineProps {
   matches?: readonly SearchMatch[];
   /** The match a reader is on, which is the one drawn differently from the rest. */
   match?: SearchMatch | null;
+  /** Something of the application's own for the gutter, or nothing. */
+  renderGutter?: DiffineRender;
+  /** Something of the application's own for under the line, or nothing. */
+  renderWidget?: DiffineRender;
 }
 
 /**
@@ -87,34 +92,34 @@ export function DiffineLine({
   strings,
   highlight,
   matches,
-  match
+  match,
+  renderGutter,
+  renderWidget
 }: DiffineLineProps): React.JSX.Element {
   const label = line ? labelFor(strings, kind, side) : null;
-
-  return (
-    <div
-      className="diffine-line"
-      data-kind={line ? kind : 'blank'}
-      data-side={side}
-      {...(row === null ? {} : { 'data-row': row })}
-      {...(change < 0 ? {} : { 'data-change': change })}
-      {...(current ? { 'data-current': 'true' } : {})}
-    >
-      {lineNumbers || markers ? (
-        // One element around the numbers and the marker so that the whole of it
-        // can be held against the left edge while a long line is scrolled past
-        // it. Held one at a time, the marker slides out from under the numbers.
-        <span className="diffine-gutter" aria-hidden="true">
+  const slot = line && renderGutter ? renderGutter(line, side) : null;
+  const widget = line && renderWidget ? renderWidget(line, side) : null;
+  const body = (
+    <>
+      {lineNumbers || markers || slot ? (
+        // One element around the numbers, the marker and whatever the
+        // application put beside them, so that the whole of it can be held
+        // against the left edge while a long line is scrolled past it. Held one
+        // at a time, the marker slides out from under the numbers.
+        <span className="diffine-gutter">
           {lineNumbers
             ? numbers.map((value, column) => (
-                <span key={column} className="diffine-number">
+                <span key={column} className="diffine-number" aria-hidden="true">
                   {value ?? ''}
                 </span>
               ))
             : null}
           {markers ? (
-            <span className="diffine-marker">{(line && MARKERS[side][kind]) ?? ''}</span>
+            <span className="diffine-marker" aria-hidden="true">
+              {(line && MARKERS[side][kind]) ?? ''}
+            </span>
           ) : null}
+          {slot ? <span className="diffine-slot">{slot}</span> : null}
         </span>
       ) : null}
       <span className="diffine-text">
@@ -129,6 +134,26 @@ export function DiffineLine({
           />
         ) : null}
       </span>
+    </>
+  );
+
+  return (
+    <div
+      className="diffine-line"
+      data-kind={line ? kind : 'blank'}
+      data-side={side}
+      {...(row === null ? {} : { 'data-row': row })}
+      {...(change < 0 ? {} : { 'data-change': change })}
+      {...(current ? { 'data-current': 'true' } : {})}
+      {...(widget ? { 'data-widget': 'true' } : {})}
+    >
+      {/*
+        The line's own columns stay one flex row whether or not something is
+        drawn under them, so a widget stacks under the line rather than beside
+        it and the row it is measured by is still the whole of both.
+      */}
+      {widget ? <div className="diffine-row">{body}</div> : body}
+      {widget ? <div className="diffine-widget">{widget}</div> : null}
     </div>
   );
 }

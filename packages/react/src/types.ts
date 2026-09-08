@@ -740,6 +740,34 @@ export type DiffineHighlight = (
 ) => readonly DiffineToken[] | null | undefined;
 
 /**
+ * Something of the application's own, drawn beside or under one line.
+ *
+ * This is where everything a comparison does not know about goes: a review
+ * comment, a coverage bar, a blame, a lint warning, a button for adding any of
+ * them. The line is handed over whole, along with the side it is on, and what
+ * comes back is drawn as it is — return `null` for a line that gets nothing,
+ * which is most of them.
+ *
+ * ```tsx
+ * <TextDiff
+ *   before={saved}
+ *   after={draft}
+ *   renderWidget={(line, side) =>
+ *     side === 'after' && comments[line.index] ? (
+ *       <Comment thread={comments[line.index]} />
+ *     ) : null
+ *   }
+ * />
+ * ```
+ *
+ * It is called for each line a pane draws, so with the rows virtualised it is
+ * called for what is on the screen. A line with nothing opposite it — the blank
+ * that holds the two sides level — is not a line, and nothing is asked about
+ * it.
+ */
+export type DiffineRender = (line: DiffLine, side: DiffineSide) => React.ReactNode;
+
+/**
  * How the two pictures are laid out.
  *
  * - `split` — one either side, both moving together under one zoom.

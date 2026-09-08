@@ -82,6 +82,8 @@ order: 1
 | `locale` | `'en' \| 'ko'` | `'en'` | 컴포넌트 자신이 쓰는 말의 언어. |
 | `strings` | `Partial<DiffineStrings>` | — | 로케일 대신 쓸 단어. |
 | `highlight` | `DiffineHighlight` | — | `language` 대신 쓸, 애플리케이션 자신의 강조기. |
+| `renderGutter` | `DiffineRender` | — | 줄 옆 여백에 넣을, 애플리케이션 자신의 내용. |
+| `renderWidget` | `DiffineRender` | — | 줄 아래에 넣을, 애플리케이션 자신의 내용. |
 
 `collapse`와 `context`는 `viewer`의 것입니다. 에디터는 입력란이 문서 전체를 들고 있어서 아무것도 접지 않습니다. `connectors`와 `syncScroll`은 두 창 사이의 이야기라서 `unified`에서는 무시됩니다. `languageLabel`은 `viewer`에서 언어 이름을, `editor`에서 그 이름을 고르는 메뉴를 그립니다. 그 선택을 누가 관리하는지는 `language`, `defaultLanguage`, `onLanguageChange`가 정합니다.
 
@@ -202,6 +204,14 @@ const DIFFINE_LANGUAGES: readonly DiffineLanguageOption[];
 에디터의 메뉴가 이 목록으로 만들어집니다. 다른 곳에 메뉴를 따로 만든다면 목록을 복사해 두지 말고 이 값에서 만드세요. 언어가 늘어나도 따라옵니다.
 
 `highlight.js`와 문법 하나하나가 `import()` 뒤에 있습니다. `plain`이 아닌 언어를 요청하기 전까지는 아무것도 내려받지 않고, 요청하면 그 언어의 문법만 내려받습니다. 문법이 도착한 다음 프레임에 색이 입혀지고, 그 전까지는 문서 그대로 그려집니다.
+
+### `DiffineRender`
+
+```ts
+type DiffineRender = (line: DiffLine, side: DiffineSide) => React.ReactNode;
+```
+
+`renderGutter`와 `renderWidget`이 받는 형태입니다. 창이 그리는 줄마다 한 번씩 호출되므로, 가상화가 켜져 있으면 화면에 보이는 줄에 대해서만 호출됩니다. 양쪽 높이를 맞추려고 넣은 빈 칸은 줄이 아니라서 묻지 않습니다. `renderWidget`은 `virtualize`를 끕니다. 줄 아래에 상자가 붙으면 그 행만 높아지기 때문입니다.
 
 ### `DiffineHighlight`
 
