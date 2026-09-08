@@ -234,6 +234,58 @@ export interface DiffResult {
   complete: boolean;
 }
 
+/** How a comparison is written out as a patch. */
+export interface DiffPatchOptions {
+  /**
+   * How many unchanged lines are kept either side of a change.
+   *
+   * This is what makes a patch smaller than the two documents it came from: the
+   * lines nobody touched are left out except for the few that say where each
+   * change sits. Three is what `diff` and `git` write, and what anything
+   * reading a patch expects to find.
+   *
+   * @default 3
+   */
+  context?: number;
+
+  /**
+   * The name written on the `---` line.
+   *
+   * A patch that is going to be applied by `git apply` or `patch` needs the
+   * path of the file on both lines, which is why this is a name and not a
+   * label: it is read by a program before it is read by a person.
+   *
+   * @default 'before'
+   */
+  before?: string;
+
+  /**
+   * The name written on the `+++` line.
+   * @default 'after'
+   */
+  after?: string;
+}
+
+/**
+ * One file of a patch, and the comparison its hunks describe.
+ *
+ * A patch is not the two documents. It is the changed lines and a few either
+ * side of each of them, so the comparison that comes back is the same shape as
+ * one worked out from two documents and covers less: {@link DiffLine.index} is
+ * still the line's own number in the file it came from, and
+ * {@link DiffResult.before} holds only the lines the patch carried rather than
+ * the whole document. Where one hunk ends and the next begins, the line numbers
+ * jump — which is what a viewer draws as a gap.
+ */
+export interface DiffPatchFile {
+  /** The name on the `---` line, or `''` where the patch carried no header. */
+  before: string;
+  /** The name on the `+++` line. */
+  after: string;
+  /** What the hunks of this file say changed. */
+  result: DiffResult;
+}
+
 /* ---------------------------------------------------------------------------
  * The comparison, in two dimensions
  *

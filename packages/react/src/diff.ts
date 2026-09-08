@@ -12,7 +12,7 @@ import type { DiffEdit, DiffInlineResult, DiffOptions, DiffResult } from './type
 import { compareInline } from './internal/diff/inline.js';
 import { matchSequences } from './internal/diff/myers.js';
 import { comparisonKey } from './internal/diff/tokens.js';
-import { compareText, type TextOptions } from './internal/diff/text.js';
+import { TEXT_DEFAULTS, compareText, settleOptions } from './internal/diff/text.js';
 
 export type {
   DiffChange,
@@ -32,23 +32,7 @@ export type {
 } from './types.js';
 
 /** What every option falls back to. */
-export const DIFFINE_DEFAULTS: Required<DiffOptions> = {
-  inline: 'word',
-  whitespace: 'exact',
-  ignoreCase: false,
-  inlineThreshold: 0.3,
-  maxCost: 5000
-};
-
-function settle(options: DiffOptions | undefined): TextOptions {
-  return {
-    mode: options?.inline ?? DIFFINE_DEFAULTS.inline,
-    whitespace: options?.whitespace ?? DIFFINE_DEFAULTS.whitespace,
-    ignoreCase: options?.ignoreCase ?? DIFFINE_DEFAULTS.ignoreCase,
-    inlineThreshold: options?.inlineThreshold ?? DIFFINE_DEFAULTS.inlineThreshold,
-    maxCost: options?.maxCost ?? DIFFINE_DEFAULTS.maxCost
-  };
-}
+export const DIFFINE_DEFAULTS: Required<DiffOptions> = TEXT_DEFAULTS;
 
 /**
  * Compares two documents and returns everything worked out about them: the
@@ -62,7 +46,7 @@ function settle(options: DiffOptions | undefined): TextOptions {
  * ```
  */
 export function diffText(before: string, after: string, options?: DiffOptions): DiffResult {
-  return compareText(before, after, settle(options));
+  return compareText(before, after, settleOptions(options));
 }
 
 /**
@@ -73,7 +57,7 @@ export function diffText(before: string, after: string, options?: DiffOptions): 
  * reachable on its own for a heading, a title, a cell of a table.
  */
 export function diffWords(before: string, after: string, options?: DiffOptions): DiffInlineResult {
-  return compareInline(before, after, { ...settle(options), mode: 'word' });
+  return compareInline(before, after, { ...settleOptions(options), mode: 'word' });
 }
 
 /** Compares two lines a grapheme at a time. */
@@ -82,7 +66,7 @@ export function diffCharacters(
   after: string,
   options?: DiffOptions
 ): DiffInlineResult {
-  return compareInline(before, after, { ...settle(options), mode: 'character' });
+  return compareInline(before, after, { ...settleOptions(options), mode: 'character' });
 }
 
 /**
@@ -107,7 +91,7 @@ export function diffSequence(
   after: readonly string[],
   options?: DiffOptions
 ): DiffEdit[] {
-  const settled = settle(options);
+  const settled = settleOptions(options);
   const key = (token: string) => comparisonKey(token, settled.whitespace, settled.ignoreCase);
   const { matches } = matchSequences(before.map(key), after.map(key), settled.maxCost);
 

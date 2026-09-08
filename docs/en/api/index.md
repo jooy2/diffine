@@ -14,6 +14,7 @@ Every export of `diffine-react`, in one place. The [guide](../guide/getting-star
 | `diffine-react`            | Everything: the component, the engine and the types.             |
 | `diffine-react/diff`       | The text comparison, with no component reaching the bundle.      |
 | `diffine-react/image`      | The picture comparison, on its own.                              |
+| `diffine-react/patch`      | Reading and writing a unified diff.                              |
 | `diffine-react/types`      | The types on their own, for an application naming one in a prop. |
 | `diffine-react/styles.css` | The stylesheet.                                                  |
 
@@ -397,6 +398,29 @@ interface DiffEdit {
 ```
 
 The edits cover both sequences exactly once, in order.
+
+## `formatPatch` and `parsePatch`
+
+```ts
+formatPatch(result: DiffResult, options?: DiffPatchOptions): string
+parsePatch(patch: string, options?: DiffOptions): DiffPatchFile[]
+```
+
+```ts
+interface DiffPatchOptions {
+  context?: number; // 3
+  before?: string; // 'before'
+  after?: string; // 'after'
+}
+
+interface DiffPatchFile {
+  before: string;
+  after: string;
+  result: DiffResult;
+}
+```
+
+`formatPatch` returns an empty string for two documents that are the same. `parsePatch` returns one entry per file the patch covers; `result.before` holds the lines the patch carried rather than the whole document, while each line's `index` is its own number in the file it came from.
 
 ## `diffImage`
 

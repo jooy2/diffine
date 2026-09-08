@@ -138,6 +138,42 @@ diffSequence(['a', 'b', 'c'], ['a', 'c']);
 
 Both sides are compared as strings, so whatever the tokens are, they arrive here as the text that identifies them. The edits cover both sequences exactly once, in order.
 
+## Patches
+
+A patch is the changed lines and a few either side of each of them, which is what `git diff` writes and what every code host reads. `parsePatch` turns one into the same value `diffText` returns, so a service that already holds the comparison can send that instead of both documents.
+
+```ts
+import { parsePatch } from 'diffine-react/patch';
+
+const [file] = parsePatch(await response.text());
+
+file.before; // 'a/src/index.ts', the name on the `---` line
+file.result; // the same shape `diffText` returns
+```
+
+One entry comes back per file the patch covers, in the order they appear, and the second argument is the same set of options `diffText` takes. A page that reads patches and a page that compares documents can be told to mark the same things.
+
+What the format does not carry, the reader does not invent. The lines between one hunk and the next are not in the patch, so the numbers jump there: a line's `index` is still its own number in the file it came from, while `result.before` holds only the lines that arrived. Anything around the hunks is skipped rather than read, including the `diff --git` line, the mode and index lines, and the marker for a file that does not end in a newline.
+
+`formatPatch` is the way back out, for an export button or a comparison that has to be handed to another tool.
+
+```ts
+import { formatPatch } from 'diffine-react/patch';
+
+formatPatch(diffText(saved, draft), {
+  before: 'a/src/index.ts',
+  after: 'b/src/index.ts'
+});
+```
+
+| Option    | What it is                                                 | Default    |
+| --------- | ---------------------------------------------------------- | ---------- |
+| `context` | How many unchanged lines are kept either side of a change. | `3`        |
+| `before`  | The name written on the `---` line.                        | `'before'` |
+| `after`   | The name written on the `+++` line.                        | `'after'`  |
+
+Two documents that turned out to be the same give an empty string rather than a header with nothing under it, so the value itself says whether there was anything to write. A patch that is going to be applied by `git apply` or `patch` needs the real path on both lines, which is what the two names are for.
+
 ## How it works
 
 The method is the one Eugene Myers published in 1986, in the shape described in the second half of that paper: walk the edit graph forwards from the start and backwards from the end at once, stop where the two meet, and recurse either side of the run of matches at the meeting point. It costs one pass over both documents per step and holds a row of the graph rather than the whole thing, which is what lets a large file open at all.

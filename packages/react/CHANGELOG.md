@@ -2,6 +2,14 @@
 
 > This package's history. Each language Diffine ships for keeps its own changelog beside its own manifest, because they version independently.
 
+## vNext (2026--)
+
+### Added
+
+- **`parsePatch` reads a unified diff, and `formatPatch` writes one.** A service that already holds the comparison — a server, a build, a hook with `git diff` in its hands — can now send the patch instead of both documents, and what comes back is the same value `diffText` returns, down to the words marked inside a pair of changed lines. `parsePatch` gives one entry per file the patch covers, each with the names off the `---` and `+++` lines; `formatPatch` takes a comparison and a `context` and writes the format `git apply` and `patch` read.
+
+  What the format does not carry, the reader does not invent. The lines between one hunk and the next are not in a patch, so the numbers jump there: a line's `index` is still its own number in the file it came from, and `result.before` holds the lines that arrived rather than the whole document. Both functions are also their own entry, `diffine-react/patch`, so nothing of the component reaches a bundle that only wanted them.
+
 ## v0.1.0 (2026-09-06)
 
 The viewer became a component that is also an editor, the text gained colour and a search of its own, and two pictures can now be compared where before only two documents could.

@@ -31,6 +31,7 @@
     "paths": {
       "diffine-react": ["../packages/react/src/index.ts"],
       "diffine-react/diff": ["../packages/react/src/diff.ts"],
+      "diffine-react/patch": ["../packages/react/src/patch.ts"],
       "diffine-react/types": ["../packages/react/src/types.ts"],
       "react": ["./node_modules/@types/react"],
       "react/*": ["./node_modules/@types/react/*"],

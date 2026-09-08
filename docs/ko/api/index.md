@@ -14,6 +14,7 @@ order: 1
 | `diffine-react`            | 전부. 컴포넌트와 엔진과 타입.                             |
 | `diffine-react/diff`       | 텍스트 비교 엔진만. 컴포넌트는 번들에 들어가지 않습니다.  |
 | `diffine-react/image`      | 이미지 비교 엔진만.                                       |
+| `diffine-react/patch`      | 유니파이드 패치 읽기와 쓰기.                              |
 | `diffine-react/types`      | 타입만. prop에 타입 이름을 쓰려는 애플리케이션을 위한 것. |
 | `diffine-react/styles.css` | 스타일시트.                                               |
 
@@ -396,6 +397,29 @@ interface DiffEdit {
 ```
 
 돌아온 편집 목록은 두 배열을 순서대로 빠짐없이 한 번씩 덮습니다.
+
+## `formatPatch`와 `parsePatch`
+
+```ts
+formatPatch(result: DiffResult, options?: DiffPatchOptions): string
+parsePatch(patch: string, options?: DiffOptions): DiffPatchFile[]
+```
+
+```ts
+interface DiffPatchOptions {
+  context?: number; // 3
+  before?: string; // 'before'
+  after?: string; // 'after'
+}
+
+interface DiffPatchFile {
+  before: string;
+  after: string;
+  result: DiffResult;
+}
+```
+
+두 문서가 같으면 `formatPatch`는 빈 문자열을 돌려줍니다. `parsePatch`는 패치가 다루는 파일마다 하나씩 돌려주며, `result.before`에는 문서 전체가 아니라 패치가 실어 온 줄만 들어갑니다. 각 줄의 `index`는 원래 파일에서의 번호입니다.
 
 ## `diffImage`
 
