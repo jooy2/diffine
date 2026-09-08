@@ -519,6 +519,23 @@ const result = diffImage(before, after, { align: 'shift' });
 | `removed`   | 첫 번째 이미지만 덮는 픽셀.                         |
 | `ratio`     | `unchanged`가 아닌 전부가 프레임에서 차지하는 비율. |
 
+## `paintDiffImage`
+
+```ts
+paintDiffImage(result: DiffImageResult, paint?: DiffImagePaint): DiffPixels
+```
+
+```ts
+interface DiffImagePaint {
+  changed?: [number, number, number, number]; // [232, 62, 140, 255]
+  added?: [number, number, number, number]; // [26, 127, 75, 255]
+  removed?: [number, number, number, number]; // [194, 51, 63, 255]
+  unchanged?: [number, number, number, number]; // [0, 0, 0, 0]
+}
+```
+
+마스크를 프레임 크기의 그림 한 장으로 만듭니다. 이것으로 파일을 써야 하는 애플리케이션을 위한 것입니다. 색은 CSS 문자열이 아니라 바이트 네 개입니다. CSS 색을 읽으려면 브라우저에 물어봐야 하기 때문입니다. 파일로 쓰는 일은, 파일을 읽는 일과 마찬가지로 애플리케이션의 몫입니다.
+
 ## 커스텀 속성
 
 `.diffine`에 선언돼 있고, 같은 방식으로 덮어쓰면 됩니다.

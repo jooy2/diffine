@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import type { DiffineHighlight, DiffineRender, DiffineStrings } from '../../types.js';
+import { selectedText } from '../../internal/copy.js';
 import type { FoldRun } from '../../internal/fold.js';
 import type { PaneLayout } from '../../internal/rows.js';
 import type { SearchMatch } from '../../internal/search.js';
@@ -66,6 +67,20 @@ export function TextDiffPane({
   renderWidget,
   invisibles
 }: TextDiffPaneProps): React.JSX.Element {
+  /*
+   * What a reader copies is the document, not the page it is drawn on. See
+   * `copy.ts`: the blanks that hold the two sides level are real empty lines
+   * here and are in neither file.
+   */
+  function onCopy(event: React.ClipboardEvent<HTMLDivElement>): void {
+    const text = selectedText(event.currentTarget, layout);
+
+    if (text !== null) {
+      event.clipboardData.setData('text/plain', text);
+      event.preventDefault();
+    }
+  }
+
   return (
     <div
       className="diffine-pane"
@@ -74,6 +89,7 @@ export function TextDiffPane({
       aria-label={name}
       tabIndex={0}
       ref={paneRef}
+      onCopy={onCopy}
     >
       <div className="diffine-lines">
         <DiffineRows

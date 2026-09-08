@@ -6,6 +6,10 @@
 
 ### Added
 
+- **What a reader copies out of a pane is the document, not the page.** The blanks that hold the two sides level are real empty lines in the page and are in neither file, so a document copied through them arrived with a gap wherever the other side was longer. The text is now built from the lines the pane is drawing: blanks and folded bands contribute nothing, the first and last lines are cut where the selection cuts them, and a selection that reaches outside the lines is left to the browser.
+
+- **`paintDiffImage` turns the mask into a picture of its own.** What changed, on a ground that is see-through, the size of the frame — which is the step between a comparison nobody can look at and a file attached to a build. It takes four bytes a colour rather than a CSS string, and writing the file stays the application's, exactly as reading one is. Together with `formatPatch`, a comparison of either kind can now leave the page in the form the rest of a toolchain reads.
+
 - **`diff.ignore` takes patterns whose matches do not count.** A snapshot with a timestamp in it, a log with a request id, a build with a hash in its filename: one line that is different every time, and a comparison that says the whole file changed. Each pattern is looked for in both lines and what it finds is set aside, so two lines that differ only inside a match are the same line — and what is set aside is still drawn, exactly as with `whitespace`.
 
   A match is set aside rather than removed, so a line with a timestamp and a line with the timestamp missing are still two different lines. It decides which lines are equal, at the level of a line: inside a pair that was edited the words are compared as they were written, because a pattern written for a line is not a pattern about one word of it.

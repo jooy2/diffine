@@ -14,7 +14,13 @@
  * server's, and never something a comparison should have an opinion about.
  */
 
-import type { DiffImageOptions, DiffImageResult, DiffPixelKind, DiffPixels } from './types.js';
+import type {
+  DiffImageOptions,
+  DiffImagePaint,
+  DiffImageResult,
+  DiffPixelKind,
+  DiffPixels
+} from './types.js';
 import { findOffset, NO_OFFSET } from './internal/image/align.js';
 import { comparePixels } from './internal/image/compare.js';
 
@@ -22,6 +28,8 @@ export type {
   DiffImageAlign,
   DiffImageArea,
   DiffImageOptions,
+  DiffImagePaint,
+  DiffPixelColour,
   DiffImageRegion,
   DiffImageResult,
   DiffImageStats,
@@ -75,4 +83,58 @@ export function diffImage(
     maxRegions: options?.maxRegions ?? DIFFINE_IMAGE_DEFAULTS.maxRegions,
     offset: align === 'shift' ? findOffset(before, after, radius) : NO_OFFSET
   });
+}
+
+/** What each kind of pixel is painted in, where nothing else was asked for. */
+const PAINT: Required<DiffImagePaint> = {
+  changed: [232, 62, 140, 255],
+  added: [26, 127, 75, 255],
+  removed: [194, 51, 63, 255],
+  unchanged: [0, 0, 0, 0]
+};
+
+/**
+ * The mask as a picture of its own: what changed, on a ground that is
+ * see-through.
+ *
+ * This is the comparison in the one shape everything outside a page can read. A
+ * build that compares two screenshots has an answer nobody can look at until it
+ * is a file, and the step between the two is this — the pixels go to an
+ * `ImageData`, the `ImageData` goes on a canvas, and the canvas writes the PNG
+ * that ends up attached to the run.
+ *
+ * ```ts
+ * const picture = paintDiffImage(diffImage(before, after));
+ * const canvas = new OffscreenCanvas(picture.width, picture.height);
+ *
+ * canvas.getContext('2d')?.putImageData(new ImageData(picture.data, picture.width), 0, 0);
+ *
+ * const png = await canvas.convertToBlob();
+ * ```
+ *
+ * Writing that file is the application's, for the same reason decoding one is:
+ * a page, a worker and a server each have their own way of doing it, and none
+ * of them is the comparison's business.
+ */
+export function paintDiffImage(result: DiffImageResult, paint?: DiffImagePaint): DiffPixels {
+  const { width, height, mask } = result;
+  const data = new Uint8ClampedArray(width * height * 4);
+  const colours = [
+    paint?.unchanged ?? PAINT.unchanged,
+    paint?.changed ?? PAINT.changed,
+    paint?.added ?? PAINT.added,
+    paint?.removed ?? PAINT.removed
+  ];
+
+  for (let pixel = 0; pixel < mask.length; pixel += 1) {
+    const colour = colours[mask[pixel]] ?? PAINT.unchanged;
+    const at = pixel * 4;
+
+    data[at] = colour[0];
+    data[at + 1] = colour[1];
+    data[at + 2] = colour[2];
+    data[at + 3] = colour[3];
+  }
+
+  return { data, width, height };
 }

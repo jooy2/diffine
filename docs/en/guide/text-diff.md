@@ -299,6 +299,33 @@ It needs every line to be the same height, which is true of a pane that is not w
 
 Turn it off with `virtualize={false}` for a page where the browser's own find has to reach text that is scrolled out of view. Nothing that is not drawn can be found. The search built into the panes is the other answer to that, and usually the better one: it reads the document rather than the page, so it finds a line on the nine thousandth row and scrolls to it.
 
+## Copying and exporting
+
+What a reader copies out of a pane is the document rather than the page it is drawn on. The numbers and the marks down the side are left out of a selection by the stylesheet, and the blanks that hold the two sides level are left out here: a document copied through them would otherwise arrive with a gap wherever the other side was longer. A selection that reaches outside the lines is left to the browser.
+
+Going the other way, `formatPatch` writes the comparison as a unified diff — see [the comparison](diff#patches) — which is the form a build, a review tool or an attachment on a CI run can read.
+
+```ts
+import { formatPatch } from 'diffine-react/patch';
+
+const patch = formatPatch(result, { before: 'a/src/index.ts', after: 'b/src/index.ts' });
+```
+
+For two pictures, `paintDiffImage` turns the mask into a picture of its own: what changed, on a ground that is see-through.
+
+```ts
+import { diffImage, paintDiffImage } from 'diffine-react/image';
+
+const picture = paintDiffImage(diffImage(before, after));
+const canvas = new OffscreenCanvas(picture.width, picture.height);
+
+canvas.getContext('2d')?.putImageData(new ImageData(picture.data, picture.width), 0, 0);
+
+const png = await canvas.convertToBlob();
+```
+
+Writing the file is the application's, for the same reason reading one is: a page, a worker and a server each have their own way of doing it, and none of them is the comparison's business. Pass `changed`, `added`, `removed` or `unchanged` as four bytes each to paint it in your own colours.
+
 ## The frame around it
 
 `header` names each side above it, and `summary` draws the bar underneath. Both are on by default, and both come off for a view that is a small piece of a page.

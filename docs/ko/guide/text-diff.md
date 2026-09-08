@@ -296,6 +296,33 @@ diffText('a\nb\n', 'a\r\nb').format;
 
 브라우저 자체의 찾기 기능이 스크롤 밖의 글자까지 닿아야 하는 페이지라면 `virtualize={false}`로 끄세요. 그리지 않은 것은 찾을 수 없습니다. 창에 들어 있는 찾기가 같은 문제의 다른 해법이고 보통은 이쪽이 낫습니다. 페이지가 아니라 문서를 읽으므로 9000번째 줄에 있는 글자도 찾아서 그 자리로 스크롤합니다.
 
+## 복사와 내보내기
+
+창에서 복사하면 화면이 아니라 문서가 나옵니다. 옆의 줄 번호와 기호는 스타일시트가 선택에서 빼고, 양쪽 높이를 맞추려고 넣은 빈 칸은 이 단계에서 뺍니다. 그러지 않으면 반대쪽이 더 긴 자리마다 빈 줄이 섞여 나옵니다. 선택이 줄 바깥까지 걸치면 브라우저에 맡깁니다.
+
+반대 방향으로는 `formatPatch`가 비교 결과를 유니파이드 패치로 씁니다. [비교 결과](diff#패치) 문서를 보세요. 빌드나 리뷰 도구, CI 실행에 첨부하는 파일이 읽는 형식입니다.
+
+```ts
+import { formatPatch } from 'diffine-react/patch';
+
+const patch = formatPatch(result, { before: 'a/src/index.ts', after: 'b/src/index.ts' });
+```
+
+이미지 쪽은 `paintDiffImage`가 마스크를 그림 한 장으로 바꿉니다. 바뀐 부분만 남고 나머지는 투명합니다.
+
+```ts
+import { diffImage, paintDiffImage } from 'diffine-react/image';
+
+const picture = paintDiffImage(diffImage(before, after));
+const canvas = new OffscreenCanvas(picture.width, picture.height);
+
+canvas.getContext('2d')?.putImageData(new ImageData(picture.data, picture.width), 0, 0);
+
+const png = await canvas.convertToBlob();
+```
+
+파일로 쓰는 일은 애플리케이션의 몫입니다. 파일을 읽는 일이 그러한 것과 같은 이유입니다. 페이지와 워커와 서버가 각각 자기 방식이 있고, 그중 무엇도 비교 엔진이 참견할 일이 아닙니다. `changed`, `added`, `removed`, `unchanged`에 각각 바이트 네 개를 넘기면 원하는 색으로 칠할 수 있습니다.
+
 ## 바깥 틀
 
 `header`는 각 문서의 이름을 위에 쓰고, `summary`는 아래쪽 상태 표시줄을 그립니다. 둘 다 기본으로 켜져 있고, 컴포넌트가 페이지의 작은 일부일 때는 둘 다 끄면 됩니다.

@@ -520,6 +520,23 @@ A byte of `mask` is an index into `DIFF_PIXEL_KINDS`, which is `['equal', 'chang
 | `removed`   | Pixels only the first one covers.                            |
 | `ratio`     | Everything that is not `unchanged`, as a share of the frame. |
 
+## `paintDiffImage`
+
+```ts
+paintDiffImage(result: DiffImageResult, paint?: DiffImagePaint): DiffPixels
+```
+
+```ts
+interface DiffImagePaint {
+  changed?: [number, number, number, number]; // [232, 62, 140, 255]
+  added?: [number, number, number, number]; // [26, 127, 75, 255]
+  removed?: [number, number, number, number]; // [194, 51, 63, 255]
+  unchanged?: [number, number, number, number]; // [0, 0, 0, 0]
+}
+```
+
+The mask as a picture the size of the frame, for an application that has to write a file out of it. Four bytes a colour rather than a CSS string, because reading one means asking a browser what it means. Writing the file is the application's, exactly as reading one is.
+
 ## Custom properties
 
 Declared on `.diffine`, and overridden the same way.

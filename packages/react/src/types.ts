@@ -519,6 +519,28 @@ export interface DiffImageStats {
   ratio: number;
 }
 
+/** One colour as four bytes: red, green, blue and alpha, each from 0 to 255. */
+export type DiffPixelColour = readonly [number, number, number, number];
+
+/**
+ * What each kind of pixel is painted in, when the mask is turned into a
+ * picture of its own.
+ *
+ * Bytes rather than CSS colours, because reading `rgb(232 62 140 / 55%)` means
+ * asking a browser what it means, and nothing else about the comparison needs
+ * one. Anything left out keeps its default.
+ */
+export interface DiffImagePaint {
+  /** A pixel both pictures cover and disagree about. @default [232, 62, 140, 255] */
+  changed?: DiffPixelColour;
+  /** A pixel only the second picture covers. @default [26, 127, 75, 255] */
+  added?: DiffPixelColour;
+  /** A pixel only the first one covers. @default [194, 51, 63, 255] */
+  removed?: DiffPixelColour;
+  /** Everything else, which is see-through unless it is asked to be something. @default [0, 0, 0, 0] */
+  unchanged?: DiffPixelColour;
+}
+
 /** Everything the engine worked out about two pictures. */
 export interface DiffImageResult {
   /**
