@@ -317,6 +317,7 @@ diffText(before: string, after: string, options?: DiffOptions): DiffResult
 | `whitespace`      | `'exact' \| 'trailing' \| 'surrounding' \| 'amount' \| 'all'` | `'exact'` |
 | `ignoreCase`      | `boolean`                                                     | `false`   |
 | `inlineThreshold` | `number`                                                      | `0.3`     |
+| `ignore`          | `readonly RegExp[]`                                           | `[]`      |
 | `maxCost`         | `number`                                                      | `5000`    |
 
 `DIFFINE_DEFAULTS` is the same table as a value.

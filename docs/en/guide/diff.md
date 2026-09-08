@@ -105,6 +105,20 @@ How alike a pair of lines has to be, from 0 to 1, before the words inside them a
 
 Two lines that were edited share most of their words. Two lines that merely landed opposite each other share a comma and a couple of vowels, and marking those scatters meaningless scraps across the row. Below the threshold, the pair is drawn as one changed line on each side.
 
+### `ignore`
+
+Patterns whose matches do not count. Empty by default.
+
+A snapshot with a timestamp in it, a log with a request id, a build with a hash in its filename: one line that is different every time, and a comparison that says the whole file changed. Each pattern is looked for in both lines and what it finds is set aside, so two lines that differ only inside a match are the same line.
+
+```ts
+diffText(saved, rendered, { ignore: [/\d{4}-\d{2}-\d{2}T[\d:.]+Z/, /\bid=\w+/] });
+```
+
+A match is set aside rather than removed, so a line with a timestamp in it and a line with the timestamp missing are still two different lines. What is set aside is still drawn, exactly as with `whitespace`.
+
+It decides that at the level of a line. Inside a pair of lines that were edited, the words are compared as they were written, because a pattern written for a line is not a pattern about one word of it.
+
 ### `maxCost`
 
 The largest difference the engine will work through before it gives up. `5000` by default.

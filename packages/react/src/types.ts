@@ -97,6 +97,32 @@ export interface DiffOptions {
   inlineThreshold?: number;
 
   /**
+   * Patterns whose matches do not count when two lines are compared.
+   *
+   * A snapshot with a timestamp in it, a log with a request id, a build with a
+   * hash in its filename: one line that is different every time, and a
+   * comparison that says the whole file changed. Each pattern is looked for in
+   * both lines and what it finds is set aside, so two lines that differ only
+   * inside a match are the same line.
+   *
+   * ```ts
+   * diffText(saved, rendered, { ignore: [/\d{4}-\d{2}-\d{2}T[\d:.]+Z/] });
+   * ```
+   *
+   * What is set aside is still drawn, exactly as with
+   * {@link DiffOptions.whitespace}: this decides which lines are called equal
+   * and never what the viewer shows. It decides that at the level of a line —
+   * inside a pair that was edited, the words are compared as they were written,
+   * because a pattern written for a line is not a pattern about one word of it.
+   *
+   * A match is set aside rather than removed, so a line with a timestamp in it
+   * and a line with the timestamp missing are still two different lines.
+   *
+   * @default []
+   */
+  ignore?: readonly RegExp[];
+
+  /**
    * The largest difference the engine will work through before it gives up.
    *
    * Finding the smallest set of edits costs roughly the size of the two

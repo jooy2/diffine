@@ -6,6 +6,10 @@
 
 ### Added
 
+- **`diff.ignore` takes patterns whose matches do not count.** A snapshot with a timestamp in it, a log with a request id, a build with a hash in its filename: one line that is different every time, and a comparison that says the whole file changed. Each pattern is looked for in both lines and what it finds is set aside, so two lines that differ only inside a match are the same line — and what is set aside is still drawn, exactly as with `whitespace`.
+
+  A match is set aside rather than removed, so a line with a timestamp and a line with the timestamp missing are still two different lines. It decides which lines are equal, at the level of a line: inside a pair that was edited the words are compared as they were written, because a pattern written for a line is not a pattern about one word of it.
+
 - **`result.format` says how each document is written, and the bar under the panes says so when the two differ.** Every line ending ends a line, so a file written on one platform and edited on another is not a file where every line changed — and the cost of that was a file whose only difference was invisible reading as no difference at all. `format` carries the line ending each document uses, whether its last line has one, and whether it begins with a byte order mark. It is worked out beside the comparison rather than inside it, so nothing about which lines are equal has changed, and it is left out of a comparison read back out of a patch, which never saw either file.
 
 - **`showInvisibles` draws the whitespace inside the lines.** A dot in the middle of each column a space takes, and a rule under a run of tabs. The characters themselves are untouched and the marks are drawn on the elements around them, so what a reader copies out is the line as it was written. `--diffine-invisible` is the colour, and `strings.format`, `strings.mixedEndings` and `strings.noFinalNewline` are the words the bar uses.

@@ -329,3 +329,78 @@ describe('diffSequence', () => {
     expect(afterCursor).toBe(after.length);
   });
 });
+
+describe('diffText with patterns to ignore', () => {
+  const STAMP = /\d{4}-\d{2}-\d{2}/u;
+
+  it('calls two lines the same when they differ only inside a match', () => {
+    const result = diffText('built 2026-01-01\nkeep', 'built 2026-09-08\nkeep', {
+      ignore: [STAMP]
+    });
+
+    expect(result.changes).toEqual([]);
+    expect(result.stats.unchanged).toBe(2);
+  });
+
+  it('leaves the lines exactly as they were written', () => {
+    const result = diffText('built 2026-01-01', 'built 2026-09-08', { ignore: [STAMP] });
+
+    expect(result.rows[0].before?.text).toBe('built 2026-01-01');
+    expect(result.rows[0].after?.text).toBe('built 2026-09-08');
+  });
+
+  it('still finds what changed outside a match', () => {
+    const result = diffText('built 2026-01-01 by ann', 'built 2026-09-08 by bob', {
+      ignore: [STAMP]
+    });
+
+    expect(result.changes).toHaveLength(1);
+  });
+
+  it('sets a match aside rather than taking it out', () => {
+    expect(diffText('a 2026-01-01 b', 'a  b', { ignore: [STAMP] }).changes).toHaveLength(1);
+  });
+
+  it('looks for a pattern everywhere in the line, not only once', () => {
+    const result = diffText('2026-01-01 to 2026-01-02', '2020-05-05 to 2020-05-06', {
+      ignore: [STAMP]
+    });
+
+    expect(result.changes).toEqual([]);
+  });
+
+  it('leaves a global pattern where it found it, so the next line starts over', () => {
+    const result = diffText('id 1\nid 2\nid 3', 'id 9\nid 8\nid 7', { ignore: [/\d+/gu] });
+
+    expect(result.changes).toEqual([]);
+  });
+
+  it('takes more than one pattern', () => {
+    const result = diffText('2026-01-01 #4821 done', '2020-05-05 #17 done', {
+      ignore: [STAMP, /#\d+/u]
+    });
+
+    expect(result.changes).toEqual([]);
+  });
+
+  it('compares the words inside a changed pair as they were written', () => {
+    const [row] = diffText(
+      'the report was written on 2026-01-01 by ann',
+      'the report was written on 2020-05-05 by bob',
+      { ignore: [STAMP] }
+    ).rows;
+    const gone = row.before?.segments
+      .filter((piece) => piece.kind === 'delete')
+      .map((piece) => piece.text)
+      .join(' ');
+
+    // The pair is a change, because the name differs. Inside it the date is
+    // compared like anything else: a pattern written for a line says nothing
+    // about one word of it.
+    expect(gone).toContain('2026');
+  });
+
+  it('ignores nothing when it is not asked to', () => {
+    expect(diffText('built 2026-01-01', 'built 2026-09-08').changes).toHaveLength(1);
+  });
+});

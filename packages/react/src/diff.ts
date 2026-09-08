@@ -92,7 +92,8 @@ export function diffSequence(
   options?: DiffOptions
 ): DiffEdit[] {
   const settled = settleOptions(options);
-  const key = (token: string) => comparisonKey(token, settled.whitespace, settled.ignoreCase);
+  const key = (token: string) =>
+    comparisonKey(token, settled.whitespace, settled.ignoreCase, settled.ignore);
   const { matches } = matchSequences(before.map(key), after.map(key), settled.maxCost);
 
   const edits: DiffEdit[] = [];

@@ -316,6 +316,7 @@ diffText(before: string, after: string, options?: DiffOptions): DiffResult
 | `whitespace`      | `'exact' \| 'trailing' \| 'surrounding' \| 'amount' \| 'all'` | `'exact'` |
 | `ignoreCase`      | `boolean`                                                     | `false`   |
 | `inlineThreshold` | `number`                                                      | `0.3`     |
+| `ignore`          | `readonly RegExp[]`                                           | `[]`      |
 | `maxCost`         | `number`                                                      | `5000`    |
 
 `DIFFINE_DEFAULTS`가 이 표를 값으로 담고 있습니다.

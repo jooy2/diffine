@@ -72,18 +72,62 @@ export function splitGraphemes(text: string): string[] {
 }
 
 /**
+ * What is left where a pattern matched: one character that is in no document.
+ *
+ * Set aside rather than taken out, so that a line with a timestamp in it and a
+ * line with the timestamp missing are still two different lines.
+ */
+const MASK = '\u0000';
+
+/**
+ * The same pattern, looking everywhere rather than once.
+ *
+ * A pattern an application wrote is usually not a global one, and replacing
+ * only the first match would leave the second one deciding whether two lines
+ * are equal. The rewritten copy is kept, because this is called once per line
+ * and compiling a regular expression per line is not free.
+ */
+const everywhere = new WeakMap<RegExp, RegExp>();
+
+function globalOf(pattern: RegExp): RegExp {
+  if (pattern.global) {
+    return pattern;
+  }
+
+  let found = everywhere.get(pattern);
+
+  if (!found) {
+    found = new RegExp(pattern.source, `${pattern.flags}g`);
+    everywhere.set(pattern, found);
+  }
+
+  return found;
+}
+
+/**
  * What a piece of text is compared as, once the things being ignored are gone.
  *
  * This is only ever the key. Whatever comes off here is still drawn, so turning
  * whitespace off changes which lines are called equal and never what a reader
  * sees.
+ *
+ * The patterns run first, on the text as it was written. Lowering the case or
+ * dropping the whitespace before them would hand each pattern a line that is
+ * not the line its author wrote it for.
  */
 export function comparisonKey(
   text: string,
   whitespace: DiffWhitespace,
-  ignoreCase: boolean
+  ignoreCase: boolean,
+  ignore?: readonly RegExp[]
 ): string {
   let key = text;
+
+  if (ignore) {
+    for (const pattern of ignore) {
+      key = key.replace(globalOf(pattern), MASK);
+    }
+  }
 
   switch (whitespace) {
     case 'trailing':

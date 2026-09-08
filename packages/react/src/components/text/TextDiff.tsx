@@ -636,6 +636,24 @@ export function TextDiff({
   const maxCost = diff?.maxCost;
   const given = editing ? undefined : result;
 
+  /*
+   * The patterns to ignore, held steady by what they say rather than by which
+   * array they arrived in.
+   *
+   * The list has the same problem the object holding it does, one level down: an
+   * application that writes `diff={{ ignore: [/\d+/] }}` inline hands over a new
+   * array on every render. What decides whether the answer could have changed is
+   * what the patterns are, so that is what this is keyed on, and reading the
+   * list through that key is what the exception below is for.
+   */
+  const patterns = diff?.ignore;
+  const ignoreKey = patterns ? patterns.map(String).join('\u0000') : '';
+  const ignore = React.useMemo(
+    () => patterns,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [ignoreKey]
+  );
+
   const comparison = React.useMemo(
     () =>
       given ??
@@ -644,9 +662,10 @@ export function TextDiff({
         whitespace,
         ignoreCase,
         inlineThreshold,
+        ignore,
         maxCost
       }),
-    [given, beforeText, afterText, inline, whitespace, ignoreCase, inlineThreshold, maxCost]
+    [given, beforeText, afterText, inline, whitespace, ignoreCase, inlineThreshold, ignore, maxCost]
   );
 
   /*

@@ -27,6 +27,15 @@ import { comparisonKey, splitLines } from './tokens.js';
 /** Every option settled, with nothing left to fall back on. */
 export interface TextOptions extends InlineOptions {
   inlineThreshold: number;
+  /**
+   * The patterns whose matches do not count.
+   *
+   * On {@link TextOptions} rather than on {@link InlineOptions}, and that is
+   * the whole of the reason it is here: a pattern written for a line is not a
+   * pattern about one word of it, so the comparison inside a pair of lines
+   * never sees these.
+   */
+  ignore: readonly RegExp[];
 }
 
 /** What every option falls back to. */
@@ -35,6 +44,7 @@ export const TEXT_DEFAULTS: Required<DiffOptions> = {
   whitespace: 'exact',
   ignoreCase: false,
   inlineThreshold: 0.3,
+  ignore: [],
   maxCost: 5000
 };
 
@@ -45,6 +55,7 @@ export function settleOptions(options: DiffOptions | undefined): TextOptions {
     whitespace: options?.whitespace ?? TEXT_DEFAULTS.whitespace,
     ignoreCase: options?.ignoreCase ?? TEXT_DEFAULTS.ignoreCase,
     inlineThreshold: options?.inlineThreshold ?? TEXT_DEFAULTS.inlineThreshold,
+    ignore: options?.ignore ?? TEXT_DEFAULTS.ignore,
     maxCost: options?.maxCost ?? TEXT_DEFAULTS.maxCost
   };
 }
@@ -127,7 +138,8 @@ export function countRows(rows: readonly DiffRow[], stats: DiffStats): void {
 export function compareText(before: string, after: string, options: TextOptions): DiffResult {
   const beforeLines = splitLines(before);
   const afterLines = splitLines(after);
-  const key = (line: string) => comparisonKey(line, options.whitespace, options.ignoreCase);
+  const key = (line: string) =>
+    comparisonKey(line, options.whitespace, options.ignoreCase, options.ignore);
   const { matches, complete } = matchSequences(
     beforeLines.map(key),
     afterLines.map(key),
