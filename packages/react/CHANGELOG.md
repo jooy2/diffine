@@ -6,6 +6,10 @@
 
 ### Added
 
+- **`applyChanges` puts a pair of arrows on every change, for taking it across.** A comparison of a saved version and a draft is read with one question in mind, and this is the answer to it: the arrow pointing left writes the right-hand version over the left, the one pointing right does the opposite, and a `readOnly` side is never written into — so the usual arrangement leaves one arrow rather than two. The write goes in through the browser's own editing command, so Ctrl+Z takes it back and `onBeforeChange` or `onAfterChange` reports it exactly as a keystroke would.
+
+  It is the editor's, because applying a change means writing a document, and the buttons sit in the column between the panes, so `connectors={false}` takes them away with it. `strings.applyChange` is what they are named with.
+
 - **`renderGutter` and `renderWidget` are where the application draws its own.** A comparison knows what changed and nothing else, and a review is made of everything else: a comment, a thread, a coverage bar, a lint warning, a button for adding one. The first adds a column to the gutter beside each line and the second puts a box under one. Both are called with the line and the side it is on, for the lines a pane draws rather than for the whole document, and both return `null` for a line that gets nothing.
 
   A widget is as tall as it is, so `virtualize` turns itself off while one is being drawn and a split view gives the line opposite the same height to keep the two sides level. Both props belong to `viewer` mode: an editor lays a field over its lines, and a column of unknown width or a box of unknown height between them would put the caret in the wrong place. `.diffine-slot` and `.diffine-widget` are what they are styled through.

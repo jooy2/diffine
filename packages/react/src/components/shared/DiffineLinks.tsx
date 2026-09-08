@@ -1,10 +1,12 @@
 'use client';
 
 import * as React from 'react';
-import type { DiffChange, DiffChangeKind } from '../../types.js';
+import type { DiffChange, DiffChangeKind, DiffineSide, DiffineStrings } from '../../types.js';
+import { fill } from '../../internal/i18n.js';
 import { readRows, useMeasure, type RowBox } from '../../internal/layout.js';
 import type { PaneLayout } from '../../internal/rows.js';
 import { useScrollWatch } from '../../internal/scroll.js';
+import { Arrow } from './DiffineIcons.js';
 
 /**
  * One change, drawn as the shape between where it left and where it arrived.
@@ -16,8 +18,12 @@ import { useScrollWatch } from '../../internal/scroll.js';
  * fill and the curves are the only thing with a line on them.
  */
 interface Link {
+  /** Which change this is, as an index into `changes`. */
+  index: number;
   kind: DiffChangeKind;
   current: boolean;
+  /** Where the middle of the band is, for the buttons that take it across. */
+  middle: number;
   /** The whole band, closed and filled. */
   area: string;
   /** Its top curve, from where the run left to where it arrived. */
@@ -106,6 +112,18 @@ export interface DiffineLinksProps {
   current: number;
   /** What has to change before the geometry is worth reading again. */
   deps: React.DependencyList;
+  /**
+   * Writes one change into one of the two documents.
+   *
+   * Left out where nothing can be written, which is every viewer and an editor
+   * that was not asked for the buttons.
+   */
+  onApply?: (change: DiffChange, into: DiffineSide) => void;
+  /** Which of the two documents can be written into at all. */
+  writable?: { before: boolean; after: boolean };
+  /** What each side is called, for the name of the button that writes into it. */
+  labels?: { before: string; after: string };
+  strings?: DiffineStrings;
 }
 
 /**
@@ -129,7 +147,11 @@ export function DiffineLinks({
   after,
   rowHeight,
   current,
-  deps
+  deps,
+  onApply,
+  writable,
+  labels,
+  strings
 }: DiffineLinksProps): React.JSX.Element {
   const column = React.useRef<HTMLDivElement>(null);
   /*
@@ -182,8 +204,10 @@ export function DiffineLinks({
       const bottom = `M0 ${leftBottom}C${bend} ${leftBottom} ${bend} ${rightBottom} ${width} ${rightBottom}`;
 
       next.push({
+        index,
         kind: change.kind,
         current: index === current,
+        middle: (Math.min(leftTop, rightTop) + Math.max(leftBottom, rightBottom)) / 2,
         area:
           `${top}L${width} ${rightBottom}` +
           `C${bend} ${rightBottom} ${bend} ${leftBottom} 0 ${leftBottom}` +
@@ -196,7 +220,10 @@ export function DiffineLinks({
     setLinks((held) =>
       held.length === next.length &&
       held.every(
-        (link, index) => link.area === next[index].area && link.current === next[index].current
+        (link, index) =>
+          link.area === next[index].area &&
+          link.current === next[index].current &&
+          link.index === next[index].index
       )
         ? held
         : next
@@ -217,9 +244,16 @@ export function DiffineLinks({
   useMeasure(watched, measure, [...deps, rowHeight, current]);
   useScrollWatch(watched, paint, true, deps);
 
+  /*
+   * The buttons that take a change across, and the whole of what decides
+   * whether there are any: something to write with, a side that can be written
+   * into, and the words to name the button with.
+   */
+  const applying = onApply && writable && labels && strings && (writable.before || writable.after);
+
   return (
-    <div className="diffine-links" ref={column} aria-hidden="true">
-      <svg className="diffine-links-canvas" focusable="false">
+    <div className="diffine-links" ref={column} aria-hidden={applying ? undefined : true}>
+      <svg className="diffine-links-canvas" focusable="false" aria-hidden="true">
         <defs>
           {/*
             An edit went out on one side and came in on the other, so its band
@@ -268,6 +302,32 @@ export function DiffineLinks({
           </g>
         ))}
       </svg>
+      {applying
+        ? links.map((link) => (
+            <div key={link.index} className="diffine-apply" style={{ top: link.middle }}>
+              {writable.before ? (
+                <button
+                  type="button"
+                  className="diffine-apply-button"
+                  aria-label={fill(strings.applyChange, { label: labels.before })}
+                  onClick={() => onApply(changes[link.index], 'before')}
+                >
+                  <Arrow left />
+                </button>
+              ) : null}
+              {writable.after ? (
+                <button
+                  type="button"
+                  className="diffine-apply-button"
+                  aria-label={fill(strings.applyChange, { label: labels.after })}
+                  onClick={() => onApply(changes[link.index], 'after')}
+                >
+                  <Arrow />
+                </button>
+              ) : null}
+            </div>
+          ))
+        : null}
     </div>
   );
 }

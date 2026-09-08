@@ -894,6 +894,48 @@ button.diffine-fold:focus-visible {
   height: 100%;
 }
 
+/* ---- Taking a change across ----------------------------------------------
+ *
+ * The arrows sit on the middle of the band a change makes, which is the one
+ * place in the view that belongs to both documents at once. They are drawn over
+ * the shape rather than beside it, so a change that is one line tall still has
+ * somewhere to put them.
+ * ----------------------------------------------------------------------- */
+
+.diffine-apply {
+  position: absolute;
+  left: 0;
+  display: flex;
+  gap: 0.125rem;
+  justify-content: center;
+  width: 100%;
+  transform: translateY(-50%);
+}
+
+.diffine-apply-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  padding: 0;
+  border: 1px solid var(--diffine-border);
+  border-radius: 0.25rem;
+  background: var(--diffine-surface);
+  color: var(--diffine-muted);
+  cursor: pointer;
+}
+
+.diffine-apply-button:hover {
+  border-color: var(--diffine-accent);
+  color: var(--diffine-accent);
+}
+
+.diffine-apply-button:focus-visible {
+  outline: 2px solid var(--diffine-accent);
+  outline-offset: 1px;
+}
+
 .diffine-link-area {
   stroke: none;
 }

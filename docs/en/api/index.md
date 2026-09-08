@@ -66,6 +66,7 @@ A document nobody can type into is read from the props on every render. An edita
 | `collapse` | `boolean` | `false` | Whether runs of unchanged lines far from a change are folded away. |
 | `context` | `number` | `3` | How many unchanged lines are kept either side of a change. |
 | `connectors` | `boolean` | `true` | Whether each change is drawn as a band between the panes. |
+| `applyChanges` | `boolean` | `false` | Whether each change carries buttons for writing it into the other document. |
 | `syncScroll` | `boolean` | `true` | Whether scrolling one pane scrolls the other. |
 | `header` | `boolean` | `true` | Whether each side is named above it. |
 | `navigation` | `boolean` | `true` | Whether the buttons for moving between changes are drawn. |
@@ -85,7 +86,7 @@ A document nobody can type into is read from the props on every render. An edita
 | `renderGutter` | `DiffineRender` | — | Something of the application's own, in the gutter beside each line. |
 | `renderWidget` | `DiffineRender` | — | Something of the application's own, under each line. |
 
-`collapse` and `context` are the viewer's; an editor holds whole documents in its fields and folds nothing. `connectors` and `syncScroll` are about the space between two panes, so both are ignored in the unified view. `languageLabel` draws the name of the language in `viewer` mode and the menu it was chosen from in `editor` mode; `language`, `defaultLanguage` and `onLanguageChange` are the usual pair for that choice.
+`collapse` and `context` are the viewer's; an editor holds whole documents in its fields and folds nothing. `applyChanges` is the editor's, because applying a change means writing a document, and its buttons live in the column `connectors` draws. `connectors` and `syncScroll` are about the space between two panes, so both are ignored in the unified view. `languageLabel` draws the name of the language in `viewer` mode and the menu it was chosen from in `editor` mode; `language`, `defaultLanguage` and `onLanguageChange` are the usual pair for that choice.
 
 Anything else the component is given goes straight to the element, so `id`, `className`, `style` and the `aria-*` attributes behave as they would on a `<div>`.
 
@@ -132,6 +133,7 @@ A pane whose search is open still draws only the lines a reader can see, so a ma
 | `changed`        | `Changed`                                                            |
 | `folded`         | `{lines} unchanged lines`                                            |
 | `expand`         | `Show {lines} unchanged lines`                                       |
+| `applyChange`    | `Take this change into {label}`                                      |
 | `summary`        | `{changes} changes, {inserted} lines added, {deleted} lines removed` |
 | `documentSize`   | `{label}: {characters} characters, {size}`                           |
 | `previousChange` | `Previous change`                                                    |

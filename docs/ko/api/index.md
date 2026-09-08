@@ -66,6 +66,7 @@ order: 1
 | `collapse` | `boolean` | `false` | 변경에서 먼 그대로인 줄을 접을지. |
 | `context` | `number` | `3` | 변경 앞뒤로 남길 그대로인 줄 수. |
 | `connectors` | `boolean` | `true` | 변경을 두 창 사이에 띠로 그릴지. |
+| `applyChanges` | `boolean` | `false` | 변경마다 반대편에 적용하는 버튼을 둘지. |
 | `syncScroll` | `boolean` | `true` | 한쪽을 스크롤하면 다른 쪽도 따라갈지. |
 | `header` | `boolean` | `true` | 각 문서의 이름을 위에 쓸지. |
 | `navigation` | `boolean` | `true` | 변경 사이를 오가는 버튼을 그릴지. |
@@ -85,7 +86,7 @@ order: 1
 | `renderGutter` | `DiffineRender` | — | 줄 옆 여백에 넣을, 애플리케이션 자신의 내용. |
 | `renderWidget` | `DiffineRender` | — | 줄 아래에 넣을, 애플리케이션 자신의 내용. |
 
-`collapse`와 `context`는 `viewer`의 것입니다. 에디터는 입력란이 문서 전체를 들고 있어서 아무것도 접지 않습니다. `connectors`와 `syncScroll`은 두 창 사이의 이야기라서 `unified`에서는 무시됩니다. `languageLabel`은 `viewer`에서 언어 이름을, `editor`에서 그 이름을 고르는 메뉴를 그립니다. 그 선택을 누가 관리하는지는 `language`, `defaultLanguage`, `onLanguageChange`가 정합니다.
+`collapse`와 `context`는 `viewer`의 것입니다. 에디터는 입력란이 문서 전체를 들고 있어서 아무것도 접지 않습니다. `applyChanges`는 `editor`의 것입니다. 변경을 적용한다는 것은 문서를 쓴다는 뜻이고, 버튼은 `connectors`가 그리는 열에 놓입니다. `connectors`와 `syncScroll`은 두 창 사이의 이야기라서 `unified`에서는 무시됩니다. `languageLabel`은 `viewer`에서 언어 이름을, `editor`에서 그 이름을 고르는 메뉴를 그립니다. 그 선택을 누가 관리하는지는 `language`, `defaultLanguage`, `onLanguageChange`가 정합니다.
 
 그 밖에 넘긴 것은 전부 엘리먼트로 그대로 갑니다. `id`, `className`, `style`, `aria-*`는 `<div>`에서와 똑같이 동작합니다.
 
@@ -132,6 +133,7 @@ order: 1
 | `changed`        | `변경됨`                                                |
 | `folded`         | `변경 없는 {lines}줄`                                   |
 | `expand`         | `변경 없는 {lines}줄 펼치기`                            |
+| `applyChange`    | `이 변경을 {label}에 적용`                              |
 | `summary`        | `변경 {changes}건, {inserted}줄 추가, {deleted}줄 삭제` |
 | `documentSize`   | `{label}: {characters}자, {size}`                       |
 | `previousChange` | `이전 변경`                                             |

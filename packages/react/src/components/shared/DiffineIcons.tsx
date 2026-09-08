@@ -37,6 +37,15 @@ export function Chevron({ up = false }: { up?: boolean }): React.JSX.Element {
   );
 }
 
+/** Which way a change is being taken, for the buttons that take one across. */
+export function Arrow({ left = false }: { left?: boolean }): React.JSX.Element {
+  return (
+    <svg className="diffine-icon" {...LINES}>
+      <path d={left ? 'M12.5 8h-9M7 3.5 2.5 8 7 12.5' : 'M3.5 8h9M9 3.5 13.5 8 9 12.5'} />
+    </svg>
+  );
+}
+
 /** Looking for something, which is what opens the search bar. */
 export function Magnifier(): React.JSX.Element {
   return (

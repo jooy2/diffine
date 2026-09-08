@@ -621,6 +621,8 @@ export interface DiffineStrings {
   folded: string;
   /** The name of the button that opens one of those bands: `{lines}`. */
   expand: string;
+  /** The name of the button that writes one change into the other side: `{label}`. */
+  applyChange: string;
   /** What the editor's menu of languages is called to a screen reader. */
   language: string;
   /** How the counts are read out: `{changes}`, `{inserted}` and `{deleted}`. */

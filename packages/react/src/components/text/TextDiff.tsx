@@ -20,6 +20,7 @@ import type {
 } from '../../types.js';
 import { diffText } from '../../diff.js';
 import { useControlled } from '../../internal/controlled.js';
+import { applyChange } from '../../internal/apply.js';
 import { typeOver } from '../../internal/field.js';
 import { foldPlan, type FoldRun } from '../../internal/fold.js';
 import { fontVariables } from '../../internal/font.js';
@@ -221,6 +222,29 @@ export interface TextDiffProps extends Omit<
    * @default true
    */
   connectors?: boolean;
+
+  /**
+   * Whether each change carries a button for writing it into the other
+   * document. Editor only.
+   *
+   * A comparison of a saved version and a draft is usually read with one
+   * question in mind: keep this, or put the other one back. On, every change
+   * grows a pair of arrows in the column between the panes — the one pointing
+   * left writes the right-hand version over the left, and the one pointing
+   * right does the opposite. A side that is `readOnly` is not written into, so
+   * the usual arrangement of a saved version on the left and a draft on the
+   * right leaves one arrow rather than two.
+   *
+   * The write goes in through the browser's own editing command, so Ctrl+Z
+   * takes it back the way it takes back anything else typed into the field, and
+   * `onBeforeChange` or `onAfterChange` reports it exactly as a keystroke would.
+   *
+   * The buttons sit in the column between the panes, so `connectors={false}`
+   * takes them away with the column they are in.
+   *
+   * @default false
+   */
+  applyChanges?: boolean;
 
   /**
    * Whether scrolling one pane scrolls the other. Split view only.
@@ -493,6 +517,7 @@ export function TextDiff({
   collapse = false,
   context = 3,
   connectors = true,
+  applyChanges = false,
   syncScroll = true,
   header = true,
   navigation = true,
@@ -849,6 +874,14 @@ export function TextDiff({
     }
   }
 
+  /** Writes one side's version of a change over the other side's. */
+  function apply(change: DiffChange, into: DiffineSide): void {
+    const text = into === 'before' ? beforeText : afterText;
+    const edit = applyChange(comparison, change, into, text);
+
+    write(into, edit.whole, edit.start, edit.end, edit.text);
+  }
+
   function replaceOne(side: DiffineSide): void {
     const pane = side === 'before' ? firstSearch : secondSearch;
     const text = side === 'before' ? beforeText : afterText;
@@ -1084,6 +1117,10 @@ export function TextDiff({
               rowHeight={rowHeight}
               current={current}
               deps={layoutDeps}
+              onApply={editing && applyChanges ? apply : undefined}
+              writable={{ before: !beforeReadOnly, after: !afterReadOnly }}
+              labels={{ before: beforeSource.label, after: afterSource.label }}
+              strings={strings}
             />
           ) : null}
           {split ? (

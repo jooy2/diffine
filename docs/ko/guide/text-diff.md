@@ -183,6 +183,27 @@ const [index, setIndex] = useState(-1);
 
 `navigation`으로 버튼을 끕니다. 버튼이 놓이는 막대는 `header`가 꺼져 있어도 그려지므로, 이름 없이 버튼만 둘 수 있습니다.
 
+## 변경을 반대편에 적용하기
+
+저장된 판본과 초안을 비교할 때 묻는 것은 대개 하나입니다. 이대로 둘 것인가, 아니면 예전 것을 되돌릴 것인가. `applyChanges`를 켜면 변경마다 두 창 사이 열에 화살표 한 쌍이 생깁니다. 왼쪽을 가리키는 쪽은 오른쪽 판본을 왼쪽에 쓰고, 오른쪽을 가리키는 쪽은 그 반대입니다.
+
+```tsx
+<TextDiff
+  mode="editor"
+  before={saved}
+  after={draft}
+  readOnly="before"
+  applyChanges
+  onAfterChange={setDraft}
+/>
+```
+
+`readOnly`인 쪽에는 쓰지 않습니다. 그래서 위처럼 왼쪽에 저장본, 오른쪽에 초안을 두면 화살표는 하나만 남습니다.
+
+쓰기는 브라우저 자체의 편집 명령을 거칩니다. 그래서 **Ctrl+Z**로 되돌릴 수 있고, `onBeforeChange`나 `onAfterChange`도 타이핑과 똑같이 알려 줍니다.
+
+변경을 적용한다는 것은 문서를 쓴다는 뜻이라 `editor`의 기능입니다. 버튼은 두 창 사이 열에 놓이므로 `connectors={false}`로 그 열을 없애면 버튼도 함께 사라집니다.
+
 ## 찾기와 바꾸기
 
 창마다 찾기가 따로 있습니다. 창 위 막대의 버튼이 그 창 아래에 찾기 막대를 열고, **Ctrl+F**(맥에서는 **Cmd+F**)는 키보드가 놓인 창의 막대를 엽니다.

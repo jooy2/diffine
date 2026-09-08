@@ -186,6 +186,27 @@ Setting `selected` scrolls the view, exactly as pressing a button does, so an ap
 
 `navigation` turns the buttons off. The bar they sit in is drawn for them even when `header` is off, so a view can have the buttons without the names.
 
+## Taking a change across
+
+A comparison of a saved version and a draft is usually read with one question in mind: keep this, or put the other one back. `applyChanges` grows a pair of arrows on every change, in the column between the panes. The one pointing left writes the right-hand version over the left, and the one pointing right does the opposite.
+
+```tsx
+<TextDiff
+  mode="editor"
+  before={saved}
+  after={draft}
+  readOnly="before"
+  applyChanges
+  onAfterChange={setDraft}
+/>
+```
+
+A side that is `readOnly` is never written into, so the arrangement above — the saved version on the left, the draft on the right — leaves one arrow rather than two.
+
+The write goes in through the browser's own editing command, so **Ctrl+Z** takes it back the way it takes back anything else typed into the field, and `onBeforeChange` or `onAfterChange` reports it exactly as a keystroke would.
+
+It belongs to `editor` mode, because applying a change means writing a document. The buttons sit in the column between the panes, so `connectors={false}` takes them away with the column they are in.
+
 ## Searching and replacing
 
 Each pane has a search of its own. The button in the bar above it opens a bar under it, and **Ctrl+F** — **Cmd+F** where that is the modifier — opens the one for the pane the keyboard is in.
