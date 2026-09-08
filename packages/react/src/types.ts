@@ -111,6 +111,31 @@ export interface DiffOptions {
   maxCost?: number;
 }
 
+/**
+ * What a document ends its lines with.
+ *
+ * `mixed` is a document with more than one of them in it, and `none` is one
+ * with no line ending at all — a single line, or nothing.
+ */
+export type DiffLineEnding = 'lf' | 'crlf' | 'cr' | 'mixed' | 'none';
+
+/**
+ * How a document is written, apart from the lines it holds.
+ *
+ * None of this changes the comparison: every line ending ends a line, so a file
+ * written on one platform and edited on another is not a file where every line
+ * changed. What it does is let a view say what the comparison cannot — that two
+ * documents with the same lines in them are not the same file.
+ */
+export interface DiffFormat {
+  /** What its lines end with. */
+  ending: DiffLineEnding;
+  /** Whether the last line carries an ending of its own. */
+  finalNewline: boolean;
+  /** Whether it begins with a byte order mark. */
+  byteOrderMark: boolean;
+}
+
 /** A run of text, and what happened to it. */
 export interface DiffSegment {
   kind: DiffEditKind;
@@ -232,6 +257,19 @@ export interface DiffResult {
    * and called a range replaced outright. See {@link DiffOptions.maxCost}.
    */
   complete: boolean;
+  /**
+   * How each document is written, which is what the rows cannot say.
+   *
+   * Two files with the same lines in them and different line endings compare as
+   * the same document, and they are not the same file. This is where that
+   * difference is, and the viewer writes it under the panes when the two
+   * disagree.
+   *
+   * Left out where nobody could know it: a comparison read back out of a patch
+   * never saw either file, and one an application built by hand is whatever it
+   * says it is.
+   */
+  format?: { before: DiffFormat; after: DiffFormat };
 }
 
 /** How a comparison is written out as a patch. */
@@ -623,6 +661,12 @@ export interface DiffineStrings {
   expand: string;
   /** The name of the button that writes one change into the other side: `{label}`. */
   applyChange: string;
+  /** How the two documents are written, where that differs: `{before}` and `{after}`. */
+  format: string;
+  /** What a document with more than one kind of line ending in it is called. */
+  mixedEndings: string;
+  /** What is said of a document whose last line carries no ending of its own. */
+  noFinalNewline: string;
   /** What the editor's menu of languages is called to a screen reader. */
   language: string;
   /** How the counts are read out: `{changes}`, `{inserted}` and `{deleted}`. */

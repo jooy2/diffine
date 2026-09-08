@@ -19,6 +19,48 @@ const MARKERS: Record<DiffineSide, Partial<Record<DiffRowKind, string>>> = {
   after: { insert: '+', replace: '~' }
 };
 
+/** Runs of spaces, and runs of tabs, which are drawn rather than left invisible. */
+const BLANKS = / +|\t+/gu;
+
+/**
+ * A run of text with its whitespace picked out, or the text as it was.
+ *
+ * The characters themselves stay exactly as they were, and the marks are drawn
+ * on the elements around them — so what a reader copies out is the line, not a
+ * line with dots and arrows in it.
+ */
+function marked(text: string, invisibles: boolean): React.ReactNode {
+  if (!invisibles || !/[ \t]/u.test(text)) {
+    return text;
+  }
+
+  const nodes: React.ReactNode[] = [];
+  let cursor = 0;
+
+  for (const run of text.matchAll(BLANKS)) {
+    if (run.index > cursor) {
+      nodes.push(text.slice(cursor, run.index));
+    }
+
+    nodes.push(
+      <span
+        key={run.index}
+        className="diffine-invisible"
+        data-kind={run[0].charAt(0) === '\t' ? 'tab' : 'space'}
+      >
+        {run[0]}
+      </span>
+    );
+    cursor = run.index + run[0].length;
+  }
+
+  if (cursor < text.length) {
+    nodes.push(text.slice(cursor));
+  }
+
+  return nodes;
+}
+
 /** Which word a screen reader hears in front of the line. */
 function labelFor(strings: DiffineStrings, kind: DiffRowKind, side: DiffineSide): string | null {
   if (kind === 'replace') {
@@ -69,6 +111,8 @@ export interface DiffineLineProps {
   renderGutter?: DiffineRender;
   /** Something of the application's own for under the line, or nothing. */
   renderWidget?: DiffineRender;
+  /** Whether the spaces and tabs inside the line are drawn. */
+  invisibles?: boolean;
 }
 
 /**
@@ -94,7 +138,8 @@ export function DiffineLine({
   matches,
   match,
   renderGutter,
-  renderWidget
+  renderWidget,
+  invisibles = false
 }: DiffineLineProps): React.JSX.Element {
   const label = line ? labelFor(strings, kind, side) : null;
   const slot = line && renderGutter ? renderGutter(line, side) : null;
@@ -131,6 +176,7 @@ export function DiffineLine({
             highlight={highlight}
             matches={matches}
             match={match}
+            invisibles={invisibles}
           />
         ) : null}
       </span>
@@ -164,13 +210,15 @@ function DiffineLineText({
   side,
   highlight,
   matches,
-  match
+  match,
+  invisibles
 }: {
   line: DiffLine;
   side: DiffineSide;
   highlight?: DiffineHighlight;
   matches?: readonly SearchMatch[];
   match?: SearchMatch | null;
+  invisibles: boolean;
 }): React.JSX.Element {
   const found: LineRange[] | undefined = matches?.map((each) => ({
     start: each.start,
@@ -180,7 +228,7 @@ function DiffineLineText({
   const pieces = splitLine(line, highlight?.(line, side), found);
 
   if (!pieces) {
-    return <>{line.text}</>;
+    return <>{marked(line.text, invisibles)}</>;
   }
 
   return (
@@ -198,17 +246,17 @@ function DiffineLineText({
                 data-current={piece.match === 'current' ? 'true' : undefined}
                 style={piece.style}
               >
-                {piece.text}
+                {marked(piece.text, invisibles)}
               </mark>
             );
           }
 
           return piece.className || piece.style ? (
             <span key={index} className={piece.className} style={piece.style}>
-              {piece.text}
+              {marked(piece.text, invisibles)}
             </span>
           ) : (
-            <React.Fragment key={index}>{piece.text}</React.Fragment>
+            <React.Fragment key={index}>{marked(piece.text, invisibles)}</React.Fragment>
           );
         }
 
@@ -220,7 +268,7 @@ function DiffineLineText({
             data-found={piece.match}
             style={piece.style}
           >
-            {piece.text}
+            {marked(piece.text, invisibles)}
           </mark>
         );
       })}

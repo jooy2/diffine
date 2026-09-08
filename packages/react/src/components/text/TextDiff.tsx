@@ -330,6 +330,23 @@ export interface TextDiffProps extends Omit<
   onSelectedChange?: (selected: number, change: DiffChange | null) => void;
 
   /**
+   * Whether the spaces and tabs inside a line are drawn.
+   *
+   * A line ending in three spaces and a line ending in none are the same line
+   * to look at, and the comparison marks the difference between them in a run
+   * of text nobody can see. On, a space is a dot in the middle of its own
+   * column and a run of tabs carries a rule under it, so what changed is
+   * visible rather than merely marked.
+   *
+   * The characters themselves are untouched — the marks are drawn on the
+   * elements around them — so what a reader copies out is the line as it was
+   * written. `--diffine-invisible` is the colour they are drawn in.
+   *
+   * @default false
+   */
+  showInvisibles?: boolean;
+
+  /**
    * How wide a tab is drawn, in characters.
    * @default 4
    */
@@ -524,6 +541,7 @@ export function TextDiff({
   search = true,
   summary = true,
   virtualize = true,
+  showInvisibles = false,
   selected: selectedProp,
   defaultSelected = -1,
   onSelectedChange,
@@ -759,6 +777,7 @@ export function TextDiff({
     font?.size,
     font?.lineHeight,
     font?.letterSpacing,
+    showInvisibles,
     // What the application draws of its own changes how tall a row is, and the
     // two sides are held level by measuring exactly that.
     slots,
@@ -1084,6 +1103,7 @@ export function TextDiff({
               highlight={colour}
               matches={firstSearch.rows}
               match={firstSearch.match}
+              invisibles={showInvisibles}
               paneRef={firstPane}
               fieldRef={beforeField}
             />
@@ -1105,6 +1125,7 @@ export function TextDiff({
               onExpand={expand}
               renderGutter={slots}
               renderWidget={widgets}
+              invisibles={showInvisibles}
             />
           )}
           {split && connectors ? (
@@ -1147,6 +1168,7 @@ export function TextDiff({
                 highlight={colour}
                 matches={secondSearch.rows}
                 match={secondSearch.match}
+                invisibles={showInvisibles}
                 paneRef={secondPane}
                 fieldRef={afterField}
               />
@@ -1168,6 +1190,7 @@ export function TextDiff({
                 onExpand={expand}
                 renderGutter={slots}
                 renderWidget={widgets}
+                invisibles={showInvisibles}
               />
             )
           ) : null}
@@ -1218,6 +1241,7 @@ export function TextDiff({
           inserted={comparison.stats.inserted + comparison.stats.changed}
           deleted={comparison.stats.deleted + comparison.stats.changed}
           linked={split && connectors}
+          format={comparison.format}
           locale={locale}
           strings={strings}
         />

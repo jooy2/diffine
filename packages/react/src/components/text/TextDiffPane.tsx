@@ -34,6 +34,8 @@ export interface TextDiffPaneProps {
   renderGutter?: DiffineRender;
   /** Something of the application's own for under each line. */
   renderWidget?: DiffineRender;
+  /** Whether the spaces and tabs inside each line are drawn. */
+  invisibles?: boolean;
 }
 
 /**
@@ -61,7 +63,8 @@ export function TextDiffPane({
   side,
   onExpand,
   renderGutter,
-  renderWidget
+  renderWidget,
+  invisibles
 }: TextDiffPaneProps): React.JSX.Element {
   return (
     <div
@@ -87,6 +90,7 @@ export function TextDiffPane({
           onExpand={onExpand}
           renderGutter={renderGutter}
           renderWidget={renderWidget}
+          invisibles={invisibles}
         />
       </div>
     </div>

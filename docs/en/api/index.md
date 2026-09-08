@@ -73,6 +73,7 @@ A document nobody can type into is read from the props on every render. An edita
 | `search` | `boolean` | `true` | Whether a reader can search a pane from inside the component. |
 | `summary` | `boolean` | `true` | Whether the bar under the view is drawn. |
 | `virtualize` | `boolean` | `true` | Whether only the lines a reader can see are drawn. |
+| `showInvisibles` | `boolean` | `false` | Whether the spaces and tabs inside a line are drawn. |
 | `language` | `string` | `'plain'` | What the documents are written in, so they are coloured as it. |
 | `defaultLanguage` | `string` | `'plain'` | Which one to start on, when the component is to keep it. |
 | `onLanguageChange` | `(language: string) => void` | — | A language was chosen from the menu. Editor only. |
@@ -134,6 +135,9 @@ A pane whose search is open still draws only the lines a reader can see, so a ma
 | `folded`         | `{lines} unchanged lines`                                            |
 | `expand`         | `Show {lines} unchanged lines`                                       |
 | `applyChange`    | `Take this change into {label}`                                      |
+| `format`         | `{before} → {after}`                                                 |
+| `mixedEndings`   | `mixed`                                                              |
+| `noFinalNewline` | `no final newline`                                                   |
 | `summary`        | `{changes} changes, {inserted} lines added, {deleted} lines removed` |
 | `documentSize`   | `{label}: {characters} characters, {size}`                           |
 | `previousChange` | `Previous change`                                                    |
@@ -327,8 +331,17 @@ interface DiffResult {
   changes: readonly DiffChange[];
   stats: DiffStats;
   complete: boolean;
+  format?: { before: DiffFormat; after: DiffFormat };
+}
+
+interface DiffFormat {
+  ending: 'lf' | 'crlf' | 'cr' | 'mixed' | 'none';
+  finalNewline: boolean;
+  byteOrderMark: boolean;
 }
 ```
+
+`format` is how each document is written rather than what is in it, and it is left out where nobody could know it — a comparison read back out of a patch never saw either file.
 
 ### `DiffRow`
 
@@ -520,6 +533,7 @@ Declared on `.diffine`, and overridden the same way.
 | `--diffine-border`         | `#d6dee9`   | `#2f3945`   |
 | `--diffine-gutter`         | `#f4f7fb`   | `#232b36`   |
 | `--diffine-accent`         | `#0e7ffc`   | `#4c9dff`   |
+| `--diffine-invisible`      | `#b6c0cf`   | `#4b5768`   |
 | `--diffine-insert-line`    | `#e7f8ee`   | `#12301f`   |
 | `--diffine-insert-piece`   | `#a5e9c1`   | `#206c42`   |
 | `--diffine-delete-line`    | `#fdecee`   | `#351c20`   |

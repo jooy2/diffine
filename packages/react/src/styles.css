@@ -19,6 +19,10 @@
   --diffine-gutter: #f4f7fb;
   --diffine-accent: #0e7ffc;
 
+  /* The dots and rules that stand for a space and a tab, where those are being
+     drawn. Faint on purpose: they are there to be found rather than read. */
+  --diffine-invisible: #b6c0cf;
+
   /* A whole line, and the words inside it. The paler pair tints the row; the
      stronger pair picks out what actually moved, and only ever sits on top of
      the paler one, which is what the contrast of both was chosen against. */
@@ -148,6 +152,7 @@
     --diffine-border: #2f3945;
     --diffine-gutter: #232b36;
     --diffine-accent: #4c9dff;
+    --diffine-invisible: #4b5768;
     --diffine-insert-line: #12301f;
     --diffine-insert-piece: #206c42;
     --diffine-delete-line: #351c20;
@@ -183,6 +188,7 @@
   --diffine-border: #2f3945;
   --diffine-gutter: #232b36;
   --diffine-accent: #4c9dff;
+  --diffine-invisible: #4b5768;
   --diffine-insert-line: #12301f;
   --diffine-insert-piece: #206c42;
   --diffine-delete-line: #351c20;
@@ -451,6 +457,17 @@
   overflow: hidden;
   min-height: 1.75rem;
   padding: 0.1875rem 0.75rem;
+}
+
+/* How the two documents are written, where that differs. It sits with the
+   counts rather than with the sizes, because it is news about the pair rather
+   than about one of them. */
+.diffine-format {
+  flex: 0 1 auto;
+  overflow: hidden;
+  color: var(--diffine-muted);
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .diffine-metric {
@@ -743,6 +760,35 @@ button.diffine-fold:focus-visible {
   position: sticky;
   left: 0;
   padding-inline: 0.75rem;
+}
+
+/* ---- The whitespace, where it is being drawn ------------------------------
+ *
+ * The characters are still the characters. What is drawn is on the element
+ * around them: a dot in the middle of every column a space takes, and a rule
+ * under a run of tabs — which is why a reader copying the line out gets the
+ * line rather than a line with marks in it.
+ *
+ * `1ch` is one character in a monospace face, so the dots land in the middle of
+ * their own columns without anything having to be measured. A tab is as wide as
+ * `tab-size` says, which is not a number of characters, so it carries a rule
+ * along its whole length instead of a mark per column.
+ * ----------------------------------------------------------------------- */
+
+.diffine-invisible[data-kind='space'] {
+  background-image: radial-gradient(
+    circle at 50% 50%,
+    var(--diffine-invisible) 0.05em,
+    transparent 0.05em
+  );
+  background-size: 1ch 100%;
+}
+
+.diffine-invisible[data-kind='tab'] {
+  background-image: linear-gradient(var(--diffine-invisible), var(--diffine-invisible));
+  background-position: 0 65%;
+  background-size: 100% 1px;
+  background-repeat: no-repeat;
 }
 
 .diffine-piece {

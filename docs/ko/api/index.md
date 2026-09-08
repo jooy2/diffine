@@ -73,6 +73,7 @@ order: 1
 | `search` | `boolean` | `true` | 창 안에서 문서를 찾을 수 있게 할지. |
 | `summary` | `boolean` | `true` | 아래쪽 상태 표시줄을 그릴지. |
 | `virtualize` | `boolean` | `true` | 보이는 줄만 그릴지. |
+| `showInvisibles` | `boolean` | `false` | 줄 안의 공백과 탭을 그릴지. |
 | `language` | `string` | `'plain'` | 문서가 어떤 언어인지. 그 언어로 색을 입힙니다. |
 | `defaultLanguage` | `string` | `'plain'` | 컴포넌트가 직접 관리할 때의 처음 언어. |
 | `onLanguageChange` | `(language: string) => void` | — | 메뉴에서 언어를 골랐을 때. 에디터 전용. |
@@ -134,6 +135,9 @@ order: 1
 | `folded`         | `변경 없는 {lines}줄`                                   |
 | `expand`         | `변경 없는 {lines}줄 펼치기`                            |
 | `applyChange`    | `이 변경을 {label}에 적용`                              |
+| `format`         | `{before} → {after}`                                    |
+| `mixedEndings`   | `혼용`                                                  |
+| `noFinalNewline` | `끝 개행 없음`                                          |
 | `summary`        | `변경 {changes}건, {inserted}줄 추가, {deleted}줄 삭제` |
 | `documentSize`   | `{label}: {characters}자, {size}`                       |
 | `previousChange` | `이전 변경`                                             |
@@ -326,8 +330,17 @@ interface DiffResult {
   changes: readonly DiffChange[];
   stats: DiffStats;
   complete: boolean;
+  format?: { before: DiffFormat; after: DiffFormat };
+}
+
+interface DiffFormat {
+  ending: 'lf' | 'crlf' | 'cr' | 'mixed' | 'none';
+  finalNewline: boolean;
+  byteOrderMark: boolean;
 }
 ```
+
+`format`은 문서에 무엇이 들어 있는지가 아니라 문서가 어떻게 쓰였는지입니다. 알 수 없으면 없습니다. 패치에서 읽어 온 비교 결과는 두 파일을 본 적이 없습니다.
 
 ### `DiffRow`
 
@@ -519,6 +532,7 @@ const result = diffImage(before, after, { align: 'shift' });
 | `--diffine-border`         | `#d6dee9`   | `#2f3945`   |
 | `--diffine-gutter`         | `#f4f7fb`   | `#232b36`   |
 | `--diffine-accent`         | `#0e7ffc`   | `#4c9dff`   |
+| `--diffine-invisible`      | `#b6c0cf`   | `#4b5768`   |
 | `--diffine-insert-line`    | `#e7f8ee`   | `#12301f`   |
 | `--diffine-insert-piece`   | `#a5e9c1`   | `#206c42`   |
 | `--diffine-delete-line`    | `#fdecee`   | `#351c20`   |

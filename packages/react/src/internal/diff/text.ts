@@ -18,6 +18,7 @@ import type {
   DiffRow,
   DiffStats
 } from '../../types.js';
+import { formatOf } from './format.js';
 import { compareInline, type InlineOptions } from './inline.js';
 import { matchSequences } from './myers.js';
 import { pairLines } from './pair.js';
@@ -195,5 +196,13 @@ export function compareText(before: string, after: string, options: TextOptions)
 
   pushChange(beforeLines.length, afterLines.length);
 
-  return { before: beforeLines, after: afterLines, rows, changes, stats, complete };
+  return {
+    before: beforeLines,
+    after: afterLines,
+    rows,
+    changes,
+    stats,
+    complete,
+    format: { before: formatOf(before), after: formatOf(after) }
+  };
 }

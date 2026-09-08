@@ -6,6 +6,10 @@
 
 ### Added
 
+- **`result.format` says how each document is written, and the bar under the panes says so when the two differ.** Every line ending ends a line, so a file written on one platform and edited on another is not a file where every line changed — and the cost of that was a file whose only difference was invisible reading as no difference at all. `format` carries the line ending each document uses, whether its last line has one, and whether it begins with a byte order mark. It is worked out beside the comparison rather than inside it, so nothing about which lines are equal has changed, and it is left out of a comparison read back out of a patch, which never saw either file.
+
+- **`showInvisibles` draws the whitespace inside the lines.** A dot in the middle of each column a space takes, and a rule under a run of tabs. The characters themselves are untouched and the marks are drawn on the elements around them, so what a reader copies out is the line as it was written. `--diffine-invisible` is the colour, and `strings.format`, `strings.mixedEndings` and `strings.noFinalNewline` are the words the bar uses.
+
 - **`applyChanges` puts a pair of arrows on every change, for taking it across.** A comparison of a saved version and a draft is read with one question in mind, and this is the answer to it: the arrow pointing left writes the right-hand version over the left, the one pointing right does the opposite, and a `readOnly` side is never written into — so the usual arrangement leaves one arrow rather than two. The write goes in through the browser's own editing command, so Ctrl+Z takes it back and `onBeforeChange` or `onAfterChange` reports it exactly as a keystroke would.
 
   It is the editor's, because applying a change means writing a document, and the buttons sit in the column between the panes, so `connectors={false}` takes them away with it. `strings.applyChange` is what they are named with.

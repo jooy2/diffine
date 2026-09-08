@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import type { DiffineLocale, DiffineStrings } from '../../types.js';
+import type { DiffFormat, DiffineLocale, DiffineStrings } from '../../types.js';
 import { fill } from '../../internal/i18n.js';
 import { formatBytes, formatCount, measureText } from '../../internal/measure.js';
 import { TallyIcon } from './DiffineIcons.js';
@@ -20,6 +20,8 @@ export interface DiffineSummaryProps {
   deleted: number;
   /** Whether the column between the panes is drawn, so the bar matches it. */
   linked: boolean;
+  /** How each document is written, where the comparison could work it out. */
+  format?: { before: DiffFormat; after: DiffFormat };
   locale: DiffineLocale;
   strings: DiffineStrings;
 }
@@ -52,6 +54,7 @@ export function DiffineSummary({
   inserted,
   deleted,
   linked,
+  format,
   locale,
   strings
 }: DiffineSummaryProps): React.JSX.Element {
@@ -60,6 +63,13 @@ export function DiffineSummary({
 
   const sentence =
     changes === 0 ? strings.identical : fill(strings.summary, { changes, inserted, deleted });
+  const written =
+    format && differs(format.before, format.after)
+      ? fill(strings.format, {
+          before: describe(format.before, strings),
+          after: describe(format.after, strings)
+        })
+      : null;
 
   return (
     <div className="diffine-summary">
@@ -81,6 +91,11 @@ export function DiffineSummary({
           locale={locale}
           strings={strings}
         />
+        {written ? (
+          <span className="diffine-format" title={written}>
+            {written}
+          </span>
+        ) : null}
         <div className="diffine-tally" title={sentence} aria-hidden="true">
           {changes === 0 ? (
             <span className="diffine-tally-item" data-kind="identical">
@@ -109,6 +124,46 @@ export function DiffineSummary({
       </span>
     </div>
   );
+}
+
+/**
+ * Whether two documents with the same lines in them are not the same file.
+ *
+ * A document with no line ending anywhere in it — one line, or nothing at all —
+ * is left out. It has no ending to be the wrong one and no last line to be
+ * missing one, and saying that a single line differs from a file in how it is
+ * written would be true of every single line there has ever been.
+ */
+function differs(before: DiffFormat, after: DiffFormat): boolean {
+  if (before.ending === 'none' || after.ending === 'none') {
+    return false;
+  }
+
+  return (
+    before.ending !== after.ending ||
+    before.finalNewline !== after.finalNewline ||
+    before.byteOrderMark !== after.byteOrderMark
+  );
+}
+
+/** One document's way of being written, in as few words as it takes. */
+function describe(format: DiffFormat, strings: DiffineStrings): string {
+  const parts: string[] = [];
+
+  if (format.ending !== 'none') {
+    // `CRLF` and `LF` are what every editor calls these, in every language.
+    parts.push(format.ending === 'mixed' ? strings.mixedEndings : format.ending.toUpperCase());
+  }
+
+  if (format.byteOrderMark) {
+    parts.push('BOM');
+  }
+
+  if (!format.finalNewline) {
+    parts.push(strings.noFinalNewline);
+  }
+
+  return parts.join(', ');
 }
 
 /** One side's size: the sentence for a screen reader, the numbers for the eye. */

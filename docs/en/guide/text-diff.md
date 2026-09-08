@@ -261,6 +261,30 @@ A search reaches the whole document rather than the part of it that is drawn, so
 
 A band also appears where a comparison is missing lines rather than hiding them — between one hunk of a [patch](diff#patches) and the next. That one is drawn whatever `collapse` says, and it cannot be pressed, because nobody sent the lines it stands for.
 
+## Line endings and whitespace
+
+Every line ending ends a line, so a file written on Windows and edited on a Mac is not a file where every line changed. The cost of that is a file whose only difference is invisible: the same lines, saved by another editor, reading as no difference at all.
+
+So it is worked out beside the comparison. `result.format` says what each document ends its lines with, whether the last one carries an ending, and whether the document begins with a byte order mark; the bar under the panes writes it out when the two disagree.
+
+```ts
+diffText('a\nb\n', 'a\r\nb').format;
+// {
+//   before: { ending: 'lf',   finalNewline: true,  byteOrderMark: false },
+//   after:  { ending: 'crlf', finalNewline: false, byteOrderMark: false }
+// }
+```
+
+`ending` is `lf`, `crlf`, `cr`, `mixed` for a document with more than one of them, or `none` for one with no line ending at all. A comparison read back out of a [patch](diff#patches) has no `format`, because a patch never saw either file.
+
+`showInvisibles` draws the whitespace inside the lines: a dot in the middle of each column a space takes, and a rule under a run of tabs.
+
+```tsx
+<TextDiff before={saved} after={draft} showInvisibles />
+```
+
+The characters themselves are untouched — the marks are drawn on the elements around them — so what a reader copies out is the line as it was written. `--diffine-invisible` is the colour they are drawn in.
+
 ## Long documents
 
 `virtualize` is on by default, and it is why a comparison of twenty thousand lines opens at all. Twenty thousand lines is twenty thousand rows in the page; forty of them are on the screen. The rest are height and nothing else.

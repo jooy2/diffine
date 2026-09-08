@@ -31,6 +31,8 @@ export interface TextDiffFieldProps {
   markers: boolean;
   strings: DiffineStrings;
   highlight?: DiffineHighlight;
+  /** Whether the spaces and tabs inside each line are drawn. */
+  invisibles?: boolean;
   /** What a search found, keyed by the line it found it in. */
   matches?: ReadonlyMap<number, readonly SearchMatch[]>;
   /** The match a reader is on, which is the one drawn differently from the rest. */
@@ -84,6 +86,7 @@ export function TextDiffField({
   markers,
   strings,
   highlight,
+  invisibles,
   matches,
   match,
   paneRef,
@@ -165,6 +168,7 @@ export function TextDiffField({
             markers={markers}
             strings={strings}
             highlight={highlight}
+            invisibles={invisibles}
             matches={matches}
             match={match}
           />
