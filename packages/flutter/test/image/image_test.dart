@@ -1,0 +1,297 @@
+import 'dart:typed_data';
+import 'dart:ui' show Color;
+
+import 'package:diffine/diffine.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+/// A picture written as rows of characters, so that a test reads as the thing
+/// it is testing.
+///
+/// A digit is a shade of grey, `0` black and `9` white, which is what an edge
+/// drawn smooth is made of. The letters are the colours worth naming, and a
+/// space is nothing at all — a pixel with no alpha behind it.
+const Map<String, List<int>> _paints = <String, List<int>>{
+  '.': <int>[255, 255, 255, 255],
+  '#': <int>[0, 0, 0, 255],
+  'r': <int>[255, 0, 0, 255],
+  'g': <int>[0, 128, 0, 255],
+  ' ': <int>[0, 0, 0, 0],
+};
+
+List<int> paintOf(String mark) {
+  final int code = mark.codeUnitAt(0);
+
+  if (code >= 0x30 && code <= 0x39) {
+    final int grey = ((code - 0x30) / 9 * 255).round();
+
+    return <int>[grey, grey, grey, 255];
+  }
+
+  final List<int>? paint = _paints[mark];
+
+  if (paint == null) {
+    throw ArgumentError("No paint for '$mark'");
+  }
+
+  return paint;
+}
+
+DiffPixels picture(List<String> rows) {
+  final int width = rows.isEmpty ? 0 : rows.first.length;
+  final Uint8List data = Uint8List(width * rows.length * 4);
+
+  for (int y = 0; y < rows.length; y += 1) {
+    if (rows[y].length != width) {
+      throw ArgumentError('every row of a picture has to be the same width');
+    }
+
+    for (int x = 0; x < width; x += 1) {
+      data.setRange((y * width + x) * 4, (y * width + x) * 4 + 4, paintOf(rows[y][x]));
+    }
+  }
+
+  return DiffPixels(data: data, width: width, height: rows.length);
+}
+
+/// The mask read back as characters, one a pixel: `.` equal, `~+-` the rest.
+List<String> marks(DiffImageResult result) {
+  const Map<DiffPixelKind, String> letters = <DiffPixelKind, String>{
+    DiffPixelKind.equal: '.',
+    DiffPixelKind.changed: '~',
+    DiffPixelKind.added: '+',
+    DiffPixelKind.removed: '-',
+  };
+
+  return <String>[
+    for (int y = 0; y < result.height; y += 1)
+      <String>[
+        for (int x = 0; x < result.width; x += 1)
+          letters[kDiffPixelKinds[result.mask[y * result.width + x]]]!,
+      ].join(),
+  ];
+}
+
+String regionOf(DiffImageRegion region) =>
+    '${region.x},${region.y} ${region.width}x${region.height} (${region.pixels})';
+
+void main() {
+  group('diffImage', () {
+    test('finds nothing between two copies of the same picture', () {
+      final DiffImageResult result = diffImage(
+        picture(<String>['.#.', '#.#']),
+        picture(<String>['.#.', '#.#']),
+      );
+
+      expect(result.stats.pixels, 6);
+      expect(result.stats.unchanged, 6);
+      expect(result.stats.changed, 0);
+      expect(result.stats.ratio, 0);
+      expect(result.regions, isEmpty);
+      expect(result.complete, isTrue);
+    });
+
+    test('marks the pixel that changed and nothing else', () {
+      final DiffImageResult result = diffImage(
+        picture(<String>['...', '...', '...']),
+        picture(<String>['...', '.r.', '...']),
+      );
+
+      expect(marks(result), <String>['...', '.~.', '...']);
+      expect(result.stats.changed, 1);
+      expect(result.regions.map(regionOf).toList(), <String>['1,1 1x1 (1)']);
+    });
+
+    test('counts a pixel that only one of the two pictures has', () {
+      final DiffImageResult result = diffImage(
+        picture(<String>['..', '..']),
+        picture(<String>['...', '...', '...']),
+      );
+
+      expect(result.width, 3);
+      expect(result.height, 3);
+      expect(marks(result), <String>['..+', '..+', '+++']);
+      expect(result.stats.added, 5);
+      expect(result.stats.removed, 0);
+    });
+
+    test('reads a picture that lost a row as pixels that were removed', () {
+      final DiffImageResult result = diffImage(
+        picture(<String>['..', '..']),
+        picture(<String>['..']),
+      );
+
+      expect(marks(result), <String>['..', '--']);
+      expect(result.stats.removed, 2);
+    });
+
+    test('lets a difference under the tolerance go', () {
+      final DiffPixels before = picture(<String>['55']);
+      final DiffPixels after = picture(<String>['56']);
+
+      expect(diffImage(before, after, const DiffImageOptions(tolerance: 0.2)).stats.changed, 0);
+      expect(diffImage(before, after, const DiffImageOptions(tolerance: 0)).stats.changed, 1);
+    });
+
+    test('tells nothing at all from a white pixel', () {
+      // Both are white once they are blended onto white, and only the
+      // transparency says otherwise.
+      final DiffImageResult result = diffImage(
+        picture(<String>[' ']),
+        picture(<String>['.']),
+        const DiffImageOptions(tolerance: 0),
+      );
+
+      expect(result.stats.changed, 1);
+    });
+
+    test('ignores an edge that was drawn smooth a second way', () {
+      final DiffPixels before = picture(<String>['.5#5.', '.5#5.', '.5#5.']);
+      final DiffPixels after = picture(<String>['.8#3.', '.8#3.', '.8#3.']);
+
+      expect(diffImage(before, after).stats.changed, 0);
+      expect(
+        diffImage(before, after, const DiffImageOptions(ignoreAntialiasing: false)).stats.changed,
+        6,
+      );
+    });
+
+    test('keeps a pixel that took a colour of its own', () {
+      // Nothing around it is darker, so it is not a blend of anything: this is
+      // a mark that arrived rather than an edge that moved.
+      expect(
+        diffImage(
+          picture(<String>['...', '...', '...']),
+          picture(<String>['...', '.#.', '...']),
+        ).stats.changed,
+        1,
+      );
+    });
+
+    test('groups the changed pixels into one region a change', () {
+      final DiffImageResult result = diffImage(
+        picture(<String>['.......', '.......', '.......', '.......']),
+        picture(<String>['r......', '.......', '.......', '.....g.']),
+        const DiffImageOptions(blockSize: 2),
+      );
+
+      expect(result.regions.map(regionOf).toList(), <String>['0,0 1x1 (1)', '5,3 1x1 (1)']);
+    });
+
+    test('joins what falls in one square of the grid, and splits what does not', () {
+      final DiffPixels before = picture(<String>['.....', '.....', '.....']);
+      final DiffPixels after = picture(<String>['r...r', '.....', '.....']);
+
+      expect(
+        diffImage(
+          before,
+          after,
+          const DiffImageOptions(blockSize: 8),
+        ).regions.map(regionOf).toList(),
+        <String>['0,0 5x1 (2)'],
+      );
+      expect(diffImage(before, after, const DiffImageOptions(blockSize: 2)).regions, hasLength(2));
+    });
+
+    test('keeps the largest regions and says the list is not all of them', () {
+      final DiffImageResult result = diffImage(
+        picture(<String>['.....', '.....', '.....']),
+        picture(<String>['r.r.r', '.....', 'r.r.r']),
+        const DiffImageOptions(blockSize: 1, maxRegions: 2),
+      );
+
+      expect(result.regions, hasLength(2));
+      expect(result.complete, isFalse);
+      // The mask still holds every one of them.
+      expect(result.stats.changed, 6);
+    });
+
+    group('with align: shift', () {
+      final DiffPixels before = picture(<String>[
+        '.......',
+        '.#####.',
+        '.#...#.',
+        '.#.#.#.',
+        '.#...#.',
+        '.#####.',
+        '.......',
+      ]);
+      // The same drawing, one pixel to the right and one down.
+      final DiffPixels moved = picture(<String>[
+        '........',
+        '........',
+        '..#####.',
+        '..#...#.',
+        '..#.#.#.',
+        '..#...#.',
+        '..#####.',
+        '........',
+      ]);
+
+      test('reads a picture that moved as a picture that changed, left alone', () {
+        expect(diffImage(before, moved).stats.changed, greaterThan(10));
+      });
+
+      test('finds the offset and compares what actually overlaps', () {
+        final DiffImageResult result = diffImage(
+          before,
+          moved,
+          const DiffImageOptions(align: DiffImageAlign.shift),
+        );
+
+        // The drawing sits a pixel further right and down, so the picture
+        // holding it is moved a pixel back to put the two on top of each other.
+        expect(result.offset.x, -1);
+        expect(result.offset.y, -1);
+        expect(result.stats.changed, 0);
+        expect(<int>[result.before.x, result.before.y], <int>[1, 1]);
+        expect(<int>[result.after.x, result.after.y], <int>[0, 0]);
+      });
+
+      test('stays where it is when the two are already lined up', () {
+        final DiffImageResult result = diffImage(
+          before,
+          before,
+          const DiffImageOptions(align: DiffImageAlign.shift),
+        );
+
+        expect(<int>[result.offset.x, result.offset.y], <int>[0, 0]);
+      });
+
+      test('goes no further than the radius it was given', () {
+        final DiffImageResult result = diffImage(
+          before,
+          moved,
+          const DiffImageOptions(align: DiffImageAlign.shift, alignRadius: 0),
+        );
+
+        expect(<int>[result.offset.x, result.offset.y], <int>[0, 0]);
+      });
+    });
+  });
+
+  group('paintDiffImage', () {
+    test('paints what changed and leaves the rest see-through', () {
+      final DiffImageResult result = diffImage(
+        picture(<String>['..', '..']),
+        picture(<String>['r.', '..']),
+      );
+      final DiffPixels painted = paintDiffImage(result);
+
+      expect(painted.width, 2);
+      expect(painted.height, 2);
+      // The first pixel changed, so it is painted; the second did not.
+      expect(painted.data[3], 255);
+      expect(painted.data[7], 0);
+    });
+
+    test('takes the colours it is given', () {
+      final DiffImageResult result = diffImage(picture(<String>['.']), picture(<String>['r']));
+      final DiffPixels painted = paintDiffImage(
+        result,
+        const DiffImagePaint(changed: Color(0xff0000ff)),
+      );
+
+      expect(painted.data.sublist(0, 4), <int>[0, 0, 255, 255]);
+    });
+  });
+}

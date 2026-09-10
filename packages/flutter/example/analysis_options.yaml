@@ -1,0 +1,14 @@
+# The example is an application rather than a package, so it is held to the
+# Flutter lints and not to the extra rules the library adds for a published API.
+
+include: package:flutter_lints/flutter.yaml
+
+formatter:
+  page_width: 100
+
+linter:
+  rules:
+    - always_declare_return_types
+    - always_use_package_imports
+    - prefer_single_quotes
+    - directives_ordering

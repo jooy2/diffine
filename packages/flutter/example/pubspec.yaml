@@ -1,0 +1,28 @@
+name: diffine_example
+description: >-
+  Diffine, running. A gallery of comparisons on any platform, and the renderer
+  behind every Flutter preview on the documentation site.
+publish_to: none
+version: 0.0.1
+
+environment:
+  sdk: ^3.8.0
+  flutter: '>=3.32.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  diffine:
+    path: ../
+  # Everything a framed gallery does with the page around it: hearing which
+  # palette that page is in, hearing the playground's switches, and opening a
+  # file for `ImageDiff.onChoose`. Web-only, and imported behind a conditional
+  # so a gallery built for anything else never sees it — see `lib/host.dart`
+  # and `lib/picker.dart`.
+  web: ^1.1.0
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: false

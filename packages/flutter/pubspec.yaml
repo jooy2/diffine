@@ -1,0 +1,32 @@
+name: diffine
+description: >-
+  Compare two versions and show what changed — a diff engine and a side-by-side
+  viewer in one package, for text and for pictures, to read or to type into.
+version: 0.1.0
+repository: https://github.com/jooy2/diffine
+homepage: https://diffine.cdget.com
+issue_tracker: https://github.com/jooy2/diffine/issues
+topics:
+  - diff
+  - diff-viewer
+  - text-diff
+  - image-diff
+  - myers
+
+environment:
+  sdk: ^3.8.0
+  flutter: '>=3.32.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  # Graphemes, for the character-by-character comparison. It is the Dart team's
+  # own package, it is what Flutter itself already ships, and it brings nothing
+  # else with it — a character diff that splits an emoji into its parts is the
+  # one place a comparison can produce text that was in neither document.
+  characters: ^1.4.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0

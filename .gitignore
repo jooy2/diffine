@@ -33,6 +33,17 @@ dist/
 docs-dist/
 coverage/
 
+# Dart and Flutter, for `packages/flutter`
+.dart_tool/
+.flutter-plugins*
+build/
+# A library pins nothing; only an example app's lock file is worth keeping.
+packages/flutter/pubspec.lock
+
+# The Flutter gallery, built into the docs site by `npm run flutter --prefix docs`.
+# It needs a Flutter SDK, and it is output rather than source.
+docs/public/flutter/
+
 # VitePress files
 docs/.vitepress/.temp
 docs/.vitepress/.temp/*
