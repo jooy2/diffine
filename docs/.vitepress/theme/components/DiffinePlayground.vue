@@ -16,13 +16,22 @@
  * of taking a document from a reader, and one of them is empty, because the
  * other thing somebody wants from a page like this is somewhere to paste their
  * own two versions.
+ *
+ * A reader on Flutter gets the same page. The controls stay where they are —
+ * they are the page's rather than either package's, and drawing them twice
+ * would be two rows that drift apart — and what they choose is posted into the
+ * framed gallery, which draws the widget those switches describe. The pictures
+ * go down as bytes with them: the four pairs are built here out of two files,
+ * and one of the four is the same photograph saved again by a worse encoder,
+ * which is not a thing Dart has an encoder to do.
  */
-import { computed, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue';
 import { useData } from 'vitepress';
 import { createElement } from 'react';
 import { ImageDiff, TextDiff } from 'diffine-react';
 import type { DiffInlineMode, DiffineImageView } from 'diffine-react';
 import 'diffine-react/styles.css';
+import { useFlutterFrame } from '../flutter';
 import { useReactIsland } from '../island';
 import { SAMPLES } from '../samples';
 import { pairOf, type PictureName, type PicturePair } from '../pictures';
@@ -369,6 +378,130 @@ onBeforeUnmount(() => window.removeEventListener('resize', measure));
 useReactIsland(host, draw, {
   watch: [mode, pick, generation, options, isDark, locale, height, language, shot, pictures, pair]
 });
+
+/* ---------------------------------------------------------------------------
+ * The Flutter half
+ * ------------------------------------------------------------------------- */
+
+/** One pair of pictures as two files, which is what can be posted into a frame. */
+interface PictureBytes {
+  before: Uint8Array;
+  after: Uint8Array;
+  beforeLabel: string;
+  afterLabel: string;
+}
+
+/** Each pair read once, however many times a reader switches back to it. */
+const BYTES = new Map<Shot, PictureBytes>();
+
+async function readPair(name: Shot, loaded: PicturePair): Promise<void> {
+  const [before, after] = await Promise.all([
+    loaded.before.arrayBuffer(),
+    loaded.after.arrayBuffer()
+  ]);
+
+  BYTES.set(name, {
+    before: new Uint8Array(before),
+    after: new Uint8Array(after),
+    beforeLabel: loaded.beforeLabel,
+    afterLabel: loaded.afterLabel
+  });
+
+  // Read to be sent, so the sending is what finishes the job.
+  tell();
+}
+
+/**
+ * The pair the frame should be comparing, or null while there is not one yet.
+ *
+ * Reading a file is asynchronous and saying what the switches are is not, so
+ * the two are not made to wait for each other: this hands back whatever has
+ * been read, starts reading anything that has not, and that read says
+ * everything again when it lands.
+ */
+function bytesFor(name: Shot): PictureBytes | null {
+  if (name === 'blank') {
+    return null;
+  }
+
+  const held = BYTES.get(name);
+
+  if (held) {
+    return held;
+  }
+
+  const loaded = pair.value;
+
+  if (loaded) {
+    void readPair(name, loaded);
+  }
+
+  return null;
+}
+
+/** Every switch on this page, as the gallery reads them. */
+function tell(): void {
+  if (!flutter.embedded.value) {
+    return;
+  }
+
+  const shown = mode.value === 'pictures' ? bytesFor(shot.value) : null;
+
+  flutter.post({
+    diffine: 'playground',
+    value: {
+      mode: mode.value,
+      // Not the switches: what says the documents below are new ones rather
+      // than the reader's own, which the frame is holding and this page is not.
+      generation: generation.value,
+      before: documents.before,
+      after: documents.after,
+      beforeLabel: documents.beforeLabel ?? '',
+      afterLabel: documents.afterLabel ?? '',
+      language: language.value,
+      detail: options.value.detail,
+      unified: options.value.unified,
+      wrap: options.value.wrap,
+      numbers: options.value.numbers,
+      align: options.value.align,
+      connectors: options.value.connectors,
+      tab: options.value.tab,
+      view: pictures.value.view,
+      tolerance: pictures.value.tolerance / 100,
+      alignPictures: pictures.value.align,
+      smoothing: pictures.value.smoothing,
+      marks: pictures.value.marks,
+      outlines: pictures.value.outlines,
+      shot: shot.value,
+      pictureBeforeLabel: shown?.beforeLabel ?? '',
+      pictureAfterLabel: shown?.afterLabel ?? ''
+    },
+    pictureBefore: shown?.before,
+    pictureAfter: shown?.after
+  });
+}
+
+const flutter = useFlutterFrame({
+  demo: () => 'playground',
+  wanted: () => true,
+  // The stage is the page, so it is never far enough away to be taken down —
+  // and it must not be, because the two documents a reader has been typing
+  // into are inside the frame rather than on this side of it.
+  recycle: false,
+  onReady: tell
+});
+
+// `box` and `frame` are destructured for the template refs of the same names.
+const { box, frame, embedded, waiting, missing, src } = flutter;
+
+watch([mode, generation, language, shot, options, pictures, pair, embedded], () => tell(), {
+  deep: true
+});
+
+// The note about a gallery that was never built is a row above the stage, and
+// it arrives one request after the page does — so the stage is measured again
+// rather than left as tall as it was before there was a line over it.
+watch(missing, () => void nextTick(measure));
 </script>
 
 <template>
@@ -478,8 +611,31 @@ useReactIsland(host, draw, {
       </div>
     </div>
 
+    <p v-if="missing" class="play-missing">
+      The Flutter playground needs the gallery built — <code>npm run flutter</code> in
+      <code>docs/</code>. Showing the React one.
+    </p>
+
+    <!--
+      Both halves are in the tree and one of them is shown, the same way a
+      `::: fw` block is. A `v-if` on the React half would tear a whole React
+      root down every time the reader flips the switch, and the frame is worse
+      still — it is an engine, and the documents somebody typed into it are
+      inside it.
+    -->
     <div ref="stage" class="play-stage">
-      <div ref="host" />
+      <div ref="box" class="play-box">
+        <iframe
+          v-if="embedded"
+          ref="frame"
+          class="play-frame"
+          :src="src"
+          :style="{ height: `${height}px` }"
+          title="Diffine for Flutter"
+        />
+        <div v-else-if="waiting" class="play-frame" :style="{ height: `${height}px` }" />
+        <div v-show="!embedded && !waiting" ref="host" />
+      </div>
     </div>
   </div>
 </template>
@@ -636,5 +792,17 @@ useReactIsland(host, draw, {
 
 .play-stage {
   min-height: 0;
+}
+
+.play-frame {
+  display: block;
+  width: 100%;
+  border: 0;
+}
+
+.play-missing {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--vp-c-text-2);
 }
 </style>

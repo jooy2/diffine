@@ -9,11 +9,25 @@ order: 3
 
 <DiffinePictures sample="retouched" height="24rem" />
 
-The two pictures above are the same photograph, one of them with a patch of itself cloned over the window. Nothing on this page is a screenshot: every demo is the component, comparing files this page fetched and edited in your browser.
+The two pictures above are the same photograph, one of them with a patch of itself cloned over the window.
+
+::: fw react
+
+Nothing on this page is a screenshot: every demo is the component, comparing files this page fetched and edited in your browser.
+
+:::
+
+::: fw flutter
+
+The previews on this page are the React package's, because they are drawn beside the prose. The [playground](./playground) is the Flutter widget on the same four pairs of pictures, with the options below it as switches.
+
+:::
 
 ## The two modes
 
 `mode` decides whether the pictures are only looked at or chosen as well.
+
+::: fw react
 
 ```tsx
 import { ImageDiff } from 'diffine-react';
@@ -25,9 +39,37 @@ import 'diffine-react/styles.css';
 
 `viewer` is the default and draws what it was given. `editor` adds every way of putting a picture in: an empty pane opens a file picker when it is clicked, a full pane takes one dropped on it, and each side has a button in the bar for a reader who is not dragging anything. A view that draws both pictures in one pane sends what is dropped on it to whichever side is empty, and to the second one when neither is. Drop a PNG on either half below.
 
+:::
+
+::: fw flutter
+
+```dart
+import 'package:diffine/diffine.dart';
+
+ImageDiff(before: saved, after: rendered);
+ImageDiff(mode: DiffineMode.editor, onChoose: chooseAPicture);
+```
+
+`DiffineMode.viewer` is the default and draws what it was given. `DiffineMode.editor` puts a button on an empty pane — and what that button does is `onChoose`. Opening a file needs a picker, a picker is a plugin, and which plugin is the application's choice:
+
+```dart
+ImageDiff(
+  mode: DiffineMode.editor,
+  onChoose: (DiffineSide side) async {
+    final XFile? file = await openFile();
+
+    return file == null ? null : DiffineEncodedImage(await file.readAsBytes());
+  },
+);
+```
+
+:::
+
 <DiffinePictures sample="badge" height="22rem" />
 
 ## Passing the two pictures
+
+::: fw react
 
 `before` and `after` take a `Blob`, an `ImageBitmap`, or a buffer of pixels shaped like `ImageData`, each of them on its own or with a name on it:
 
@@ -54,6 +96,35 @@ setBefore(await response.blob());
 
 In `editor` mode the component works as either a controlled or an uncontrolled one. Pass `defaultBefore` and `defaultAfter` and it keeps the pictures; pass `before` and `after` and they are the application's, with `onBeforeChange` and `onAfterChange` reporting what a reader chose. Which of the two it is, is settled on the first render, because a picture that arrived later would replace one somebody was in the middle of comparing.
 
+:::
+
+::: fw flutter
+
+`before` and `after` take the bytes of a file, a picture already decoded, or a buffer of pixels — one of the three shapes of `DiffineImageContent` — and the name for the header is its own argument:
+
+```dart
+ImageDiff(
+  before: DiffineEncodedImage(saved),
+  beforeLabel: 'baseline.png',
+  after: DiffineEncodedImage(rendered),
+  afterLabel: 'run 4821',
+);
+```
+
+`DiffineEncodedImage` is the usual answer, because bytes are what a file picker, an asset and a response all hand over:
+
+```dart
+final ByteData bytes = await rootBundle.load('assets/baseline.png');
+
+setState(() => before = DiffineEncodedImage(bytes.buffer.asUint8List()));
+```
+
+The other two are `DiffineDecodedImage` for a `ui.Image` an application already holds, and `DiffinePixelImage` for a buffer from anywhere at all.
+
+There is no URL on that list, and it is missing on purpose. A picture fetched by the widget would be decoded from bytes the application never saw. Fetching it is one line, and that line is worth being the application's.
+
+:::
+
 ## Four ways of looking at them
 
 `view` decides how the two are laid out. There are four because no single one of them answers every question.
@@ -78,6 +149,8 @@ In `editor` mode the component works as either a controlled or an uncontrolled o
 
 Pink is a pixel that changed. Green and red are the pixels only one of the two pictures covers, which is what a difference in size, or an offset, leaves behind. They are the same green and red a line that arrived or went away is drawn in.
 
+::: fw react
+
 None of it is a prop. The five colours are custom properties on the element:
 
 ```css
@@ -92,6 +165,34 @@ None of it is a prop. The five colours are custom properties on the element:
 
 They carry their own transparency because all five sit on top of the picture they are describing. A canvas cannot be styled, so these are read off the element and painted into the pixels. It is the one place in Diffine where a custom property is looked up rather than simply used, and it is why a mask is repainted when the palette under it changes.
 
+:::
+
+::: fw flutter
+
+None of it is an argument. The colours are on the theme, under `image`:
+
+```dart
+ImageDiff(
+  before: DiffineEncodedImage(saved),
+  after: DiffineEncodedImage(rendered),
+  theme: DiffineTheme.light.copyWith(
+    image: const DiffineImageColours(
+      changed: Color(0x8ce83e8c),
+      added: Color(0x801a7f4b),
+      removed: Color(0x80c2333f),
+      outline: Color(0x66141c28),
+      marker: Color(0xf20e7ffc),
+      ground: Color(0xffeaeef4),
+      chequer: Color(0xffdbe1ea),
+    ),
+  ),
+);
+```
+
+They carry their own transparency because all of them sit on top of the picture they are describing. The mask is painted into pixels rather than styled, which is why it is painted again when the palette under it changes.
+
+:::
+
 ## Moving around
 
 Both panes share one viewport, so there is nothing to keep in step: a drag, a wheel or a button moves the pair.
@@ -105,7 +206,7 @@ Above its own size the picture is drawn crisp rather than smooth. At four hundre
 
 `navigation` draws the buttons that step from one change to the next. Stepping to one moves the view onto it and pulls in far enough to see it, unless it is already a comfortable size, in which case the zoom you set is the zoom you keep.
 
-`viewport` and `defaultViewport` work the way everything else here does, taking `'fit'` or a `{ scale, x, y }`, with `onViewportChange` reporting where a reader went. The `x` and `y` are the point of the frame the middle of the pane is looking at, because a centre is what stays still when a picture is zoomed.
+<Fw react="`viewport` and `defaultViewport` work the way everything else here does, taking `'fit'` or a `{ scale, x, y }`, with `onViewportChange` reporting where a reader went." flutter="`viewport` takes a `DiffineImageViewport`, or `null` for the whole frame in the pane, with `onViewportChanged` reporting where a reader went." /> The `x` and `y` are the point of the frame the middle of the pane is looking at, because a centre is what stays still when a picture is zoomed.
 
 ## How the two are compared
 
@@ -114,6 +215,18 @@ Above its own size the picture is drawn crisp rather than smooth. At four hundre
 ### tolerance
 
 How different two pixels have to be, from 0 to 1, before the difference counts. The default is `0.05`.
+
+::: fw flutter
+
+```dart
+ImageDiff(
+  before: DiffineEncodedImage(saved),
+  after: DiffineEncodedImage(rendered),
+  diff: const DiffImageOptions(tolerance: 0.02, align: DiffImageAlign.shift),
+);
+```
+
+:::
 
 Zero means exactly equal, and that is rarely what anybody wants: a photograph saved twice by the same encoder is not byte-for-byte the same picture. The demo below is one photograph against itself re-encoded badly, compared at zero. Nothing in it changed, and a third of it comes back as a difference.
 
@@ -131,7 +244,7 @@ It is not free: every pixel that differs is read again with its eight neighbours
 
 ### align
 
-Whether an offset between the two is looked for before anything is compared. `'none'` by default, `'shift'` to look.
+Whether an offset between the two is looked for before anything is compared. <Fw react="`'none'` by default, `'shift'` to look." flutter="`DiffImageAlign.none` by default, `.shift` to look." />
 
 The pair below is one crop of a photograph against the same crop taken a pixel further along. Nothing in it changed and every edge in it did. Turn the switch on and the comparison finds the offset first; what is left is the strip of frame one of them no longer reaches.
 
@@ -147,9 +260,11 @@ The pair below is one crop of a photograph against the same crop taken a pixel f
 
 `maxPixels` is how many pixels a picture is decoded at, and it defaults to four million.
 
-A photograph out of a modern camera is twenty-four million, and two of them held as bitmaps and as buffers is most of a gigabyte before anything has been compared. Past the cap a picture is decoded smaller, which costs a little sharpness at a high zoom and keeps the page from stopping. Raise it when the pictures are what the page is for, and lower it on a page that is showing forty of them.
+A photograph out of a modern camera is twenty-four million, and two of them held as pictures and as buffers is most of a gigabyte before anything has been compared. Past the cap a picture is decoded smaller, which costs a little sharpness at a high zoom and keeps the <Fw react="page" flutter="app" /> from stopping. Raise it when the pictures are what the screen is for, and lower it on one that is showing forty of them.
 
-The comparison itself is a few million pieces of arithmetic, and an application that wants that off the thread its page is drawn on can do it elsewhere and hand over the answer:
+The comparison itself is a few million pieces of arithmetic, and an application that wants that off the thread its screen is drawn on can do it elsewhere and hand over the answer:
+
+::: fw react
 
 ```tsx
 const result = await compareInAWorker(before, after);
@@ -157,11 +272,29 @@ const result = await compareInAWorker(before, after);
 <ImageDiff before={before} after={after} result={result} />;
 ```
 
+:::
+
+::: fw flutter
+
+```dart
+final DiffImageResult result = await Isolate.run(() => diffImage(before, after));
+
+ImageDiff(
+  before: DiffinePixelImage(before),
+  after: DiffinePixelImage(after),
+  result: result,
+);
+```
+
+:::
+
 The pictures are still needed. A result carries what happened to each pixel and none of the pixels themselves.
 
 ## The comparison on its own
 
-`diffImage` is the engine, with no React and no DOM in it:
+`diffImage` is the engine, with <Fw react="no React and no DOM" flutter="no widget" /> in it:
+
+::: fw react
 
 ```ts
 import { diffImage } from 'diffine-react/image';
@@ -171,7 +304,23 @@ const result = diffImage(before, after, { align: 'shift' });
 console.log(`${result.regions.length} areas, ${Math.round(result.stats.ratio * 100)}%`);
 ```
 
-Both sides are `ImageData`, or anything shaped like it: `{ data, width, height }`, four bytes a pixel, row by row from the top-left. What comes back is the frame the two were compared in, where each of them sits in it, a byte a pixel saying what happened to it, the changes as rectangles, and the counts. Opening a file is not part of it; decoding is a decoder's job.
+:::
+
+::: fw flutter
+
+```dart
+final DiffImageResult result = diffImage(
+  before,
+  after,
+  const DiffImageOptions(align: DiffImageAlign.shift),
+);
+
+debugPrint('${result.regions.length} areas, ${(result.stats.ratio * 100).round()}%');
+```
+
+:::
+
+Both sides are <Fw react="`ImageData`, or anything shaped like it: `{ data, width, height }`" flutter="`DiffPixels`: `data`, `width` and `height`" />, four bytes a pixel, row by row from the top-left. What comes back is the frame the two were compared in, where each of them sits in it, a byte a pixel saying what happened to it, the changes as rectangles, and the counts. Opening a file is not part of it; decoding is a decoder's job.
 
 The whole of it is on the [API page](../api/#diffimage).
 
@@ -179,4 +328,4 @@ The whole of it is on the [API page](../api/#diffimage).
 
 `header`, `navigation`, `zoom` and `summary` each turn off a part of the frame: the names above the panes, the buttons for stepping through the changes, the zoom controls, and the bar underneath with each picture's size and how much of it moved.
 
-`colorScheme`, `locale` and `strings` work exactly as they do on [`TextDiff`](./text-diff). `system` follows the reader's own setting, `locale` is the language of the component's own words, and `strings` replaces any of them.
+`colorScheme`, `locale`, `strings` and <Fw react="the custom properties" flutter="`theme`" /> work exactly as they do on [`TextDiff`](./text-diff).

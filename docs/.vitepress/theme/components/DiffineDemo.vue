@@ -1,17 +1,24 @@
 <script setup lang="ts">
 /**
- * A real `TextDiff`, in one mode or the other, on a VitePress page.
+ * A real comparison, in whichever package the reader picked, on a VitePress
+ * page.
  *
- * Nothing about it is a screenshot or a re-implementation — see `island.ts` for
- * how a React component reaches a page here and why what is drawn below is the
- * component a reader would install.
+ * **React** is mounted as an island — see `island.ts` for how a React component
+ * reaches a page here. Nothing about it is a screenshot or a re-implementation:
+ * what is drawn is the component a reader would install.
  *
- * The palette and the language follow the page rather than the component's own
+ * **Flutter** is framed, by `../flutter.ts` — the gallery under
+ * `packages/flutter/example`, built and shown in an `<iframe>`. Without a build
+ * of it the preview says so and shows the React half, which is the honest
+ * answer and not a broken rectangle.
+ *
+ * The palette and the language follow the page rather than either package's own
  * defaults, because a demo that stayed light on a dark page, or English on a
  * Korean one, would be demonstrating the wrong thing.
  */
 import { computed, ref } from 'vue';
 import { useData } from 'vitepress';
+import { useFlutterFrame } from '../flutter';
 import { createElement } from 'react';
 import { TextDiff } from 'diffine-react';
 import type {
@@ -55,6 +62,15 @@ const props = withDefaults(
     height?: string;
     /** Whether the reader gets the switches as well as the view. */
     controls?: boolean;
+    /**
+     * Which demo of the Flutter gallery answers this one.
+     *
+     * Worked out from `mode` where nothing is given, and `false` for a demo
+     * that has no Flutter half at all — the home page's, which shows the React
+     * package to every reader because the framework switch lives in the sidebar
+     * and the home page has no sidebar.
+     */
+    flutter?: string | false;
   }>(),
   {
     mode: 'viewer',
@@ -77,7 +93,8 @@ const props = withDefaults(
     colour: false,
     lines: 0,
     height: '20rem',
-    controls: false
+    controls: false,
+    flutter: undefined
   }
 );
 
@@ -176,11 +193,40 @@ function draw() {
 }
 
 useReactIsland(host, draw, { watch: [chosen, isDark, locale, () => props.sample] });
+
+/* ---------------------------------------------------------------------------
+ * The Flutter half
+ * ------------------------------------------------------------------------- */
+
+/**
+ * Which demo of the gallery answers this one.
+ *
+ * Worked out from `mode` where nothing is given, and `false` for a demo that
+ * has no Flutter half at all — the home page's, which shows the React package
+ * to every reader because the framework switch lives in the sidebar and the
+ * home page has no sidebar.
+ */
+const demo = computed(() =>
+  typeof props.flutter === 'string'
+    ? props.flutter
+    : props.mode === 'editor'
+      ? 'text/editor'
+      : 'text/basic'
+);
+
+const { box, frame, embedded, waiting, missing, src } = useFlutterFrame({
+  demo: () => demo.value,
+  wanted: () => props.flutter !== false
+});
 </script>
 
 <template>
-  <div class="diffine-demo">
-    <div v-if="controls" class="diffine-demo-controls">
+  <div ref="box" class="diffine-demo">
+    <p v-if="missing" class="diffine-demo-missing">
+      The Flutter preview needs the gallery built — <code>npm run flutter</code> in
+      <code>docs/</code>. Showing the React one.
+    </p>
+    <div v-if="controls && !embedded && !waiting" class="diffine-demo-controls">
       <label v-if="mode === 'viewer'">
         <input
           type="checkbox"
@@ -209,7 +255,31 @@ useReactIsland(host, draw, { watch: [chosen, isDark, locale, () => props.sample]
       a browser, which is all hydration asks for, and `onMounted` is already the
       thing that never runs on a server.
     -->
-    <div ref="host" />
+    <!--
+      The React half stays in the tree and is hidden rather than removed, the
+      way a `::: fw` block is: a `v-if` on it would unmount and remount a whole
+      React root every time the reader flips the switch.
+
+      The frame is the other way round, and for the same reason turned over: it
+      is an engine, so it exists only while it is close enough to be worth
+      running. `loading` stays on it for the browser with no
+      `IntersectionObserver` to measure that distance with.
+    -->
+    <iframe
+      v-if="embedded"
+      ref="frame"
+      class="diffine-demo-frame"
+      :src="src"
+      :style="{ height }"
+      title="Diffine for Flutter"
+      loading="lazy"
+    />
+    <!--
+      The frame's place while it is not worth running, so that a reader on
+      Flutter scrolling towards one is never shown the React half instead.
+    -->
+    <div v-else-if="waiting" class="diffine-demo-frame" :style="{ height }" />
+    <div v-show="!embedded && !waiting" ref="host" />
   </div>
 </template>
 

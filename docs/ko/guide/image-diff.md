@@ -9,11 +9,25 @@ order: 3
 
 <DiffinePictures sample="retouched" height="24rem" />
 
-위의 두 장은 같은 사진이고, 오른쪽은 창 부분에 자기 자신의 일부를 복제해 덮은 것입니다. 이 페이지에 그림은 없습니다. 모든 예제는 페이지가 브라우저에서 내려받아 고친 파일을 컴포넌트가 직접 비교한 결과입니다.
+위의 두 장은 같은 사진이고, 오른쪽은 창 부분에 자기 자신의 일부를 복제해 덮은 것입니다.
+
+::: fw react
+
+이 페이지에 그림은 없습니다. 모든 예제는 페이지가 브라우저에서 내려받아 고친 파일을 컴포넌트가 직접 비교한 결과입니다.
+
+:::
+
+::: fw flutter
+
+이 페이지의 예제는 React 패키지 쪽입니다. 글 옆에 그려지기 때문입니다. Flutter 위젯이 같은 이미지 네 쌍을 비교하는 모습은 [직접 써보기](./playground)에 있고, 아래에 나오는 옵션이 그 화면의 스위치로 놓여 있습니다.
+
+:::
 
 ## 두 가지 모드
 
 `mode`는 이미지를 보기만 할지 고르기도 할지를 정합니다.
+
+::: fw react
 
 ```tsx
 import { ImageDiff } from 'diffine-react';
@@ -25,9 +39,37 @@ import 'diffine-react/styles.css';
 
 기본값 `viewer`는 받은 것을 그립니다. `editor`는 이미지를 넣는 방법을 모두 붙입니다. 빈 창을 누르면 파일 선택 창이 열리고, 채워진 창은 끌어다 놓은 이미지를 받고, 위쪽 막대에는 양쪽마다 버튼이 하나씩 있습니다. 두 이미지를 한 창에 그리는 보기에서는 비어 있는 쪽으로 가고, 양쪽 다 차 있으면 오른쪽으로 갑니다. 아래 두 창에 PNG를 끌어다 놓아 보세요.
 
+:::
+
+::: fw flutter
+
+```dart
+import 'package:diffine/diffine.dart';
+
+ImageDiff(before: saved, after: rendered);
+ImageDiff(mode: DiffineMode.editor, onChoose: chooseAPicture);
+```
+
+기본값 `DiffineMode.viewer`는 받은 것을 그립니다. `DiffineMode.editor`는 빈 창에 버튼을 놓고, 그 버튼이 하는 일이 `onChoose`입니다. 파일을 여는 데는 피커가 필요하고, 피커는 플러그인이고, 어떤 플러그인을 쓸지는 애플리케이션이 정할 일이기 때문입니다.
+
+```dart
+ImageDiff(
+  mode: DiffineMode.editor,
+  onChoose: (DiffineSide side) async {
+    final XFile? file = await openFile();
+
+    return file == null ? null : DiffineEncodedImage(await file.readAsBytes());
+  },
+);
+```
+
+:::
+
 <DiffinePictures sample="badge" height="22rem" />
 
 ## 두 이미지 전달하기
+
+::: fw react
 
 `before`와 `after`는 `Blob`, `ImageBitmap`, 그리고 `ImageData` 모양의 픽셀 버퍼를 받습니다. 그대로 주거나 이름을 붙여서 줍니다.
 
@@ -54,6 +96,35 @@ setBefore(await response.blob());
 
 `editor`는 제어 컴포넌트와 비제어 컴포넌트 양쪽을 지원합니다. `defaultBefore`와 `defaultAfter`를 주면 컴포넌트가 상태를 관리하고, `before`와 `after`를 주면 애플리케이션이 관리하며 고른 결과는 `onBeforeChange`와 `onAfterChange`로 알려 줍니다. 어느 쪽인지는 첫 렌더에서 정해집니다. 나중에 도착한 이미지는 비교하던 사람의 이미지를 도중에 교체하게 되기 때문입니다.
 
+:::
+
+::: fw flutter
+
+`before`와 `after`는 파일의 바이트, 이미 디코딩한 이미지, 픽셀 버퍼 셋 중 하나를 받습니다. `DiffineImageContent`의 세 가지 모양이고, 헤더에 쓸 이름은 따로 받습니다.
+
+```dart
+ImageDiff(
+  before: DiffineEncodedImage(saved),
+  beforeLabel: 'baseline.png',
+  after: DiffineEncodedImage(rendered),
+  afterLabel: 'run 4821',
+);
+```
+
+보통은 `DiffineEncodedImage`입니다. 파일 피커도 에셋도 응답도 전부 바이트를 넘겨주기 때문입니다.
+
+```dart
+final ByteData bytes = await rootBundle.load('assets/baseline.png');
+
+setState(() => before = DiffineEncodedImage(bytes.buffer.asUint8List()));
+```
+
+나머지 둘은 애플리케이션이 이미 들고 있는 `ui.Image`를 위한 `DiffineDecodedImage`와, 어디서 왔든 픽셀 버퍼를 받는 `DiffinePixelImage`입니다.
+
+목록에 URL은 없고, 빠뜨린 것이 아니라 뺀 것입니다. 위젯이 직접 받아 오면 애플리케이션이 한 번도 확인하지 못한 바이트를 해석하게 됩니다. 받아 오는 코드는 한 줄이고, 그 한 줄은 애플리케이션이 쥐고 있는 편이 낫습니다.
+
+:::
+
 ## 네 가지 보기
 
 `view`는 두 장을 어떻게 놓을지 정합니다. 하나로는 모든 질문에 답할 수 없어서 네 가지입니다.
@@ -78,6 +149,8 @@ setBefore(await response.blob());
 
 분홍은 바뀐 픽셀입니다. 초록과 빨강은 두 이미지 중 한쪽만 덮는 픽셀, 곧 크기가 다르거나 위치가 어긋나서 남은 자리입니다. 줄이 새로 생기거나 사라졌을 때 쓰는 초록과 빨강이 그대로 옵니다.
 
+::: fw react
+
 이 가운데 prop은 하나도 없습니다. 다섯 색 모두 엘리먼트의 커스텀 속성입니다.
 
 ```css
@@ -92,6 +165,34 @@ setBefore(await response.blob());
 
 다섯 색 모두 투명도를 품고 있습니다. 설명하려는 이미지 위에 얹히기 때문입니다. 캔버스에는 스타일을 입힐 수 없어서 이 값들은 엘리먼트에서 읽어 픽셀에 직접 칠합니다. Diffine에서 커스텀 속성을 읽어 가는 곳은 여기뿐이고, 팔레트가 바뀌면 표시를 다시 칠하는 이유도 이것입니다.
 
+:::
+
+::: fw flutter
+
+이 가운데 인자는 하나도 없습니다. 색은 테마의 `image` 아래에 있습니다.
+
+```dart
+ImageDiff(
+  before: DiffineEncodedImage(saved),
+  after: DiffineEncodedImage(rendered),
+  theme: DiffineTheme.light.copyWith(
+    image: const DiffineImageColours(
+      changed: Color(0x8ce83e8c),
+      added: Color(0x801a7f4b),
+      removed: Color(0x80c2333f),
+      outline: Color(0x66141c28),
+      marker: Color(0xf20e7ffc),
+      ground: Color(0xffeaeef4),
+      chequer: Color(0xffdbe1ea),
+    ),
+  ),
+);
+```
+
+모두 투명도를 품고 있습니다. 설명하려는 이미지 위에 얹히기 때문입니다. 표시는 스타일이 아니라 픽셀로 칠하므로, 팔레트가 바뀌면 다시 칠합니다.
+
+:::
+
 ## 움직이기
 
 두 창은 하나의 뷰포트를 함께 씁니다. 맞출 것이 애초에 없습니다. 끌든 굴리든 버튼을 누르든 두 장이 같이 움직입니다.
@@ -105,7 +206,7 @@ setBefore(await response.blob());
 
 `navigation`은 변경 사이를 오가는 버튼을 그립니다. 하나로 옮기면 그 자리로 화면을 옮기고 볼 수 있을 만큼 당깁니다. 이미 적당한 크기로 보이고 있다면 맞춰 둔 배율은 그대로 둡니다.
 
-`viewport`와 `defaultViewport`도 문서와 같은 방식이고 `'fit'`이나 `{ scale, x, y }`를 받습니다. 읽는 사람이 옮긴 자리는 `onViewportChange`로 알려 줍니다. `x`와 `y`는 창 한가운데가 보고 있는 프레임 위의 점입니다. 확대할 때 제자리에 남는 것이 모서리가 아니라 가운데이기 때문입니다.
+<Fw react="`viewport`와 `defaultViewport`도 문서와 같은 방식이고 `'fit'`이나 `{ scale, x, y }`를 받습니다. 읽는 사람이 옮긴 자리는 `onViewportChange`로 알려 줍니다." flutter="`viewport`는 `DiffineImageViewport`를 받고, 전체를 창에 맞추려면 `null`로 둡니다. 읽는 사람이 옮긴 자리는 `onViewportChanged`로 알려 줍니다." /> `x`와 `y`는 창 한가운데가 보고 있는 프레임 위의 점입니다. 확대할 때 제자리에 남는 것이 모서리가 아니라 가운데이기 때문입니다.
 
 ## 어떻게 비교하는지
 
@@ -114,6 +215,18 @@ setBefore(await response.blob());
 ### tolerance
 
 두 픽셀이 얼마나 달라야 차이로 셀지, 0에서 1 사이로 정합니다. 기본값은 `0.05`입니다.
+
+::: fw flutter
+
+```dart
+ImageDiff(
+  before: DiffineEncodedImage(saved),
+  after: DiffineEncodedImage(rendered),
+  diff: const DiffImageOptions(tolerance: 0.02, align: DiffImageAlign.shift),
+);
+```
+
+:::
 
 0은 완전히 같아야 한다는 뜻이고, 그걸 원하는 경우는 드뭅니다. 같은 인코더로 두 번 저장한 사진도 파일이 완전히 같지는 않습니다. 아래는 사진 한 장과 그것을 형편없이 다시 인코딩한 것을 0으로 비교한 결과입니다. 바뀐 것은 없는데 3분의 1이 차이로 잡힙니다.
 
@@ -131,7 +244,7 @@ setBefore(await response.blob());
 
 ### align
 
-비교하기 전에 두 이미지 사이의 어긋남을 먼저 찾을지 정합니다. 기본은 `'none'`이고 `'shift'`로 찾습니다.
+비교하기 전에 두 이미지 사이의 어긋남을 먼저 찾을지 정합니다. <Fw react="기본은 `'none'`이고 `'shift'`로 찾습니다." flutter="기본은 `DiffImageAlign.none`이고 `.shift`로 찾습니다." />
 
 아래 쌍은 사진의 한 부분과, 같은 부분을 1픽셀 옆에서 잘라낸 것입니다. 바뀐 것은 없고 모든 경계가 달라졌습니다. 스위치를 켜면 어긋난 만큼을 먼저 찾고, 남는 것은 한쪽이 더 이상 닿지 않는 테두리 한 줄입니다.
 
@@ -147,9 +260,11 @@ setBefore(await response.blob());
 
 `maxPixels`는 이미지를 몇 픽셀까지 해석할지 정하고 기본값은 400만입니다.
 
-요즘 카메라 사진 한 장이 2400만 픽셀입니다. 두 장을 비트맵과 버퍼로 들고 있으면 비교를 시작하기도 전에 1기가바이트에 가까워집니다. 한도를 넘으면 이미지를 작게 해석합니다. 크게 확대했을 때 조금 무른 대신 페이지가 멈추지 않습니다. 이미지가 페이지의 본론이면 올리고, 마흔 장을 늘어놓는 페이지라면 내리면 됩니다.
+요즘 카메라 사진 한 장이 2400만 픽셀입니다. 두 장을 이미지와 버퍼로 들고 있으면 비교를 시작하기도 전에 1기가바이트에 가까워집니다. 한도를 넘으면 이미지를 작게 해석합니다. 크게 확대했을 때 조금 무른 대신 <Fw react="페이지" flutter="앱" />가 멈추지 않습니다. 이미지가 화면의 본론이면 올리고, 마흔 장을 늘어놓는 화면이라면 내리면 됩니다.
 
-비교 자체는 수백만 번의 연산이라, 그 일을 페이지를 그리는 스레드에서 빼고 싶다면 다른 곳에서 계산해 결과만 넘기면 됩니다.
+비교 자체는 수백만 번의 연산이라, 그 일을 화면을 그리는 스레드에서 빼고 싶다면 다른 곳에서 계산해 결과만 넘기면 됩니다.
+
+::: fw react
 
 ```tsx
 const result = await compareInAWorker(before, after);
@@ -157,11 +272,29 @@ const result = await compareInAWorker(before, after);
 <ImageDiff before={before} after={after} result={result} />;
 ```
 
+:::
+
+::: fw flutter
+
+```dart
+final DiffImageResult result = await Isolate.run(() => diffImage(before, after));
+
+ImageDiff(
+  before: DiffinePixelImage(before),
+  after: DiffinePixelImage(after),
+  result: result,
+);
+```
+
+:::
+
 이미지는 그래도 필요합니다. 결과에는 픽셀마다 무슨 일이 있었는지가 들어 있을 뿐, 픽셀 자체는 없습니다.
 
 ## 엔진만 쓰기
 
-`diffImage`가 엔진이고, React도 DOM도 들어 있지 않습니다.
+`diffImage`가 엔진이고, <Fw react="React도 DOM도" flutter="위젯이" /> 들어 있지 않습니다.
+
+::: fw react
 
 ```ts
 import { diffImage } from 'diffine-react/image';
@@ -171,7 +304,23 @@ const result = diffImage(before, after, { align: 'shift' });
 console.log(`${result.regions.length}곳, ${Math.round(result.stats.ratio * 100)}%`);
 ```
 
-양쪽 모두 `ImageData`이거나 같은 모양이면 됩니다. `{ data, width, height }`에 픽셀당 4바이트, 왼쪽 위부터 한 줄씩입니다. 돌아오는 것은 두 이미지를 비교한 프레임, 그 안에서 각자가 놓인 자리, 픽셀마다 한 바이트씩의 결과, 사각형으로 묶인 변경, 그리고 집계입니다. 파일을 여는 일은 여기 없습니다. 해석은 디코더의 몫입니다.
+:::
+
+::: fw flutter
+
+```dart
+final DiffImageResult result = diffImage(
+  before,
+  after,
+  const DiffImageOptions(align: DiffImageAlign.shift),
+);
+
+debugPrint('${result.regions.length}곳, ${(result.stats.ratio * 100).round()}%');
+```
+
+:::
+
+양쪽 모두 <Fw react="`ImageData`이거나 같은 모양이면 됩니다. `{ data, width, height }`에" flutter="`DiffPixels`입니다. `data`, `width`, `height`에" /> 픽셀당 4바이트, 왼쪽 위부터 한 줄씩입니다. 돌아오는 것은 두 이미지를 비교한 프레임, 그 안에서 각자가 놓인 자리, 픽셀마다 한 바이트씩의 결과, 사각형으로 묶인 변경, 그리고 집계입니다. 파일을 여는 일은 여기 없습니다. 해석은 디코더의 몫입니다.
 
 전체는 [API 문서](../api/#diffimage)에 있습니다.
 
@@ -179,4 +328,4 @@ console.log(`${result.regions.length}곳, ${Math.round(result.stats.ratio * 100)
 
 `header`, `navigation`, `zoom`, `summary`는 각각 창 위의 이름, 변경 사이를 오가는 버튼, 확대 버튼, 그리고 이미지 크기와 달라진 비율이 적힌 아래 막대를 끕니다.
 
-`colorScheme`, `locale`, `strings`는 [`TextDiff`](./text-diff)와 똑같이 동작합니다. `system`은 읽는 사람의 설정을 따르고, `locale`은 컴포넌트가 쓰는 말의 언어이며, `strings`는 그중 아무 낱말이나 바꿉니다.
+`colorScheme`, `locale`, `strings`, <Fw react="커스텀 속성" flutter="`theme`" />은 [`TextDiff`](./text-diff)와 똑같이 동작합니다.

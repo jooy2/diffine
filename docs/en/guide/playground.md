@@ -1,7 +1,7 @@
 ---
 title: Playground
 order: 5
-description: The editor and the viewer with nothing switched off, on documents you can change.
+description: The editor and the viewer with nothing switched off, in whichever package you picked, on documents you can change.
 aside: false
 outline: false
 prev: false

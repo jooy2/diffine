@@ -5,7 +5,9 @@ order: 4
 
 # The comparison
 
-`diffText` works out what changed between two documents and returns it. Nothing in it touches React or the DOM, which is why it is also an entry of its own: a summary line, a count in a badge, or a comparison done in a worker needs the value rather than the view.
+`diffText` works out what changed between two documents and returns it. Nothing in it touches <Fw react="React or the DOM" flutter="a widget" />, which is why <Fw react="it is also an entry of its own" flutter="it is as usable from a build script or an isolate as from a screen" />: a summary line, a count in a badge, or a comparison done <Fw react="in a worker" flutter="off the thread the screen is drawn on" /> needs the value rather than the view.
+
+::: fw react
 
 ```ts
 import { diffText } from 'diffine-react/diff';
@@ -15,6 +17,19 @@ const result = diffText(saved, draft);
 result.changes.length; // 3
 result.stats; // { unchanged: 41, changed: 5, inserted: 2, deleted: 1 }
 ```
+
+:::
+
+::: fw flutter
+
+```dart
+final DiffResult result = diffText(saved, draft);
+
+result.changes.length; // 3
+result.stats; // unchanged 41, changed 5, inserted 2, deleted 1
+```
+
+:::
 
 ## What comes back
 
@@ -30,6 +45,8 @@ result.stats; // { unchanged: 41, changed: 5, inserted: 2, deleted: 1 }
 
 A row holds whichever side has a line on it. `equal` has both, `insert` has only `after`, `delete` has only `before`, and `replace` is a pair of lines that sit opposite each other and differ.
 
+::: fw react
+
 ```ts
 for (const row of result.rows) {
   if (row.kind === 'equal') {
@@ -40,6 +57,22 @@ for (const row of result.rows) {
 }
 ```
 
+:::
+
+::: fw flutter
+
+```dart
+for (final DiffRow row in result.rows) {
+  if (row.kind == DiffRowKind.equal) {
+    continue;
+  }
+
+  debugPrint('${row.kind.name} ${row.before?.text ?? ''} ${row.after?.text ?? ''}');
+}
+```
+
+:::
+
 That `null` is what a side-by-side view draws a blank for. Anything else reading these rows can skip it instead.
 
 A line carries `index`, which is which line of its own document it is, counted from zero; its `text` as it was written; and `segments`.
@@ -47,6 +80,8 @@ A line carries `index`, which is which line of its own document it is, counted f
 ### Segments
 
 `segments` is the line broken into the pieces that changed and the pieces that did not. Only that side's own pieces are there, so joining them back together gives the line:
+
+::: fw react
 
 ```ts
 const [row] = diffText('the quick fox', 'the slow fox').rows;
@@ -57,6 +92,21 @@ row.after.segments;
 // [{ kind: 'equal', text: 'the ' }, { kind: 'insert', text: 'slow' }, { kind: 'equal', text: ' fox' }]
 ```
 
+:::
+
+::: fw flutter
+
+```dart
+final DiffRow row = diffText('the quick fox', 'the slow fox').rows.first;
+
+row.before!.segments;
+// equal 'the ', delete 'quick', equal ' fox'
+row.after!.segments;
+// equal 'the ', insert 'slow', equal ' fox'
+```
+
+:::
+
 An empty list means there was nothing to compare the line against, or that the pair turned out to have too little in common to be worth marking. Either way the line is whatever its row says it is, all the way across.
 
 ### Changes
@@ -65,11 +115,26 @@ A change is a run of lines that changed together, one entry per change, which is
 
 Each one carries the lines it covers on both sides, and the rows it occupies:
 
+::: fw react
+
 ```ts
 for (const change of result.changes) {
   console.log(`${change.kind}: before lines ${change.beforeStart + 1}-${change.beforeEnd}`);
 }
 ```
+
+:::
+
+::: fw flutter
+
+```dart
+for (final DiffChange change in result.changes) {
+  debugPrint('${change.kind.name}: before lines '
+      '${change.beforeStart + 1}-${change.beforeEnd}');
+}
+```
+
+:::
 
 `rowStart` and `rowEnd` are what a view uses to jump to the next change, or to draw a band across a gutter.
 
@@ -111,9 +176,27 @@ Patterns whose matches do not count. Empty by default.
 
 A snapshot with a timestamp in it, a log with a request id, a build with a hash in its filename: one line that is different every time, and a comparison that says the whole file changed. Each pattern is looked for in both lines and what it finds is set aside, so two lines that differ only inside a match are the same line.
 
+::: fw react
+
 ```ts
 diffText(saved, rendered, { ignore: [/\d{4}-\d{2}-\d{2}T[\d:.]+Z/, /\bid=\w+/] });
 ```
+
+:::
+
+::: fw flutter
+
+```dart
+diffText(
+  saved,
+  rendered,
+  DiffOptions(
+    ignore: <RegExp>[RegExp(r'\d{4}-\d{2}-\d{2}T[\d:.]+Z'), RegExp(r'\bid=\w+')],
+  ),
+);
+```
+
+:::
 
 A match is set aside rather than removed, so a line with a timestamp in it and a line with the timestamp missing are still two different lines. What is set aside is still drawn, exactly as with `whitespace`.
 
@@ -129,15 +212,30 @@ Finding the smallest set of edits costs roughly the size of the two documents mu
 
 `diffWords` and `diffCharacters` compare two lines without a document around them: a heading, a title, a cell of a table.
 
+::: fw react
+
 ```ts
 import { diffWords } from 'diffine-react/diff';
 
 const { before, after, similarity } = diffWords('the quick fox', 'the slow fox');
 ```
 
+:::
+
+::: fw flutter
+
+```dart
+final DiffInlineResult result = diffWords('the quick fox', 'the slow fox');
+// result.before, result.after, result.similarity
+```
+
+:::
+
 `similarity` is the share of the two that could be paired up, counted in characters. It is what `inlineThreshold` is measured against.
 
 `diffSequence` is the engine itself, for an application whose pieces are neither lines nor words:
+
+::: fw react
 
 ```ts
 import { diffSequence } from 'diffine-react/diff';
@@ -150,11 +248,26 @@ diffSequence(['a', 'b', 'c'], ['a', 'c']);
 // ]
 ```
 
+:::
+
+::: fw flutter
+
+```dart
+diffSequence(<String>['a', 'b', 'c'], <String>['a', 'c']);
+// equal  0..1 / 0..1
+// delete 1..2 / 1..1
+// equal  2..3 / 1..2
+```
+
+:::
+
 Both sides are compared as strings, so whatever the tokens are, they arrive here as the text that identifies them. The edits cover both sequences exactly once, in order.
 
 ## Patches
 
 A patch is the changed lines and a few either side of each of them, which is what `git diff` writes and what every code host reads. `parsePatch` turns one into the same value `diffText` returns, so a service that already holds the comparison can send that instead of both documents.
+
+::: fw react
 
 ```ts
 import { parsePatch } from 'diffine-react/patch';
@@ -165,11 +278,26 @@ file.before; // 'a/src/index.ts', the name on the `---` line
 file.result; // the same shape `diffText` returns
 ```
 
-One entry comes back per file the patch covers, in the order they appear, and the second argument is the same set of options `diffText` takes. A page that reads patches and a page that compares documents can be told to mark the same things.
+:::
+
+::: fw flutter
+
+```dart
+final DiffPatchFile file = parsePatch(response.body).first;
+
+file.before; // 'a/lib/main.dart', the name on the `---` line
+file.result; // the same shape `diffText` returns
+```
+
+:::
+
+One entry comes back per file the patch covers, in the order they appear, and the second argument is the same set of options `diffText` takes. A screen that reads patches and a screen that compares documents can be told to mark the same things.
 
 What the format does not carry, the reader does not invent. The lines between one hunk and the next are not in the patch, so the numbers jump there: a line's `index` is still its own number in the file it came from, while `result.before` holds only the lines that arrived. The viewer draws that jump as a band saying how many lines are not there. Anything around the hunks is skipped rather than read, including the `diff --git` line, the mode and index lines, and the marker for a file that does not end in a newline.
 
 `formatPatch` is the way back out, for an export button or a comparison that has to be handed to another tool.
+
+::: fw react
 
 ```ts
 import { formatPatch } from 'diffine-react/patch';
@@ -179,6 +307,19 @@ formatPatch(diffText(saved, draft), {
   after: 'b/src/index.ts'
 });
 ```
+
+:::
+
+::: fw flutter
+
+```dart
+formatPatch(
+  diffText(saved, draft),
+  const DiffPatchOptions(before: 'a/lib/main.dart', after: 'b/lib/main.dart'),
+);
+```
+
+:::
 
 | Option    | What it is                                                 | Default    |
 | --------- | ---------------------------------------------------------- | ---------- |

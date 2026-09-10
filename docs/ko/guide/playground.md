@@ -1,7 +1,7 @@
 ---
 title: 직접 써보기
 order: 5
-description: 에디터와 뷰어를 아무것도 끄지 않은 채로 올려 둔 페이지입니다. 문서를 직접 고쳐 가며 볼 수 있습니다.
+description: 고른 패키지의 에디터와 뷰어를 아무것도 끄지 않은 채로 올려 둔 페이지입니다. 문서를 직접 고쳐 가며 볼 수 있습니다.
 aside: false
 outline: false
 prev: false

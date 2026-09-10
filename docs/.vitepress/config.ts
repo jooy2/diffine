@@ -3,12 +3,20 @@ import { writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import ReactPlugin from '@vitejs/plugin-react';
+import container from 'markdown-it-container';
 import { withSidebar } from 'vitepress-sidebar';
 import { withI18n } from 'vitepress-i18n';
-import { defineConfig, type HeadConfig, type TransformContext, type UserConfig } from 'vitepress';
+import {
+  defineConfig,
+  type HeadConfig,
+  type MarkdownRenderer,
+  type TransformContext,
+  type UserConfig
+} from 'vitepress';
 import type { VitePressI18nOptions } from 'vitepress-i18n/types';
 import type { VitePressSidebarOptions } from 'vitepress-sidebar/types';
 import packageJson from '../../packages/react/package.json' with { type: 'json' };
+import { FRAMEWORK_HEAD_SCRIPT, FRAMEWORK_IDS, FRAMEWORKS } from './data/frameworks';
 
 const vitePressDir = dirname(fileURLToPath(import.meta.url));
 /** `docs/`, which is where the locale folders live and what VitePress serves. */
@@ -22,6 +30,17 @@ const locales = [defaultLocale, 'ko'];
 const siteUrl = packageJson.homepage.replace(/\/+$/, '');
 const repoUrl = packageJson.repository.url.replace(/\.git$/, '');
 const npmUrl = `https://www.npmjs.com/package/${packageJson.name}`;
+/*
+ * The other registry, which the navbar had no link to.
+ *
+ * Half the readers of this site install from pub.dev and the row above the menu
+ * offered them npm — the registry for the package they did not pick. The name
+ * comes off the framework list rather than being written again, since that is
+ * already where each ecosystem's package name is recorded.
+ */
+const pubUrl = `https://pub.dev/packages/${
+  FRAMEWORKS.find((framework) => framework.id === 'flutter')?.pkg ?? 'diffine'
+}`;
 /** The card image. A square mark, which is why the Twitter card is `summary`. */
 const socialImage = `${siteUrl}/256x256.png`;
 
@@ -279,11 +298,11 @@ function transformHead({ pageData, siteData, title, description }: TransformCont
         description,
         url,
         codeRepository: repoUrl,
-        programmingLanguage: ['TypeScript'],
-        runtimePlatform: ['React'],
+        programmingLanguage: ['TypeScript', 'Dart'],
+        runtimePlatform: ['React', 'Flutter'],
         license: 'https://opensource.org/licenses/MIT',
         author: { '@type': 'Organization', name: 'CDGet', url: 'https://cdget.com' },
-        sameAs: [repoUrl, npmUrl]
+        sameAs: [repoUrl, npmUrl, pubUrl]
       })
     ]);
   }
@@ -408,15 +427,49 @@ const vitePressConfig: UserConfig = {
     // `summary` and not `summary_large_image`: the image is a square mark, and
     // a wide card would letterbox it into a strip of background.
     ['meta', { name: 'twitter:card', content: 'summary' }],
-    ['meta', { name: 'twitter:image', content: socialImage }]
+    ['meta', { name: 'twitter:image', content: socialImage }],
+    // Which package's half of every page is displayed, applied to `<html>`
+    // before the first paint. See `data/frameworks.ts`.
+    ['script', {}, FRAMEWORK_HEAD_SCRIPT]
   ],
   sitemap: {
     hostname: packageJson.homepage
   },
+  /**
+   * `::: fw react` … `:::` — the block that only one package's readers see.
+   *
+   * Both halves are in the document and CSS displays one of them, which is what
+   * makes the switch instant and what keeps the two from being two pages that
+   * drift apart. It also means the search index carries both, so a reader
+   * looking up `renderWidget` finds the text diff page whichever package they
+   * had selected.
+   */
   markdown: {
     // The heading ids the anchors are written against — see `slugOf`.
     anchor: { slugify: slugOf },
-    headers: { slugify: slugOf }
+    headers: { slugify: slugOf },
+    config(md: MarkdownRenderer) {
+      md.use(container, 'fw', {
+        validate: (params: string) => /^fw(\s+\S+)+$/.test(params.trim()),
+        render(tokens: { nesting: number; info: string }[], index: number) {
+          const token = tokens[index];
+
+          if (token.nesting !== 1) {
+            return '</div>\n';
+          }
+
+          // `::: fw flutter`, and `::: fw react flutter` for a block both of
+          // them want but nobody else does.
+          const wanted = token.info
+            .trim()
+            .split(/\s+/)
+            .slice(1)
+            .filter((id) => FRAMEWORK_IDS.includes(id));
+
+          return `<div class="diffine-fw" data-fw="${wanted.join(' ')}">\n`;
+        }
+      });
+    }
   },
   /* -------------------------------------------------------------------------
    * The live demos
@@ -506,6 +559,16 @@ const vitePressConfig: UserConfig = {
     },
     socialLinks: [
       { icon: 'npm', link: npmUrl, ariaLabel: `${packageJson.name} on npm` },
+      // pub.dev has no icon in VitePress's set, so the mark is Flutter's own —
+      // the same path `FrameworkMark.vue` draws in the sidebar switch, drawn
+      // here in the navbar's colour like every other social link.
+      {
+        icon: {
+          svg: '<svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><title>pub.dev</title><path d="M14.314 0 2.3 12l3.7 3.7L21.684.013h-7.37Zm.014 11.072L7.857 17.53l6.47 6.47H21.7l-6.42-6.47 6.42-6.458h-7.372Z"/></svg>'
+        },
+        link: pubUrl,
+        ariaLabel: 'diffine on pub.dev'
+      },
       { icon: 'github', link: repoUrl }
     ],
     footer: {

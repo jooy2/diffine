@@ -5,7 +5,9 @@ order: 4
 
 # 비교 결과
 
-`diffText`는 두 문서 사이에서 무엇이 달라졌는지 계산해 돌려줍니다. React도 DOM도 건드리지 않기 때문에 진입점도 따로 있습니다. 요약 한 줄, 배지의 숫자, 워커에서 돌리는 계산에는 화면이 아니라 값이 필요하기 때문입니다.
+`diffText`는 두 문서 사이에서 무엇이 달라졌는지 계산해 돌려줍니다. <Fw react="React도 DOM도" flutter="위젯을" /> 건드리지 않아서 <Fw react="진입점이 따로 있습니다" flutter="화면에서든 빌드 스크립트나 아이솔레이트에서든 똑같이 씁니다" />. 요약 한 줄, 배지의 숫자, <Fw react="워커에서 돌리는" flutter="화면을 그리는 스레드 밖에서 돌리는" /> 계산에는 화면이 아니라 값이 필요하기 때문입니다.
+
+::: fw react
 
 ```ts
 import { diffText } from 'diffine-react/diff';
@@ -15,6 +17,19 @@ const result = diffText(saved, draft);
 result.changes.length; // 3
 result.stats; // { unchanged: 41, changed: 5, inserted: 2, deleted: 1 }
 ```
+
+:::
+
+::: fw flutter
+
+```dart
+final DiffResult result = diffText(saved, draft);
+
+result.changes.length; // 3
+result.stats; // unchanged 41, changed 5, inserted 2, deleted 1
+```
+
+:::
 
 ## 돌려주는 것
 
@@ -30,6 +45,8 @@ result.stats; // { unchanged: 41, changed: 5, inserted: 2, deleted: 1 }
 
 한 행은 줄이 있는 쪽만 채워집니다. `equal`은 양쪽 다, `insert`는 `after`만, `delete`는 `before`만 있고, `replace`는 마주 보는 두 줄이 서로 다른 경우입니다.
 
+::: fw react
+
 ```ts
 for (const row of result.rows) {
   if (row.kind === 'equal') {
@@ -40,6 +57,22 @@ for (const row of result.rows) {
 }
 ```
 
+:::
+
+::: fw flutter
+
+```dart
+for (final DiffRow row in result.rows) {
+  if (row.kind == DiffRowKind.equal) {
+    continue;
+  }
+
+  debugPrint('${row.kind.name} ${row.before?.text ?? ''} ${row.after?.text ?? ''}');
+}
+```
+
+:::
+
 좌우 비교 화면은 그 `null` 자리에 빈 칸을 그립니다. 화면이 아닌 곳에서 읽는다면 그냥 건너뛰면 됩니다.
 
 줄에는 자기 문서에서 몇 번째 줄인지 나타내는 `index`(0부터), 쓰인 그대로의 `text`, 그리고 `segments`가 있습니다.
@@ -47,6 +80,8 @@ for (const row of result.rows) {
 ### 조각
 
 `segments`는 한 줄을 바뀐 부분과 안 바뀐 부분으로 쪼갠 것입니다. 그 줄이 속한 쪽의 조각만 들어 있어서, 이어 붙이면 원래 줄이 나옵니다.
+
+::: fw react
 
 ```ts
 const [row] = diffText('the quick fox', 'the slow fox').rows;
@@ -57,6 +92,21 @@ row.after.segments;
 // [{ kind: 'equal', text: 'the ' }, { kind: 'insert', text: 'slow' }, { kind: 'equal', text: ' fox' }]
 ```
 
+:::
+
+::: fw flutter
+
+```dart
+final DiffRow row = diffText('the quick fox', 'the slow fox').rows.first;
+
+row.before!.segments;
+// equal 'the ', delete 'quick', equal ' fox'
+row.after!.segments;
+// equal 'the ', insert 'slow', equal ' fox'
+```
+
+:::
+
 빈 배열이면 비교할 상대가 없었거나, 짝이 너무 안 닮아서 짚어 줄 가치가 없다고 판단한 경우입니다. 어느 쪽이든 그 줄은 행이 말하는 그대로 처음부터 끝까지 하나입니다.
 
 ### 변경
@@ -65,11 +115,26 @@ row.after.segments;
 
 각 항목은 양쪽에서 어느 줄들을 덮는지와 어느 행을 차지하는지를 갖고 있습니다.
 
+::: fw react
+
 ```ts
 for (const change of result.changes) {
   console.log(`${change.kind}: before ${change.beforeStart + 1}~${change.beforeEnd}줄`);
 }
 ```
+
+:::
+
+::: fw flutter
+
+```dart
+for (final DiffChange change in result.changes) {
+  debugPrint('${change.kind.name}: before '
+      '${change.beforeStart + 1}~${change.beforeEnd}줄');
+}
+```
+
+:::
 
 `rowStart`와 `rowEnd`는 다음 변경으로 건너뛰거나 여백에 띠를 그릴 때 쓰는 값입니다.
 
@@ -111,9 +176,27 @@ for (const change of result.changes) {
 
 타임스탬프가 박힌 스냅샷, 요청 아이디가 붙은 로그, 파일 이름에 해시가 든 빌드 결과물. 매번 달라지는 줄 하나 때문에 파일 전체가 바뀐 것처럼 나오는 경우입니다. 각 패턴을 양쪽 줄에서 찾아 그 부분을 빼고 비교하므로, 그 안에서만 다른 두 줄은 같은 줄이 됩니다.
 
+::: fw react
+
 ```ts
 diffText(saved, rendered, { ignore: [/\d{4}-\d{2}-\d{2}T[\d:.]+Z/, /\bid=\w+/] });
 ```
+
+:::
+
+::: fw flutter
+
+```dart
+diffText(
+  saved,
+  rendered,
+  DiffOptions(
+    ignore: <RegExp>[RegExp(r'\d{4}-\d{2}-\d{2}T[\d:.]+Z'), RegExp(r'\bid=\w+')],
+  ),
+);
+```
+
+:::
 
 찾은 부분은 지우는 것이 아니라 자리를 남긴 채 치웁니다. 그래서 타임스탬프가 있는 줄과 아예 없는 줄은 여전히 다른 줄입니다. 치운 부분도 화면에는 그대로 그려집니다. `whitespace`와 같습니다.
 
@@ -129,15 +212,30 @@ diffText(saved, rendered, { ignore: [/\d{4}-\d{2}-\d{2}T[\d:.]+Z/, /\bid=\w+/] }
 
 `diffWords`와 `diffCharacters`는 문서 없이 두 줄만 비교합니다. 제목, 이름, 표의 한 칸 같은 것들입니다.
 
+::: fw react
+
 ```ts
 import { diffWords } from 'diffine-react/diff';
 
 const { before, after, similarity } = diffWords('the quick fox', 'the slow fox');
 ```
 
+:::
+
+::: fw flutter
+
+```dart
+final DiffInlineResult result = diffWords('the quick fox', 'the slow fox');
+// result.before, result.after, result.similarity
+```
+
+:::
+
 `similarity`는 짝지을 수 있었던 비율을 글자 수로 센 값입니다. `inlineThreshold`가 재는 대상이 이 값입니다.
 
 `diffSequence`는 엔진 그 자체입니다. 비교 단위가 줄도 단어도 아닌 경우에 쓰세요.
+
+::: fw react
 
 ```ts
 import { diffSequence } from 'diffine-react/diff';
@@ -150,11 +248,26 @@ diffSequence(['a', 'b', 'c'], ['a', 'c']);
 // ]
 ```
 
+:::
+
+::: fw flutter
+
+```dart
+diffSequence(<String>['a', 'b', 'c'], <String>['a', 'c']);
+// equal  0..1 / 0..1
+// delete 1..2 / 1..1
+// equal  2..3 / 1..2
+```
+
+:::
+
 양쪽 다 문자열로 비교하므로, 토큰이 무엇이든 그것을 식별하는 문자열로 넘기면 됩니다. 돌아온 편집 목록은 두 배열을 순서대로 빠짐없이 한 번씩 덮습니다.
 
 ## 패치
 
 패치는 바뀐 줄과 그 앞뒤 몇 줄만 담은 형식입니다. `git diff`가 쓰는 것이고 어느 코드 호스트나 읽는 것입니다. `parsePatch`는 이것을 `diffText`가 돌려주는 값과 똑같은 형태로 바꿔 줍니다. 비교를 이미 끝내 둔 서버라면 문서 두 벌 대신 패치만 보내면 됩니다.
+
+::: fw react
 
 ```ts
 import { parsePatch } from 'diffine-react/patch';
@@ -165,11 +278,26 @@ file.before; // `---` 줄에 적힌 이름, 여기서는 'a/src/index.ts'
 file.result; // `diffText`가 돌려주는 것과 같은 형태
 ```
 
+:::
+
+::: fw flutter
+
+```dart
+final DiffPatchFile file = parsePatch(response.body).first;
+
+file.before; // `---` 줄에 적힌 이름, 여기서는 'a/lib/main.dart'
+file.result; // `diffText`가 돌려주는 것과 같은 형태
+```
+
+:::
+
 패치가 다루는 파일마다 하나씩, 적힌 순서대로 돌아옵니다. 두 번째 인자는 `diffText`가 받는 옵션 그대로라, 바뀐 두 줄 안에서 단어를 골라내는 기준을 양쪽 페이지에서 똑같이 맞출 수 있습니다.
 
 형식에 없는 것을 지어내지는 않습니다. 한 헝크가 끝나고 다음 헝크가 시작하는 사이의 줄은 패치에 없으므로 그 지점에서 줄 번호가 건너뜁니다. 각 줄의 `index`는 원래 파일에서의 번호 그대로이고, `result.before`는 패치가 실어 온 줄만 담습니다. 뷰어는 그 지점에 몇 줄이 빠져 있는지 적힌 띠를 그립니다. 헝크를 둘러싼 나머지는 읽지 않고 넘깁니다. `diff --git` 줄, 모드와 인덱스 줄, 파일이 개행으로 끝나지 않는다는 표시가 여기에 해당합니다.
 
 반대 방향은 `formatPatch`입니다. 내보내기 버튼이나, 비교 결과를 다른 도구에 넘겨야 하는 경우에 씁니다.
+
+::: fw react
 
 ```ts
 import { formatPatch } from 'diffine-react/patch';
@@ -179,6 +307,19 @@ formatPatch(diffText(saved, draft), {
   after: 'b/src/index.ts'
 });
 ```
+
+:::
+
+::: fw flutter
+
+```dart
+formatPatch(
+  diffText(saved, draft),
+  const DiffPatchOptions(before: 'a/lib/main.dart', after: 'b/lib/main.dart'),
+);
+```
+
+:::
 
 | 옵션      | 설명                             | 기본값     |
 | --------- | -------------------------------- | ---------- |

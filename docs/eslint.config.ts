@@ -19,6 +19,9 @@ export default pluginTypeScriptESLint.config(
     // and neither ours to lint.
     '**/.vitepress/cache',
     '../docs-dist',
+    // The Flutter gallery, compiled to one file of JavaScript by `dart2js` and
+    // framed by `DiffineDemo`. Written by `npm run flutter`, not by anybody.
+    'public/flutter',
     '**/*-lock.json',
     '**/*-lock.yaml'
   ]),
