@@ -16,20 +16,21 @@ Guides and the full API, in English and Korean. This README is the map; each pac
 
 - **Lines, then words.** Lines are matched first, then the words or characters inside a pair of lines that was edited rather than replaced.
 - **A patch is a comparison too.** `parsePatch` reads a unified diff into the same value `diffText` returns, so a service that already holds the comparison can send that instead of both documents, and `formatPatch` writes one back out for anything downstream that reads the format.
-- **The result is a plain object.** `diffText` returns rows, changes and counts; `diffImage` returns a byte a pixel, the changes as rectangles, and the counts. Both are plain objects with no React and no DOM in them, so a badge, a terminal and a worker can use the same call the viewer does.
-- **One dependency, fetched rather than shipped.** The engine, the alignment and the viewer are ours. `highlight.js` is the only dependency and it sits behind an `import()` with each grammar, so a page whose `language` is `plain` downloads none of it.
-- **Every part of the view is a prop.** Line numbers, wrapping, alignment, connectors, the unified view, folding away the lines nobody edited. Each one has a default, so `TextDiff` cuts down to what an application wants to show without a stylesheet being touched — and `renderGutter` and `renderWidget` are where a review comment or a coverage bar goes.
-- **Reading and writing in one component.** `mode="editor"` lays a field over each pane and works the comparison out again on every keystroke, with the browser's own undo, input method and selection left alone.
+- **The result is a plain value.** `diffText` returns rows, changes and counts; `diffImage` returns a byte a pixel, the changes as rectangles, and the counts. Neither has a component or a widget anywhere in it, so a badge, a terminal, a worker and an isolate can use the same call the viewer does.
+- **One dependency each.** The engine, the alignment and the viewer are ours. React adds `highlight.js`, behind an `import()` with each grammar, so a page whose `language` is `plain` downloads none of it. Flutter adds `characters`, which is what Flutter already ships.
+- **Every part of the view is one setting.** Line numbers, wrapping, alignment, connectors, the unified view, folding away the lines nobody edited. Each one has a default, so `TextDiff` cuts down to what an application wants to show without a stylesheet or a theme file being touched — and `renderGutter` and `renderWidget` are where a review comment or a coverage bar goes.
+- **Reading and writing in one component.** The editor mode lays a field over each pane and works the comparison out again on every keystroke, with the platform's own undo, input method and selection left alone.
 - **Four ways of comparing two pictures.** Side by side, faded over each other, wiped across, or the mask on its own. `tolerance` sets how much of a difference counts, `ignoreAntialiasing` drops what a renderer's smoothing left behind, and `align` finds the offset between two shots that are not lined up.
-- **Types in the box.** TypeScript declarations ship with the package.
+- **The same library twice.** The two packages share the engine, the reading of a comparison and the palette down to the colour values, so a screen written against one reads the same written against the other.
 
 ## Packages
 
-| Package                            | Registry                                                            | Requires                               | Quick start                        |
-| ---------------------------------- | ------------------------------------------------------------------- | -------------------------------------- | ---------------------------------- |
-| [`packages/react`](packages/react) | [npm: `diffine-react`](https://www.npmjs.com/package/diffine-react) | React 18 or 19, Node.js 20.19 or later | [README](packages/react/README.md) |
+| Package                                | Registry                                                             | Requires                               | Quick start                          |
+| -------------------------------------- | -------------------------------------------------------------------- | -------------------------------------- | ------------------------------------ |
+| [`packages/react`](packages/react)     | [npm: `diffine-react`](https://www.npmjs.com/package/diffine-react)  | React 18 or 19, Node.js 20.19 or later | [README](packages/react/README.md)   |
+| [`packages/flutter`](packages/flutter) | [pub.dev: `diffine`](https://pub.dev/packages/diffine)               | Flutter 3.32 or later                  | [README](packages/flutter/README.md) |
 
-The packages sit in a folder of their own because more are planned. Each one **versions independently and keeps its own changelog** beside its own manifest, at [`packages/react/CHANGELOG.md`](packages/react/CHANGELOG.md), so a release on one side is not a release on another.
+Each package **versions independently and keeps its own changelog** beside its own manifest, at [`packages/react/CHANGELOG.md`](packages/react/CHANGELOG.md) and [`packages/flutter/CHANGELOG.md`](packages/flutter/CHANGELOG.md), so a release on one side is not a release on the other.
 
 ## Install
 
@@ -47,12 +48,24 @@ import "diffine-react/styles.css";
 <ImageDiff before={saved} after={rendered} />;
 ```
 
+```bash
+flutter pub add diffine
+```
+
+```dart
+import 'package:diffine/diffine.dart';
+
+TextDiff(before: before, after: after);
+ImageDiff(before: DiffineEncodedImage(saved), after: DiffineEncodedImage(rendered));
+```
+
 ## Repository layout
 
-| Path             | What it is                                      | How it is run                                                                        |
-| ---------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------ |
-| `packages/react` | The npm package, `diffine-react`                | `cd packages/react && npm install`, then `npm test`, `npm run lint`, `npm run build` |
-| `docs`           | The documentation site, shared by every package | `cd docs && npm install`, then `npm run dev`                                         |
+| Path               | What it is                                      | How it is run                                                                        |
+| ------------------ | ----------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `packages/react`   | The npm package, `diffine-react`                | `cd packages/react && npm install`, then `npm test`, `npm run lint`, `npm run build` |
+| `packages/flutter` | The pub.dev package, `diffine`                  | `cd packages/flutter && flutter pub get`, then `flutter test`, `flutter analyze`     |
+| `docs`             | The documentation site, shared by every package | `cd docs && npm install`, then `npm run dev`                                         |
 
 There is no install at the repository root and no root manifest of any kind. Each folder is entered and run on its own.
 
@@ -61,7 +74,7 @@ There is no install at the repository root and no root manifest of any kind. Eac
 | Page                                                                   | What you will find                                       |
 | ---------------------------------------------------------------------- | -------------------------------------------------------- |
 | [**Getting started**](https://diffine.cdget.com/guide/getting-started) | Install and setup, end to end.                           |
-| [**Text diff**](https://diffine.cdget.com/guide/text-diff)             | Every part of the view, the editing mode, and the props. |
+| [**Text diff**](https://diffine.cdget.com/guide/text-diff)             | Every part of the view, the editing mode, and the settings that turn each one on or off. |
 | [**Image diff**](https://diffine.cdget.com/guide/image-diff)           | Comparing two pictures, and every way of reading that.   |
 | [**Playground**](https://diffine.cdget.com/guide/playground)           | Every mode, on documents and pictures you can change.    |
 | [**Diff engine**](https://diffine.cdget.com/guide/diff)                | What the comparison returns, and how to read it.         |
