@@ -33,7 +33,22 @@ jobs:
         run: npm ci
         working-directory: ./docs
 
-      # `build` copies the package's changelog into every locale before
+      # The Flutter previews are the gallery under `packages/flutter/example`,
+      # built for the web and framed. Only here: `run-test-docs` leaves it out
+      # because a build that is missing is not a failure — a page without one
+      # says so and shows the React half — and an SDK install is not worth
+      # paying for on every pull request to find that out.
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Build the Flutter previews
+        run: npm run flutter
+        working-directory: ./docs
+
+      # `build` copies each package's changelog into every locale before
       # VitePress runs.
       - name: Build the site
         run: npm run build

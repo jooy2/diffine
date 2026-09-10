@@ -1,0 +1,76 @@
+name: run-test-flutter
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+    paths:
+      - packages/flutter/**
+      - .github/workflows/run-test-flutter.yml
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: ./packages/flutter
+
+jobs:
+  analyse:
+    runs-on: ubuntu-latest
+    name: Analyse and check formatting
+
+    steps:
+      - uses: actions/checkout@v5
+      - uses: subosito/flutter-action@v2
+        name: Setup Flutter
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - name: Check formatting
+        run: dart format --output=none --set-exit-if-changed --line-length 100 lib test
+      - name: Analyse
+        run: flutter analyze
+      # The gallery is a package of its own, and it is what the documentation
+      # site frames — so a change that breaks it takes every Flutter preview on
+      # the site with it, and it is checked here rather than being found there.
+      - name: Install the gallery
+        run: flutter pub get
+        working-directory: ./packages/flutter/example
+      - name: Check the gallery's formatting
+        run: dart format --output=none --set-exit-if-changed --line-length 100 lib
+        working-directory: ./packages/flutter/example
+      - name: Analyse the gallery
+        run: flutter analyze
+        working-directory: ./packages/flutter/example
+
+  run-test-flutter:
+    runs-on: ubuntu-latest
+    name: Test
+
+    steps:
+      - uses: actions/checkout@v5
+      - uses: subosito/flutter-action@v2
+        name: Setup Flutter
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - name: Test
+        run: flutter test
+
+      # Again in a browser, because the two platforms disagree about what
+      # `dart:ui` answers and a suite that only ever runs on one of them cannot
+      # see it. `ImageDescriptor.width` is the case that put this here: a number
+      # everywhere else and a throw on the web, which meant every picture handed
+      # over as the bytes of a file failed in a browser while all 187 tests
+      # passed.
+      #
+      # `test/diff` and `test/image` rather than everything, and that is the
+      # whole of what a browser can be asked here: a `testWidgets` suite does
+      # not finish under `--platform chrome`, while a plain `test` one runs in
+      # seconds. So what asks the platform a question — `test/image/decode`
+      # above all — is written as plain tests and lands here, and what draws
+      # stays on the first run.
+      - name: Test in a browser
+        run: flutter test --platform chrome test/diff test/image
