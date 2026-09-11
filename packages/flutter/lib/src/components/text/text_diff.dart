@@ -884,55 +884,63 @@ class _TextDiffState extends State<TextDiff> {
         border: Border.all(color: theme.border),
         borderRadius: BorderRadius.circular(theme.radius),
       ),
-      child: DiffineSurface(
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(theme.radius),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              if (widget.header || tools)
-                _header(
-                  theme: theme,
-                  strings: strings,
-                  comparison: comparison,
-                  split: split,
-                  empty: empty,
-                  searchable: searchable,
-                  tools: tools,
-                  current: current,
-                  beforeLabel: beforeLabel,
-                  afterLabel: afterLabel,
-                ),
-              Expanded(child: body),
-              if (_firstSearch.open || _secondSearch.open)
-                _findBar(
-                  theme: theme,
-                  strings: strings,
-                  layouts: layouts,
-                  split: split,
-                  beforeLabel: beforeLabel,
-                  afterLabel: afterLabel,
-                ),
-              if (widget.summary && !empty)
-                DiffineSummary(
-                  theme: theme,
-                  before: beforeText.isEmpty && widget.result != null
-                      ? comparison.before.join('\n')
-                      : beforeText,
-                  after: afterText.isEmpty && widget.result != null
-                      ? comparison.after.join('\n')
-                      : afterText,
-                  beforeLabel: beforeLabel,
-                  afterLabel: afterLabel,
-                  changes: comparison.changes.length,
-                  inserted: comparison.stats.inserted + comparison.stats.changed,
-                  deleted: comparison.stats.deleted + comparison.stats.changed,
-                  linked: split && widget.connectors,
-                  format: comparison.format,
-                  locale: widget.locale,
-                  strings: strings,
-                ),
-            ],
+      // Held off the border by the width of it. A decoration is painted behind
+      // what it decorates, and every bar in here draws a background of its own
+      // across the full width — so without this the line round the comparison
+      // is painted and then covered over, and only the rounded corners are left
+      // of it.
+      child: Padding(
+        padding: const EdgeInsets.all(kFrameBorder),
+        child: DiffineSurface(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(theme.radius - kFrameBorder),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                if (widget.header || tools)
+                  _header(
+                    theme: theme,
+                    strings: strings,
+                    comparison: comparison,
+                    split: split,
+                    empty: empty,
+                    searchable: searchable,
+                    tools: tools,
+                    current: current,
+                    beforeLabel: beforeLabel,
+                    afterLabel: afterLabel,
+                  ),
+                Expanded(child: body),
+                if (_firstSearch.open || _secondSearch.open)
+                  _findBar(
+                    theme: theme,
+                    strings: strings,
+                    layouts: layouts,
+                    split: split,
+                    beforeLabel: beforeLabel,
+                    afterLabel: afterLabel,
+                  ),
+                if (widget.summary && !empty)
+                  DiffineSummary(
+                    theme: theme,
+                    before: beforeText.isEmpty && widget.result != null
+                        ? comparison.before.join('\n')
+                        : beforeText,
+                    after: afterText.isEmpty && widget.result != null
+                        ? comparison.after.join('\n')
+                        : afterText,
+                    beforeLabel: beforeLabel,
+                    afterLabel: afterLabel,
+                    changes: comparison.changes.length,
+                    inserted: comparison.stats.inserted + comparison.stats.changed,
+                    deleted: comparison.stats.deleted + comparison.stats.changed,
+                    linked: split && widget.connectors,
+                    format: comparison.format,
+                    locale: widget.locale,
+                    strings: strings,
+                  ),
+              ],
+            ),
           ),
         ),
       ),

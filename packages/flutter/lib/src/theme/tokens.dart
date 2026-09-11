@@ -16,6 +16,14 @@ import 'package:diffine/src/types.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
+/// How thick the line round a comparison is.
+///
+/// Named because the content is held off the edge by exactly this much: a
+/// decoration is painted behind what it decorates, and the bars inside draw
+/// backgrounds of their own across the full width, so a border nothing was
+/// inset from would be painted and then covered over.
+const double kFrameBorder = 1;
+
 /// What a syntax highlighter's runs are drawn in.
 ///
 /// Eight rather than one per kind of token: every kind a grammar emits is

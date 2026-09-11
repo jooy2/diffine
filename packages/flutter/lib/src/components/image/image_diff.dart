@@ -805,124 +805,132 @@ class _ImageDiffState extends State<ImageDiff> {
         border: Border.all(color: theme.border),
         borderRadius: BorderRadius.circular(theme.radius),
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(theme.radius),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            if (widget.header || (tools && !stacked))
-              _header(
-                theme: theme,
-                strings: strings,
-                regions: regions,
-                current: current,
-                viewport: viewport,
-                editing: editing,
-                tools: tools && !stacked,
-                labels: labels,
-                bothLabel: bothLabel,
-              ),
-            if (tools && stacked)
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  color: theme.gutter,
-                  border: Border(bottom: BorderSide(color: theme.border)),
+      // Held off the border by the width of it. A decoration is painted behind
+      // what it decorates, and every bar in here draws a background of its own
+      // across the full width — so without this the line round the comparison
+      // is painted and then covered over, and only the rounded corners are left
+      // of it.
+      child: Padding(
+        padding: const EdgeInsets.all(kFrameBorder),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(theme.radius - kFrameBorder),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              if (widget.header || (tools && !stacked))
+                _header(
+                  theme: theme,
+                  strings: strings,
+                  regions: regions,
+                  current: current,
+                  viewport: viewport,
+                  editing: editing,
+                  tools: tools && !stacked,
+                  labels: labels,
+                  bothLabel: bothLabel,
                 ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: _tools(
-                      theme: theme,
-                      strings: strings,
-                      regions: regions,
-                      current: current,
-                      viewport: viewport,
-                      fading: false,
-                      chooser: null,
+              if (tools && stacked)
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: theme.gutter,
+                    border: Border(bottom: BorderSide(color: theme.border)),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: _tools(
+                        theme: theme,
+                        strings: strings,
+                        regions: regions,
+                        current: current,
+                        viewport: viewport,
+                        fading: false,
+                        chooser: null,
+                      ),
                     ),
                   ),
                 ),
-              ),
-            Expanded(
-              child: MouseRegion(
-                onExit: (PointerExitEvent _) {
-                  if (!_grabbed) {
-                    setState(() => _looking = null);
-                  }
-                },
-                child: Stack(
-                  children: <Widget>[
-                    Positioned.fill(
-                      child: _laidSplit
-                          ? Row(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: <Widget>[
-                                for (int at = 0; at < _held.length; at += 1) ...<Widget>[
-                                  if (at > 0) _Rule(colour: theme.border),
-                                  Expanded(
-                                    child: _pane(
-                                      at: at,
-                                      theme: theme,
-                                      strings: strings,
-                                      name: labels[at],
-                                      frame: frame,
-                                      viewport: viewport,
-                                      layers: layers.each[at],
-                                      regions: regions,
-                                      current: current,
-                                      blank: _held[at] == null,
-                                      loading: _loading[at],
-                                      failed: _failed[at],
-                                      editing: editing,
+              Expanded(
+                child: MouseRegion(
+                  onExit: (PointerExitEvent _) {
+                    if (!_grabbed) {
+                      setState(() => _looking = null);
+                    }
+                  },
+                  child: Stack(
+                    children: <Widget>[
+                      Positioned.fill(
+                        child: _laidSplit
+                            ? Row(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: <Widget>[
+                                  for (int at = 0; at < _held.length; at += 1) ...<Widget>[
+                                    if (at > 0) _Rule(colour: theme.border),
+                                    Expanded(
+                                      child: _pane(
+                                        at: at,
+                                        theme: theme,
+                                        strings: strings,
+                                        name: labels[at],
+                                        frame: frame,
+                                        viewport: viewport,
+                                        layers: layers.each[at],
+                                        regions: regions,
+                                        current: current,
+                                        blank: _held[at] == null,
+                                        loading: _loading[at],
+                                        failed: _failed[at],
+                                        editing: editing,
+                                      ),
                                     ),
-                                  ),
+                                  ],
                                 ],
-                              ],
-                            )
-                          : _pane(
-                              at: -1,
-                              theme: theme,
-                              strings: strings,
-                              name: bothLabel,
-                              frame: frame,
-                              viewport: viewport,
-                              layers: layers.both,
-                              regions: regions,
-                              current: current,
-                              blank: blank,
-                              loading: _loading.any((bool one) => one),
-                              failed: _failed.any((bool one) => one),
-                              editing: editing,
-                              wipe: _laid == DiffineImageView.wipe ? _wipeValue : null,
-                            ),
-                    ),
-                    if (looking != null && samples.isNotEmpty && !blank)
-                      _placedLoupe(
-                        theme: theme,
-                        strings: strings,
-                        samples: samples,
-                        looking: looking,
+                              )
+                            : _pane(
+                                at: -1,
+                                theme: theme,
+                                strings: strings,
+                                name: bothLabel,
+                                frame: frame,
+                                viewport: viewport,
+                                layers: layers.both,
+                                regions: regions,
+                                current: current,
+                                blank: blank,
+                                loading: _loading.any((bool one) => one),
+                                failed: _failed.any((bool one) => one),
+                                editing: editing,
+                                wipe: _laid == DiffineImageView.wipe ? _wipeValue : null,
+                              ),
                       ),
-                  ],
+                      if (looking != null && samples.isNotEmpty && !blank)
+                        _placedLoupe(
+                          theme: theme,
+                          strings: strings,
+                          samples: samples,
+                          looking: looking,
+                        ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-            if (widget.summary)
-              ImageDiffSummary(
-                theme: theme,
-                split: _laidSplit,
-                locale: widget.locale,
-                strings: strings,
-                pictures: <ImageMetrics?>[
-                  for (int at = 0; at < _held.length; at += 1) _metricsOf(_held[at], labels[at]),
-                ],
-                changed: _ratio,
-                regions: regions.length,
-                complete: _whole,
-                compared: _comparison != null || _several != null,
-              ),
-          ],
+              if (widget.summary)
+                ImageDiffSummary(
+                  theme: theme,
+                  split: _laidSplit,
+                  locale: widget.locale,
+                  strings: strings,
+                  pictures: <ImageMetrics?>[
+                    for (int at = 0; at < _held.length; at += 1) _metricsOf(_held[at], labels[at]),
+                  ],
+                  changed: _ratio,
+                  regions: regions.length,
+                  complete: _whole,
+                  compared: _comparison != null || _several != null,
+                ),
+            ],
+          ),
         ),
       ),
     );
