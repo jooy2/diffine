@@ -18,6 +18,7 @@ import 'dart:ui' as ui;
 
 import 'package:diffine/src/internal/image/align.dart';
 import 'package:diffine/src/internal/image/compare.dart';
+import 'package:diffine/src/internal/image/many.dart';
 import 'package:diffine/src/types.dart';
 
 /// What each byte of [DiffImageResult.mask] means, in the order the bytes
@@ -116,6 +117,109 @@ DiffImageSimilarity imageSimilarity(
   );
 }
 
+/// Compares several pictures at once and returns where any of them disagree.
+///
+/// ```dart
+/// final DiffImagesResult result = diffImages(<DiffPixels>[one, two, three]);
+///
+/// debugPrint('${result.regions.length} areas, '
+///     '${(result.stats.ratio * 100).round()}%');
+/// ```
+///
+/// Three renderings of one screen, four exports of one asset, a saved version
+/// against the last five runs: what is wanted there is one frame with every
+/// disagreement on it, and [diffImage] cannot give that because a pair has no
+/// room for a third.
+///
+/// Each picture is compared with the baseline exactly as [diffImage] would
+/// compare it, so every option means what it means there — and a list of two is
+/// the same answer in a different shape. What the list adds is the mask: a bit
+/// a picture rather than a kind, so that `mask[pixel] != 0` is "does anything
+/// disagree here" and `mask[pixel] & (1 << i)` is "does this one".
+///
+/// At most [kMostPictures], because a bit a picture is what a byte holds.
+DiffImagesResult diffImages(List<DiffPixels> pictures, [DiffImagesOptions? options]) {
+  final DiffImagesOptions settled = options ?? const DiffImagesOptions();
+  final int baseline = settled.baseline;
+
+  if (pictures.length < 2 || pictures.length > kMostPictures) {
+    throw RangeError(
+      'diffine: ${pictures.length} pictures were given, and a comparison takes '
+      '2 to $kMostPictures.',
+    );
+  }
+
+  if (baseline < 0 || baseline >= pictures.length) {
+    throw RangeError(
+      'diffine: the baseline is $baseline, which is not one of the '
+      '${pictures.length} pictures.',
+    );
+  }
+
+  for (int at = 0; at < pictures.length; at += 1) {
+    _check(pictures[at], 'picture $at');
+  }
+
+  return compareMany(
+    pictures,
+    ManyOptions(
+      tolerance: settled.tolerance,
+      ignoreAntialiasing: settled.ignoreAntialiasing,
+      blockSize: settled.blockSize,
+      maxRegions: settled.maxRegions,
+      baseline: baseline,
+      offsets: <DiffImageOffset>[
+        for (int at = 0; at < pictures.length; at += 1)
+          if (at == baseline || settled.align != DiffImageAlign.shift)
+            DiffImageOffset.zero
+          else
+            findOffset(pictures[baseline], pictures[at], settled.alignRadius),
+      ],
+    ),
+  );
+}
+
+/// How alike several pictures are, as one number and the counts behind it.
+///
+/// The same shorter question [imageSimilarity] asks about a pair. A build
+/// comparing one screen drawn on four machines wants one number to put a
+/// threshold on and a list saying which of the four is the odd one out:
+///
+/// ```dart
+/// final DiffImagesSimilarity alike = imagesSimilarity(shots);
+///
+/// if (alike.similarity < 0.995) {
+///   final double worst = alike.each.reduce(math.min);
+///
+///   debugPrint('the odd one out is ${alike.each.indexOf(worst)}');
+/// }
+/// ```
+///
+/// One picture disagreeing in a corner costs the set exactly as much as all of
+/// them disagreeing there, because the question [DiffImagesSimilarity.similarity]
+/// asks is whether they agree. [DiffImagesSimilarity.each] is what says which
+/// of them did not.
+DiffImagesSimilarity imagesSimilarity(List<DiffPixels> pictures, [DiffImagesOptions? options]) {
+  final DiffImagesResult result = diffImages(pictures, options);
+  final DiffImagesStats stats = result.stats;
+
+  return DiffImagesSimilarity(
+    similarity: 1 - stats.ratio,
+    identical: stats.changed == 0,
+    pixels: stats.covered,
+    matched: stats.unchanged,
+    changed: stats.changed,
+    baseline: result.baseline,
+    each: <double>[
+      for (final int apart in stats.apart) stats.covered == 0 ? 1 : 1 - apart / stats.covered,
+    ],
+    sizes: <DiffImageSize>[
+      for (final DiffPixels picture in pictures)
+        DiffImageSize(width: picture.width, height: picture.height),
+    ],
+  );
+}
+
 /// That a picture is as large as it says it is, checked once before anything
 /// reads it.
 ///
@@ -148,6 +252,39 @@ const DiffImagePaint _paint = DiffImagePaint(
   removed: ui.Color(0xffc2333f),
   unchanged: ui.Color(0x00000000),
 );
+
+/// The mask of several pictures as a picture of its own.
+///
+/// The same step between an answer and a file that [paintDiffImage] is, for a
+/// comparison of a list. With no [picture] it paints every pixel any of them
+/// disagrees about, which is the one image a build attaches to a run that
+/// compared four. With one, it paints what that picture alone disagrees with
+/// the baseline about — four files, one a picture, saying who is the odd one
+/// out where.
+///
+/// `added` and `removed` do not apply: whose arrival a pixel is depends on
+/// which of the pictures is being asked about, and the answer for a list is
+/// that they disagree.
+DiffPixels paintDiffImages(DiffImagesResult result, {DiffImagePaint? paint, int? picture}) {
+  final int width = result.width;
+  final int height = result.height;
+  final Uint8List data = Uint8List(width * height * 4);
+  final ui.Color changed = paint?.changed ?? _paint.changed!;
+  final ui.Color unchanged = paint?.unchanged ?? _paint.unchanged!;
+  final int wanted = picture == null ? 0xff : 1 << picture;
+
+  for (int pixel = 0; pixel < result.mask.length; pixel += 1) {
+    final ui.Color colour = (result.mask[pixel] & wanted) == 0 ? unchanged : changed;
+    final int at = pixel * 4;
+
+    data[at] = (colour.r * 255).round();
+    data[at + 1] = (colour.g * 255).round();
+    data[at + 2] = (colour.b * 255).round();
+    data[at + 3] = (colour.a * 255).round();
+  }
+
+  return DiffPixels(data: data, width: width, height: height);
+}
 
 /// The mask as a picture of its own: what changed, on a ground that is
 /// see-through.

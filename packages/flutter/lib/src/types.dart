@@ -856,6 +856,183 @@ class DiffImageSize {
   String toString() => '$width × $height';
 }
 
+/// How many pictures one comparison of several can hold.
+///
+/// The mask is a byte a pixel and each picture is a bit of it, so eight is what
+/// a byte holds. A comparison of more than eight is a comparison nobody reads
+/// as one picture anyway — and the pair each of them makes with the baseline is
+/// still `diffImage`, which has no limit.
+const int kMostPictures = 8;
+
+/// How several pictures are compared.
+@immutable
+class DiffImagesOptions extends DiffImageOptions {
+  /// Every option, with the same defaults a pair reads.
+  const DiffImagesOptions({
+    this.baseline = 0,
+    super.tolerance,
+    super.ignoreAntialiasing,
+    super.align,
+    super.alignRadius,
+    super.blockSize,
+    super.maxRegions,
+  });
+
+  /// Which picture the rest are counted against, as an index into the list.
+  ///
+  /// A comparison of several asks one of two questions, and this decides which.
+  /// With a baseline it is "how does each of these differ from that one", which
+  /// is what a saved version against four runs is. Without one it is "where do
+  /// these disagree at all", and the answer to that is the same whichever of
+  /// them the counting starts from: a pixel they all agree about has no bit set
+  /// whoever is the baseline.
+  final int baseline;
+}
+
+/// How much of the frame several pictures ended up agreeing about.
+@immutable
+class DiffImagesStats {
+  /// The counts and the share they come to.
+  const DiffImagesStats({
+    required this.pixels,
+    required this.covered,
+    required this.unchanged,
+    required this.changed,
+    required this.ratio,
+    required this.apart,
+  });
+
+  /// How many pixels the frame holds.
+  final int pixels;
+
+  /// How many of those at least one of the pictures reaches.
+  final int covered;
+
+  /// How many of those every picture that reaches them agrees about.
+  final int unchanged;
+
+  /// The rest: pixels at least one of them disagrees about.
+  final int changed;
+
+  /// [changed] as a share of [covered], from 0 to 1.
+  final double ratio;
+
+  /// How many pixels each picture disagrees with the baseline about, in the
+  /// order the pictures were given. The baseline's own is 0.
+  final List<int> apart;
+}
+
+/// Everything the engine worked out about several pictures.
+@immutable
+class DiffImagesResult {
+  /// One comparison of several pictures.
+  const DiffImagesResult({
+    required this.width,
+    required this.height,
+    required this.areas,
+    required this.offsets,
+    required this.baseline,
+    required this.mask,
+    required this.regions,
+    required this.stats,
+    required this.complete,
+  });
+
+  /// How wide the frame all of them were compared in is.
+  ///
+  /// As large as it has to be to hold every one of them once its offset is
+  /// applied, which for pictures of one size laid corner to corner is that
+  /// size.
+  final int width;
+
+  /// How tall it is.
+  final int height;
+
+  /// Where each picture sits in that frame, in the order they were given.
+  final List<DiffImageArea> areas;
+
+  /// How far each one was moved to line it up with the baseline, in pixels.
+  final List<DiffImageOffset> offsets;
+
+  /// Which picture the rest were counted against.
+  final int baseline;
+
+  /// Which pictures disagree at each pixel, a bit each, row by row.
+  ///
+  /// Bit `i` is set when the picture at `i` in the list differs from the
+  /// baseline there — because the two pixels are far enough apart, or because
+  /// one of them covers the pixel and the other does not. `0` is a pixel every
+  /// picture agrees about, and the baseline's own bit is never set.
+  ///
+  /// A bit rather than a count, because it answers both questions:
+  /// `mask[pixel] != 0` is "does anything disagree here", and
+  /// `mask[pixel] & (1 << i)` is "does this one", which is what lets a view
+  /// tint each picture with what is wrong with that picture.
+  final Uint8List mask;
+
+  /// Where the changes are, in reading order.
+  final List<DiffImageRegion> regions;
+
+  /// How much of the frame ended up where.
+  final DiffImagesStats stats;
+
+  /// Whether the list of regions holds all of them.
+  final bool complete;
+}
+
+/// How alike several pictures are, as one number and the counts behind it.
+///
+/// The same shorter question [DiffImageSimilarity] answers for a pair. A build
+/// comparing one screen drawn on four machines wants one number and a list
+/// saying which of the four is the odd one out, and this is both.
+@immutable
+class DiffImagesSimilarity {
+  /// The share and the counts behind it.
+  const DiffImagesSimilarity({
+    required this.similarity,
+    required this.identical,
+    required this.pixels,
+    required this.matched,
+    required this.changed,
+    required this.baseline,
+    required this.each,
+    required this.sizes,
+  });
+
+  /// How alike they all are, from 0 to 1: the share of the pixels at least one
+  /// of them covers that every one of them agrees about.
+  ///
+  /// Times a hundred is the percentage. One picture disagreeing in a corner
+  /// costs the whole set exactly as much as all of them disagreeing there,
+  /// because the question is whether they agree.
+  final double similarity;
+
+  /// Whether not one pixel of any of them came out different.
+  final bool identical;
+
+  /// How many pixels at least one of them covers.
+  final int pixels;
+
+  /// How many of those every one of them agrees about.
+  final int matched;
+
+  /// The rest.
+  final int changed;
+
+  /// Which picture the rest were counted against.
+  final int baseline;
+
+  /// How alike each picture is to the baseline, from 0 to 1, in the order they
+  /// were given. The baseline's own is 1.
+  ///
+  /// This is what says which of them is the odd one out, where [similarity]
+  /// only says that one of them is.
+  final List<double> each;
+
+  /// How large each picture was, in order.
+  final List<DiffImageSize> sizes;
+}
+
 /// What each kind of pixel is painted in, when the mask is turned into a
 /// picture of its own.
 ///

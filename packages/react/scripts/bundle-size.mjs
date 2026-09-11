@@ -35,7 +35,7 @@ const packageDir = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const BUDGETS = [
   { entry: 'diffine-react', take: '{ diffText }', gzip: 3000 },
   { entry: 'diffine-react/diff', take: '*', gzip: 3100 },
-  { entry: 'diffine-react/image', take: '*', gzip: 3400 },
+  { entry: 'diffine-react/image', take: '*', gzip: 4500 },
   { entry: 'diffine-react/patch', take: '*', gzip: 3600 },
   { entry: 'diffine-react/text-diff', take: '{ TextDiff }', gzip: 18500 },
   { entry: 'diffine-react/image-diff', take: '{ ImageDiff }', gzip: 13900 }

@@ -25,8 +25,12 @@ export { DIFFINE_DEFAULTS, diffCharacters, diffSequence, diffText, diffWords } f
 export {
   DIFF_PIXEL_KINDS,
   DIFFINE_IMAGE_DEFAULTS,
+  MOST_PICTURES,
   diffImage,
+  diffImages,
   imageSimilarity,
-  paintDiffImage
+  imagesSimilarity,
+  paintDiffImage,
+  paintDiffImages
 } from './image.js';
 export { formatPatch, parsePatch } from './patch.js';

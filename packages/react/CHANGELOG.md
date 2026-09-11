@@ -62,6 +62,12 @@
 
 - **`stats.distance` says how far apart two pictures are, not just how much of them moved.** The average distance between two pixels both pictures cover, on the scale `tolerance` is measured on. Every pixel is in it, including the ones the tolerance and the smoothing test let through, so a picture re-encoded badly and a picture with a panel painted over are no longer the same answer. It costs one addition on the pixels that were being measured anyway.
 
+- **`diffImages` compares several pictures at once, and `imagesSimilarity` says how alike they are.** Three renderings of one screen, four exports of one asset, a saved version against the last five runs: what is wanted there is one frame with every disagreement on it, and a pair has no room for a third. Each picture is compared with a baseline exactly as `diffImage` would compare it, so every option means what it means there and a list of two is the same answer in a different shape.
+
+  What the list adds is the mask. It is a bit a picture rather than a kind, so `mask[pixel] !== 0` is "does anything disagree here" and `mask[pixel] & (1 << i)` is "does this one" — which is what lets a view tint each picture with what is wrong with that picture. A byte holds eight of them, and `MOST_PICTURES` is that number. `paintDiffImages` turns the mask into a picture, of all of them at once or of one on its own.
+
+  `imagesSimilarity` is the shorter question again: one share for the set, and `each` saying how alike every picture is to the baseline, which is what names the odd one out where the one number only says there is one.
+
 - **`imageSimilarity` answers how alike two pictures are, in one number.** `diffImage` says where two pictures differ, which is the question a reader looking at them has; a build with a threshold in it, a report ranking a hundred screenshots and a badge on a page are all asking the shorter one. What comes back is a share from 0 to 1, the counts it came from, how large each picture was, and how far apart the pixels are on average — because a photograph saved again is unalike in most of its pixels and barely apart in any of them, and one number cannot say both. It is the whole comparison underneath, so every option means what it means there.
 
 ### Changed

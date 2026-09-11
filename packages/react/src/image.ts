@@ -19,11 +19,16 @@ import type {
   DiffImagePaint,
   DiffImageResult,
   DiffImageSimilarity,
+  DiffImagesOptions,
+  DiffImagesResult,
+  DiffImagesSimilarity,
   DiffPixelKind,
   DiffPixels
 } from './types.js';
-import { findOffset, NO_OFFSET } from './internal/image/align.js';
+import { MOST_PICTURES } from './types.js';
+import { findOffset, NO_OFFSET, type Offset } from './internal/image/align.js';
 import { comparePixels } from './internal/image/compare.js';
+import { compareMany } from './internal/image/many.js';
 
 export type {
   DiffImageAlign,
@@ -35,9 +40,14 @@ export type {
   DiffImageResult,
   DiffImageSimilarity,
   DiffImageStats,
+  DiffImagesOptions,
+  DiffImagesResult,
+  DiffImagesSimilarity,
+  DiffImagesStats,
   DiffPixelKind,
   DiffPixels
 } from './types.js';
+export { MOST_PICTURES } from './types.js';
 
 /**
  * What each byte of {@link DiffImageResult.mask} means, in the order the bytes
@@ -101,7 +111,7 @@ export function diffImage(
  * rather than throwing, two of those compare equal, and a buffer one row short
  * would come back as two pictures that agree about the row it is missing.
  */
-function check(pixels: DiffPixels, side: 'before' | 'after'): void {
+function check(pixels: DiffPixels, side: string): void {
   const { data, width, height } = pixels;
 
   if (!Number.isInteger(width) || !Number.isInteger(height) || width < 0 || height < 0) {
@@ -165,6 +175,118 @@ export function imageSimilarity(
   };
 }
 
+/**
+ * How the pictures of a list are lined up with the baseline, and what is left
+ * of the options once that is settled.
+ */
+function settle(
+  pictures: readonly DiffPixels[],
+  baseline: number,
+  options: DiffImagesOptions | undefined
+): { offsets: Offset[] } {
+  const align = options?.align ?? DIFFINE_IMAGE_DEFAULTS.align;
+  const radius = options?.alignRadius ?? DIFFINE_IMAGE_DEFAULTS.alignRadius;
+
+  return {
+    offsets: pictures.map((picture, at) =>
+      at === baseline || align !== 'shift'
+        ? NO_OFFSET
+        : findOffset(pictures[baseline], picture, radius)
+    )
+  };
+}
+
+/**
+ * Compares several pictures at once and returns where any of them disagree.
+ *
+ * ```ts
+ * const result = diffImages([chrome, firefox, safari]);
+ *
+ * console.log(`${result.regions.length} areas, ${Math.round(result.stats.ratio * 100)}%`);
+ * ```
+ *
+ * Three renderings of one screen, four exports of one asset, a saved version
+ * against the last five runs: what is wanted there is one frame with every
+ * disagreement on it, and `diffImage` cannot give that because a pair has no
+ * room for a third.
+ *
+ * Each picture is compared with the baseline exactly as `diffImage` would
+ * compare it, so every option means what it means there — and a list of two is
+ * the same answer in a different shape. What the list adds is the mask: a bit a
+ * picture rather than a kind, so that `mask[pixel] !== 0` is "does anything
+ * disagree here" and `mask[pixel] & (1 << i)` is "does this one".
+ *
+ * At most {@link MOST_PICTURES}, because a bit a picture is what a byte holds.
+ */
+export function diffImages(
+  pictures: readonly DiffPixels[],
+  options?: DiffImagesOptions
+): DiffImagesResult {
+  const baseline = options?.baseline ?? 0;
+
+  if (pictures.length < 2 || pictures.length > MOST_PICTURES) {
+    throw new RangeError(
+      `diffine: ${pictures.length} pictures were given, and a comparison takes 2 to ${MOST_PICTURES}.`
+    );
+  }
+
+  if (!Number.isInteger(baseline) || baseline < 0 || baseline >= pictures.length) {
+    throw new RangeError(
+      `diffine: the baseline is ${baseline}, which is not one of the ${pictures.length} pictures.`
+    );
+  }
+
+  for (const [at, picture] of pictures.entries()) {
+    check(picture, `picture ${at}`);
+  }
+
+  return compareMany(pictures, {
+    tolerance: options?.tolerance ?? DIFFINE_IMAGE_DEFAULTS.tolerance,
+    ignoreAntialiasing: options?.ignoreAntialiasing ?? DIFFINE_IMAGE_DEFAULTS.ignoreAntialiasing,
+    blockSize: options?.blockSize ?? DIFFINE_IMAGE_DEFAULTS.blockSize,
+    maxRegions: options?.maxRegions ?? DIFFINE_IMAGE_DEFAULTS.maxRegions,
+    baseline,
+    ...settle(pictures, baseline, options)
+  });
+}
+
+/**
+ * How alike several pictures are, as one number and the counts behind it.
+ *
+ * The same shorter question {@link imageSimilarity} asks about a pair. A build
+ * comparing one screen drawn on four machines wants one number to put a
+ * threshold on and a list saying which of the four is the odd one out:
+ *
+ * ```ts
+ * const { similarity, each } = imagesSimilarity([chrome, firefox, safari]);
+ *
+ * if (similarity < 0.995) {
+ *   console.log(`the odd one out is ${each.indexOf(Math.min(...each))}`);
+ * }
+ * ```
+ *
+ * One picture disagreeing in a corner costs the set exactly as much as all of
+ * them disagreeing there, because the question `similarity` asks is whether
+ * they agree. `each` is what says which of them did not.
+ */
+export function imagesSimilarity(
+  pictures: readonly DiffPixels[],
+  options?: DiffImagesOptions
+): DiffImagesSimilarity {
+  const { stats, baseline } = diffImages(pictures, options);
+
+  return {
+    similarity: 1 - stats.ratio,
+    identical: stats.changed === 0,
+    pixels: stats.covered,
+    matched: stats.unchanged,
+    changed: stats.changed,
+    baseline,
+    each: stats.apart.map((apart) => (stats.covered === 0 ? 1 : 1 - apart / stats.covered)),
+    sizes: pictures.map((picture) => ({ width: picture.width, height: picture.height }))
+  };
+}
+
 /** What each kind of pixel is painted in, where nothing else was asked for. */
 const PAINT: Required<DiffImagePaint> = {
   changed: [232, 62, 140, 255],
@@ -172,6 +294,43 @@ const PAINT: Required<DiffImagePaint> = {
   removed: [194, 51, 63, 255],
   unchanged: [0, 0, 0, 0]
 };
+
+/**
+ * The mask of several pictures as a picture of its own.
+ *
+ * The same step between an answer and a file that {@link paintDiffImage} is,
+ * for a comparison of a list. With no `picture` it paints every pixel any of
+ * them disagrees about, which is the one image a build attaches to a run that
+ * compared four. With one, it paints what that picture alone disagrees with the
+ * baseline about — four files, one a picture, saying who is the odd one out
+ * where.
+ *
+ * `added` and `removed` do not apply: whose arrival a pixel is depends on which
+ * of the pictures is being asked about, and the answer for a list is that they
+ * disagree.
+ */
+export function paintDiffImages(
+  result: DiffImagesResult,
+  paint?: DiffImagePaint & { picture?: number }
+): DiffPixels {
+  const { width, height, mask } = result;
+  const data = new Uint8ClampedArray(width * height * 4);
+  const changed = paint?.changed ?? PAINT.changed;
+  const unchanged = paint?.unchanged ?? PAINT.unchanged;
+  const wanted = paint?.picture === undefined ? 0xff : 1 << paint.picture;
+
+  for (let pixel = 0; pixel < mask.length; pixel += 1) {
+    const colour = (mask[pixel] & wanted) === 0 ? unchanged : changed;
+    const at = pixel * 4;
+
+    data[at] = colour[0];
+    data[at + 1] = colour[1];
+    data[at + 2] = colour[2];
+    data[at + 3] = colour[3];
+  }
+
+  return { data, width, height };
+}
 
 /**
  * The mask as a picture of its own: what changed, on a ground that is

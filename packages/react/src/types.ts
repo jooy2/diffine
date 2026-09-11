@@ -661,6 +661,136 @@ export interface DiffImageResult {
   complete: boolean;
 }
 
+/**
+ * How many pictures one comparison of several can hold.
+ *
+ * The mask is a byte a pixel and each picture is a bit of it, so eight is what
+ * a byte holds. A comparison of more than eight is a comparison nobody reads as
+ * one picture anyway — and the pair each of them makes with the baseline is
+ * still `diffImage`, which has no limit.
+ */
+export const MOST_PICTURES = 8;
+
+/** How several pictures are compared. */
+export interface DiffImagesOptions extends DiffImageOptions {
+  /**
+   * Which picture the rest are counted against, as an index into the list.
+   *
+   * A comparison of several asks one of two questions, and this decides which.
+   * With a baseline it is "how does each of these differ from that one", which
+   * is what a saved version against four runs is. Without one it is "where do
+   * these disagree at all", and the answer to that is the same whichever of
+   * them the counting starts from: a pixel they all agree about has no bit set
+   * whoever is the baseline.
+   *
+   * @default 0
+   */
+  baseline?: number;
+}
+
+/** How much of the frame several pictures ended up agreeing about. */
+export interface DiffImagesStats {
+  /** How many pixels the frame holds. */
+  pixels: number;
+  /** How many of those at least one of the pictures reaches. */
+  covered: number;
+  /** How many of those every picture that reaches them agrees about. */
+  unchanged: number;
+  /** The rest: pixels at least one of them disagrees about. */
+  changed: number;
+  /** `changed` as a share of `covered`, from 0 to 1. */
+  ratio: number;
+  /**
+   * How many pixels each picture disagrees with the baseline about, in the
+   * order the pictures were given. The baseline's own is 0.
+   */
+  apart: readonly number[];
+}
+
+/** Everything the engine worked out about several pictures. */
+export interface DiffImagesResult {
+  /**
+   * The frame all of them were compared in.
+   *
+   * As large as it has to be to hold every one of them once its offset is
+   * applied, which for pictures of one size laid corner to corner is that size.
+   */
+  width: number;
+  height: number;
+  /** Where each picture sits in that frame, in the order they were given. */
+  areas: readonly DiffImageArea[];
+  /**
+   * How far each one was moved to line it up with the baseline, in pixels.
+   *
+   * `{ x: 0, y: 0 }` for the baseline, and for every other picture unless
+   * {@link DiffImageOptions.align} asked for a search.
+   */
+  offsets: readonly { x: number; y: number }[];
+  /** Which picture the rest were counted against. */
+  baseline: number;
+  /**
+   * Which pictures disagree at each pixel, a bit each, row by row.
+   *
+   * Bit `i` is set when the picture at `i` in the list differs from the
+   * baseline there — because the two pixels are far enough apart, or because
+   * one of them covers the pixel and the other does not. `0` is a pixel every
+   * picture agrees about, and the baseline's own bit is never set.
+   *
+   * A bit rather than a count, because it answers both questions: `mask[pixel]
+   * !== 0` is "does anything disagree here", and `mask[pixel] & (1 << i)` is
+   * "does this one", which is what lets a view tint each picture with what is
+   * wrong with that picture.
+   */
+  mask: Uint8Array;
+  /** Where the changes are, in reading order. */
+  regions: readonly DiffImageRegion[];
+  stats: DiffImagesStats;
+  /**
+   * Whether the list of regions holds all of them. See
+   * {@link DiffImageOptions.maxRegions}.
+   */
+  complete: boolean;
+}
+
+/**
+ * How alike several pictures are, as one number and the counts behind it.
+ *
+ * The same shorter question {@link DiffImageSimilarity} answers for a pair. A
+ * build comparing one screen drawn on four machines wants one number and a
+ * list saying which of the four is the odd one out, and this is both.
+ */
+export interface DiffImagesSimilarity {
+  /**
+   * How alike they all are, from 0 to 1: the share of the pixels at least one
+   * of them covers that every one of them agrees about.
+   *
+   * Times a hundred is the percentage. One picture disagreeing in a corner
+   * costs the whole set exactly as much as all of them disagreeing there,
+   * because the question is whether they agree.
+   */
+  similarity: number;
+  /** Whether not one pixel of any of them came out different. */
+  identical: boolean;
+  /** How many pixels at least one of them covers. */
+  pixels: number;
+  /** How many of those every one of them agrees about. */
+  matched: number;
+  /** The rest. */
+  changed: number;
+  /** Which picture the rest were counted against. */
+  baseline: number;
+  /**
+   * How alike each picture is to the baseline, from 0 to 1, in the order they
+   * were given. The baseline's own is 1.
+   *
+   * This is what says which of them is the odd one out, where `similarity`
+   * only says that one of them is.
+   */
+  each: readonly number[];
+  /** How large each picture was, in order. */
+  sizes: readonly { width: number; height: number }[];
+}
+
 /* ---------------------------------------------------------------------------
  * The view
  *

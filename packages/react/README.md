@@ -312,7 +312,7 @@ Every entry is its own bundle, and importing one costs what that one is. The roo
 | --- | --- | --- |
 | `diffine-react` | The whole comparison: text, pictures, patches, types. | 2.6 kB |
 | `diffine-react/diff` | The text comparison on its own. | 2.9 kB |
-| `diffine-react/image` | The picture comparison on its own. | 3.2 kB |
+| `diffine-react/image` | The picture comparison on its own. | 4.2 kB |
 | `diffine-react/patch` | Reading and writing a unified diff. | 3.3 kB |
 | `diffine-react/text-diff` | `TextDiff`, and the list its menu of languages is made from. | 17.6 kB |
 | `diffine-react/image-diff` | `ImageDiff`. | 13.3 kB |
