@@ -51,6 +51,8 @@ class PlaygroundSettings {
     this.smoothing = true,
     this.marks = true,
     this.outlines = true,
+    this.unchanged = DiffineImageUnchanged.keep,
+    this.loupe = true,
     this.shot = '',
     this.pictureBefore,
     this.pictureAfter,
@@ -116,6 +118,8 @@ class PlaygroundSettings {
       smoothing: flag('smoothing', or: fallback.smoothing),
       marks: flag('marks', or: fallback.marks),
       outlines: flag('outlines', or: fallback.outlines),
+      unchanged: DiffineImageUnchanged.values.asNameMap()[value['unchanged']] ?? fallback.unchanged,
+      loupe: flag('loupe', or: fallback.loupe),
       shot: text('shot', or: fallback.shot),
       pictureBefore: pictureBefore,
       pictureAfter: pictureAfter,
@@ -187,6 +191,12 @@ class PlaygroundSettings {
 
   /// Whether a box is drawn round each change.
   final bool outlines;
+
+  /// What is done with the parts of the picture nothing happened to.
+  final DiffineImageUnchanged unchanged;
+
+  /// Whether the pixels under the pointer are shown magnified.
+  final bool loupe;
 
   /// Which pair of pictures the page sent, so a new one is a new comparison.
   ///

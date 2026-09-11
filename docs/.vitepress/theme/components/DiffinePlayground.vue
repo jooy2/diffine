@@ -30,7 +30,7 @@ import { useData } from 'vitepress';
 import { createElement } from 'react';
 import { ImageDiff } from 'diffine-react/image-diff';
 import { TextDiff } from 'diffine-react/text-diff';
-import type { DiffInlineMode, DiffineImageView } from 'diffine-react';
+import type { DiffInlineMode, DiffineImageUnchanged, DiffineImageView } from 'diffine-react';
 import 'diffine-react/styles.css';
 import { useFlutterFrame } from '../flutter';
 import { useReactIsland } from '../island';
@@ -47,6 +47,7 @@ const MODES: readonly Mode[] = ['editor', 'viewer', 'pictures'];
 const PICKS: readonly Pick[] = ['code', 'prose', 'config', 'korean', 'blank'];
 const SHOTS: readonly Shot[] = ['retouched', 'moved', 'saved', 'badge', 'blank'];
 const VIEWS: readonly DiffineImageView[] = ['split', 'overlay', 'wipe', 'mask'];
+const RESTS: readonly DiffineImageUnchanged[] = ['keep', 'dim', 'hide'];
 const DETAILS: readonly DiffInlineMode[] = ['word', 'character', 'none'];
 
 const WORDS = {
@@ -87,7 +88,10 @@ const WORDS = {
     lineUp: 'Line them up',
     smoothing: 'Ignore smoothing',
     marks: 'Mark the pixels',
-    outlines: 'Box the changes'
+    outlines: 'Box the changes',
+    loupe: 'Show the pixels under the pointer',
+    unchanged: 'The rest of it',
+    rests: { keep: 'Leave it', dim: 'Push it back', hide: 'Drop it' }
   },
   ko: {
     mode: '무엇을 써 볼지',
@@ -126,7 +130,10 @@ const WORDS = {
     lineUp: '위치 맞추기',
     smoothing: '경계 보정 무시',
     marks: '픽셀 표시',
-    outlines: '변경 영역 표시'
+    outlines: '변경 영역 표시',
+    loupe: '포인터 아래 픽셀 보기',
+    unchanged: '나머지 부분',
+    rests: { keep: '그대로', dim: '흐리게', hide: '감추기' }
   }
 };
 
@@ -167,7 +174,9 @@ const pictures = ref({
   align: false,
   smoothing: true,
   marks: true,
-  outlines: true
+  outlines: true,
+  unchanged: 'keep' as DiffineImageUnchanged,
+  loupe: true
 });
 
 /**
@@ -277,6 +286,8 @@ function drawPictures() {
       align: pictures.value.align ? ('shift' as const) : ('none' as const),
       ignoreAntialiasing: pictures.value.smoothing
     },
+    unchanged: pictures.value.unchanged,
+    loupe: pictures.value.loupe,
     marks: pictures.value.marks,
     outlines: pictures.value.outlines,
     colorScheme: isDark.value ? ('dark' as const) : ('light' as const),
@@ -476,6 +487,8 @@ function tell(): void {
       smoothing: pictures.value.smoothing,
       marks: pictures.value.marks,
       outlines: pictures.value.outlines,
+      unchanged: pictures.value.unchanged,
+      loupe: pictures.value.loupe,
       shot: shot.value,
       pictureBeforeLabel: shown?.beforeLabel ?? '',
       pictureAfterLabel: shown?.afterLabel ?? ''
@@ -549,6 +562,12 @@ watch(missing, () => void nextTick(measure));
         <input type="range" min="0" max="30" v-model.number="pictures.tolerance" />
         <span class="play-value">{{ (pictures.tolerance / 100).toFixed(2) }}</span>
       </label>
+      <label class="play-field">
+        <span>{{ words.unchanged }}</span>
+        <select v-model="pictures.unchanged">
+          <option v-for="name in RESTS" :key="name" :value="name">{{ words.rests[name] }}</option>
+        </select>
+      </label>
       <div class="play-switches">
         <label>
           <input type="checkbox" v-model="pictures.align" />
@@ -565,6 +584,10 @@ watch(missing, () => void nextTick(measure));
         <label>
           <input type="checkbox" v-model="pictures.outlines" />
           {{ words.outlines }}
+        </label>
+        <label>
+          <input type="checkbox" v-model="pictures.loupe" />
+          {{ words.loupe }}
         </label>
       </div>
     </div>

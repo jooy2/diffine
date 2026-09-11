@@ -160,6 +160,8 @@ class _PlaygroundState extends State<Playground> {
       ),
       marks: settings.marks,
       outlines: settings.outlines,
+      unchanged: settings.unchanged,
+      loupe: settings.loupe,
       colorScheme: widget.scheme,
       locale: widget.locale,
       height: double.infinity,
