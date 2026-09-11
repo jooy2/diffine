@@ -362,7 +362,17 @@ export function ImageDiffPane({
       data-side={side}
       data-blank={blank}
       data-over={over || undefined}
-      role="img"
+      /*
+       * A group holding a picture, rather than a picture.
+       *
+       * It was `img`, which is the role for what the canvas holds and the
+       * wrong one for the pane around it: a role of `img` makes everything
+       * inside it presentational, so the button an empty pane invites a picture
+       * with was not reachable by a screen reader at all. What the pane is, is
+       * a group with a name that happens to take the keyboard. The canvas
+       * inside it is hidden, because pixels are not something to read out.
+       */
+      role="group"
       aria-label={name}
       tabIndex={0}
       onPointerDown={onPointerDown}

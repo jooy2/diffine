@@ -54,6 +54,17 @@ describe('ImageDiff', () => {
     }
   });
 
+  it('leaves what an editable pane invites reachable', () => {
+    // A pane used to be `role="img"`, which makes everything inside it
+    // presentational — so the file input was in the markup and in no
+    // accessibility tree.
+    const markup = render({ mode: 'editor' });
+
+    expect(markup).toContain('role="group"');
+    expect(markup).not.toContain('role="img"');
+    expect(markup).toContain('type="file"');
+  });
+
   it('says there is nothing to compare before a picture has arrived', () => {
     // Nothing is decoded on a server, so this is also what the first paint of
     // every comparison looks like.

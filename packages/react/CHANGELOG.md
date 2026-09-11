@@ -48,6 +48,8 @@
 
   What the format does not carry, the reader does not invent. The lines between one hunk and the next are not in a patch, so the numbers jump there: a line's `index` is still its own number in the file it came from, and `result.before` holds the lines that arrived rather than the whole document. Both functions are also their own entry, `diffine-react/patch`, so nothing of the component reaches a bundle that only wanted them.
 
+- **A pane no longer hides what is inside it from a screen reader.** It was `role="img"`, which is the role for what the canvas holds and the wrong one for the pane around it: a role of `img` makes everything inside it presentational, so the button an empty pane invites a picture with was in the markup and in no accessibility tree. The pane is a `group` with a name now, which is what it always was. The Flutter package never had this — a `Semantics` node with `image` on it does not take its children out of the tree.
+
 - **The wheel zooms about the pointer.** It used to need Ctrl or Cmd held, and a plain wheel either moved a picture larger than its pane or left the page to scroll. That is the right answer for a comparison sitting in the middle of an article and the wrong one for a comparison that is the page, which is most of them — so `wheel` is now a prop with `zoom` as its default, Shift to move the picture instead, and `wheel="pan"` for the old behaviour.
 
   A wheel notch also counts in what it says it counts in. `deltaMode` was ignored, so a mouse on Windows and Firefox, which reports lines rather than pixels, was asking for a zoom of about one part in three hundred — a notch that did nothing at all.
