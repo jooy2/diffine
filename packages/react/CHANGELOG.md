@@ -56,6 +56,8 @@
 
 - **A `highlight` of the application's own no longer fetches a grammar.** The prop replaces `language`'s colours rather than joining them, so a viewer given both was downloading a grammar whose runs it then threw away. `language` still names what the bar writes and what the menu starts on.
 
+- **`npm run size` measures what each entry costs, and CI fails a change that outgrows it.** Tree shaking is a property of the build rather than of the source and it is lost quietly — one plain import where an `import()` used to be, and a page that colours nothing is carrying a syntax highlighter again. The check bundles each entry the way an application would, counts what a page fetches before it draws anything, and compares it against a budget. What is behind an `import()` is not in that number.
+
 ## v0.1.0 (2026-09-06)
 
 The viewer became a component that is also an editor, the text gained colour and a search of its own, and two pictures can now be compared where before only two documents could.

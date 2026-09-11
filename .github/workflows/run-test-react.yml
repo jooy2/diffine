@@ -39,6 +39,12 @@ jobs:
       # fails here rather than in a release.
       - name: Build
         run: npm run build
+      # Tree shaking is a property of the build rather than of the source, and
+      # it is lost quietly. This measures what each entry costs a page before it
+      # draws and fails when one of them outgrows its budget, which is what a
+      # module landing in a graph it was kept out of looks like from here.
+      - name: Measure the bundles
+        run: node scripts/bundle-size.mjs
 
   run-test-react:
     runs-on: ${{ matrix.os }}

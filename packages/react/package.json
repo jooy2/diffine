@@ -25,6 +25,7 @@
     "lint": "eslint . --report-unused-disable-directives",
     "lint:fix": "eslint . --report-unused-disable-directives --fix",
     "prepare": "npm run build",
+    "size": "npm run build && node scripts/bundle-size.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --project tsconfig.prod.json --noEmit && tsc --project test/tsconfig.json"
