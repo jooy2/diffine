@@ -3,6 +3,12 @@
 /// Written here rather than in the screens, because every demo showing the same
 /// pair is what makes the options comparable: a reader turning wrapping on
 /// should see the wrapping change and nothing else.
+///
+/// Each pair is longer than it has to be to show one change, and deliberately:
+/// a demo is somewhere to scroll a comparison, fold it, search it and step
+/// between changes, and a pair that fits on one screen answers none of those.
+/// So the changes are spread from the top of each document to the bottom rather
+/// than gathered where they would all be visible at once.
 library;
 
 import 'dart:math' as math;
@@ -37,38 +43,215 @@ class Sample {
   final String language;
 }
 
-const String _codeBefore = '''
-Map<String, num> subtotal(List<Item> items) {
+const String _codeBefore = r'''
+const double taxRate = 0.08;
+
+class Line {
+  Line({required this.sku, required this.name, required this.price, this.quantity = 1});
+
+  final String sku;
+  final String name;
+  final num price;
+  int quantity;
+}
+
+num subtotal(List<Line> lines) {
   num total = 0;
 
-  for (final Item item in items) {
-    total += item.price * item.quantity;
+  for (final Line line in lines) {
+    total += line.price * line.quantity;
   }
 
-  return <String, num>{'total': total};
+  return total;
+}
+
+num tax(List<Line> lines) {
+  return subtotal(lines) * taxRate;
+}
+
+num total(List<Line> lines) {
+  return subtotal(lines) + tax(lines);
 }
 
 // Rounding is the caller's problem for now.
 String format(num amount) {
-  return '\\\$\${amount.toStringAsFixed(2)}';
+  return '$' + amount.toStringAsFixed(2);
+}
+
+Cart addItem(Cart cart, Product product, {int quantity = 1}) {
+  final Line? found = cart.lines.where((Line line) => line.sku == product.sku).firstOrNull;
+
+  if (found != null) {
+    found.quantity += quantity;
+
+    return cart;
+  }
+
+  cart.lines.add(
+    Line(sku: product.sku, name: product.name, price: product.price, quantity: quantity),
+  );
+
+  return cart;
+}
+
+Cart removeItem(Cart cart, String sku) {
+  cart.lines.removeWhere((Line line) => line.sku == sku);
+
+  return cart;
+}
+
+Cart setQuantity(Cart cart, String sku, int quantity) {
+  final Line? found = cart.lines.where((Line line) => line.sku == sku).firstOrNull;
+
+  if (found == null) {
+    return cart;
+  }
+
+  if (quantity < 1) {
+    return removeItem(cart, sku);
+  }
+
+  found.quantity = quantity;
+
+  return cart;
+}
+
+int itemCount(Cart cart) {
+  return cart.lines.fold(0, (int sum, Line line) => sum + line.quantity);
+}
+
+bool isEmpty(Cart cart) {
+  return cart.lines.isEmpty;
+}
+
+Summary summarise(Cart cart) {
+  return Summary(
+    lines: cart.lines.length,
+    items: itemCount(cart),
+    total: format(total(cart.lines)),
+  );
 }
 ''';
 
-const String _codeAfter = '''
-Map<String, num> subtotal(List<Item> items, {String currency = 'USD'}) {
+const String _codeAfter = r'''
+const Map<String, int> decimals = <String, int>{'USD': 2, 'EUR': 2, 'JPY': 0, 'KRW': 0};
+const Map<String, double> taxRates = <String, double>{'US': 0.08, 'DE': 0.19, 'KR': 0.1};
+
+class Line {
+  Line({
+    required this.sku,
+    required this.name,
+    required this.price,
+    required this.currency,
+    this.quantity = 1,
+  });
+
+  final String sku;
+  final String name;
+  final num price;
+  final String currency;
+  int quantity;
+}
+
+num subtotal(List<Line> lines, {String currency = 'USD'}) {
   num total = 0;
 
-  for (final Item item in items) {
-    total += item.price * item.quantity;
+  for (final Line line in lines) {
+    total += line.price * line.quantity;
   }
 
-  final num tax = total * rateFor(currency);
+  return round(total, currency);
+}
 
-  return <String, num>{'total': total + tax, 'tax': tax};
+num round(num amount, String currency) {
+  return num.parse(amount.toStringAsFixed(decimals[currency] ?? 2));
+}
+
+num tax(List<Line> lines, {String region = 'US', String currency = 'USD'}) {
+  return round(subtotal(lines, currency: currency) * (taxRates[region] ?? 0), currency);
+}
+
+num total(List<Line> lines, {String region = 'US', String currency = 'USD'}) {
+  return round(
+    subtotal(lines, currency: currency) + tax(lines, region: region, currency: currency),
+    currency,
+  );
 }
 
 String format(num amount, {String currency = 'USD'}) {
   return NumberFormat.simpleCurrency(name: currency).format(amount);
+}
+
+Cart addItem(Cart cart, Product product, {int quantity = 1}) {
+  final Line? found = cart.lines.where((Line line) => line.sku == product.sku).firstOrNull;
+
+  if (found != null) {
+    found.quantity += quantity;
+
+    return cart;
+  }
+
+  cart.lines.add(
+    Line(
+      sku: product.sku,
+      name: product.name,
+      price: product.price,
+      currency: product.currency ?? cart.currency,
+      quantity: quantity,
+    ),
+  );
+
+  return cart;
+}
+
+Cart removeItem(Cart cart, String sku) {
+  cart.lines.removeWhere((Line line) => line.sku == sku);
+
+  return cart;
+}
+
+Cart setQuantity(Cart cart, String sku, int quantity) {
+  final Line? found = cart.lines.where((Line line) => line.sku == sku).firstOrNull;
+
+  if (found == null) {
+    return cart;
+  }
+
+  if (quantity < 1) {
+    return removeItem(cart, sku);
+  }
+
+  found.quantity = quantity;
+
+  return cart;
+}
+
+Cart applyDiscount(Cart cart, String code) {
+  final Discount? rule = cart.discounts[code];
+
+  if (rule == null) {
+    return cart;
+  }
+
+  cart.discount = Discount(code: code, off: rule.off);
+
+  return cart;
+}
+
+int itemCount(Cart cart) {
+  return cart.lines.fold(0, (int sum, Line line) => sum + line.quantity);
+}
+
+Summary summarise(Cart cart) {
+  return Summary(
+    lines: cart.lines.length,
+    items: itemCount(cart),
+    currency: cart.currency,
+    total: format(
+      total(cart.lines, region: cart.region, currency: cart.currency),
+      currency: cart.currency,
+    ),
+  );
 }
 ''';
 
@@ -80,6 +263,28 @@ inside a change is then compared again, one level down, which says what happened
 inside them.
 
 The result is one flat list of rows.
+
+Matching the lines
+
+The two documents are cut into lines and walked against each other. A line that
+appears on both sides in the same order is left alone.
+
+Everything else is a change: a run of lines that arrived, a run that went away,
+or a run that was replaced.
+
+Looking inside a change
+
+A replaced run is compared again, word by word. A word is a run of letters and
+digits, and everything between two words is its own token.
+
+Where a line changed by a digit or two, the words are cut again into graphemes,
+so that a number that moved is a number that moved rather than a new one.
+
+What comes back
+
+Each row holds a line, a kind and a number.
+
+A viewer draws the rows in order and needs nothing else.
 ''';
 
 const String _proseAfter = '''
@@ -91,6 +296,32 @@ happened inside them — words, or graphemes where a number moved.
 
 The result is one flat list of rows, in document order.
 Each row holds whichever side has a line on it.
+
+Matching the lines
+
+The two documents are cut into lines and walked against each other, longest run
+of agreement first. A line that appears on both sides in the same order is left
+alone.
+
+Everything else is a change: a run of lines that arrived, a run that went away,
+or a run that was replaced. A run that arrived beside one that went away is read
+as a replacement rather than as two changes.
+
+Looking inside a change
+
+A replaced run is compared again, word by word. A word is a run of letters and
+digits, and everything between two words is its own token, so a comma that moved
+is a comma that moved.
+
+Where a line changed by a digit or two, the words are cut again into graphemes,
+so that a number that moved is a number that moved rather than a new one.
+
+What comes back
+
+Each row holds a line, a kind, a number on each side, and the pieces inside it.
+
+A viewer draws the rows in order and needs nothing else. Nothing in the answer
+is a widget, so a build script can ask for one and hand it on.
 ''';
 
 /// Two versions of a source file.
