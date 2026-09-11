@@ -13,13 +13,16 @@
  * comment, a template string, a heredoc — and a line handed over on its own
  * would be coloured as though the document started there.
  *
- * Nothing here is loaded until a `language` is asked for. Both the library and
- * each grammar are behind an `import()`, so a page with a viewer that colours
- * nothing downloads none of it.
+ * Nothing here is loaded until a `language` is asked for, and that includes
+ * this module. The library and each grammar are behind an `import()`, and so is
+ * everything below — `useSyntax.ts` fetches this file the first time a viewer
+ * is given a language, so a page with a viewer that colours nothing downloads
+ * none of it and a bundler writes none of it into the chunk the page starts
+ * with.
  */
 
 import type { DiffineToken } from '../../types.js';
-import { LANGUAGES } from './catalogue.js';
+import { GRAMMARS } from './grammars.js';
 
 /** The lines of a document, each as the runs it is coloured in. */
 export type LineTokens = readonly (readonly DiffineToken[])[];
@@ -69,14 +72,14 @@ export function loadLanguage(language: string): Promise<boolean> {
     return held;
   }
 
-  const entry = LANGUAGES[language];
+  const fetchGrammar = GRAMMARS[language];
 
-  if (!entry) {
+  if (!fetchGrammar) {
     return Promise.resolve(false);
   }
 
   const arriving = (async () => {
-    const [hljs, grammar] = await Promise.all([core(), entry.load().catch(() => null)]);
+    const [hljs, grammar] = await Promise.all([core(), fetchGrammar().catch(() => null)]);
 
     if (!hljs || !grammar) {
       return false;

@@ -1,12 +1,12 @@
 /**
- * The languages the components can colour, and how each one is fetched.
+ * The languages the components know, and what each one is called.
  *
- * A grammar is a module of its own, and every one of them is behind an
- * `import()` — so an application that never sets `language` downloads none of
- * them, and one that sets it to `python` downloads Python. That is the whole
- * reason this file is a list of thunks rather than a list of imports: written
- * the other way, the cost of every grammar here would land on every page with a
- * viewer on it, highlighted or not.
+ * Names, and nothing but names. Every grammar is a module of its own fetched
+ * when it is asked for, and the fetches are in `grammars.ts` rather than here,
+ * because a bundler reads them while it is still deciding what a build
+ * contains: a list of names that sat beside thirty-four `import()` calls would
+ * write thirty-five grammar files into the build of a page that colours
+ * nothing. Split in two, a menu costs a menu and a grammar costs a grammar.
  *
  * The names are English and are not translated. They are what the language
  * calls itself, and `TypeScript` is `TypeScript` in every locale.
@@ -14,50 +14,45 @@
 
 import type { DiffineLanguageOption } from '../../types.js';
 
-/** One language: what to call it, and how to fetch the grammar for it. */
-export interface LanguageEntry {
-  name: string;
-  load: () => Promise<{ default: import('highlight.js').LanguageFn }>;
-}
-
 /** What `language` is when nothing is being coloured. */
 export const PLAIN = 'plain';
 
-export const LANGUAGES: Record<string, LanguageEntry> = {
-  bash: { name: 'Bash', load: () => import('highlight.js/lib/languages/bash') },
-  c: { name: 'C', load: () => import('highlight.js/lib/languages/c') },
-  cpp: { name: 'C++', load: () => import('highlight.js/lib/languages/cpp') },
-  csharp: { name: 'C#', load: () => import('highlight.js/lib/languages/csharp') },
-  css: { name: 'CSS', load: () => import('highlight.js/lib/languages/css') },
-  dart: { name: 'Dart', load: () => import('highlight.js/lib/languages/dart') },
-  diff: { name: 'Diff', load: () => import('highlight.js/lib/languages/diff') },
-  dockerfile: { name: 'Dockerfile', load: () => import('highlight.js/lib/languages/dockerfile') },
-  go: { name: 'Go', load: () => import('highlight.js/lib/languages/go') },
-  graphql: { name: 'GraphQL', load: () => import('highlight.js/lib/languages/graphql') },
-  ini: { name: 'INI / TOML', load: () => import('highlight.js/lib/languages/ini') },
-  java: { name: 'Java', load: () => import('highlight.js/lib/languages/java') },
-  javascript: { name: 'JavaScript', load: () => import('highlight.js/lib/languages/javascript') },
-  json: { name: 'JSON', load: () => import('highlight.js/lib/languages/json') },
-  kotlin: { name: 'Kotlin', load: () => import('highlight.js/lib/languages/kotlin') },
-  less: { name: 'Less', load: () => import('highlight.js/lib/languages/less') },
-  lua: { name: 'Lua', load: () => import('highlight.js/lib/languages/lua') },
-  markdown: { name: 'Markdown', load: () => import('highlight.js/lib/languages/markdown') },
-  nginx: { name: 'Nginx', load: () => import('highlight.js/lib/languages/nginx') },
-  objectivec: { name: 'Objective-C', load: () => import('highlight.js/lib/languages/objectivec') },
-  perl: { name: 'Perl', load: () => import('highlight.js/lib/languages/perl') },
-  php: { name: 'PHP', load: () => import('highlight.js/lib/languages/php') },
-  powershell: { name: 'PowerShell', load: () => import('highlight.js/lib/languages/powershell') },
-  python: { name: 'Python', load: () => import('highlight.js/lib/languages/python') },
-  r: { name: 'R', load: () => import('highlight.js/lib/languages/r') },
-  ruby: { name: 'Ruby', load: () => import('highlight.js/lib/languages/ruby') },
-  rust: { name: 'Rust', load: () => import('highlight.js/lib/languages/rust') },
-  scala: { name: 'Scala', load: () => import('highlight.js/lib/languages/scala') },
-  scss: { name: 'SCSS', load: () => import('highlight.js/lib/languages/scss') },
-  sql: { name: 'SQL', load: () => import('highlight.js/lib/languages/sql') },
-  swift: { name: 'Swift', load: () => import('highlight.js/lib/languages/swift') },
-  typescript: { name: 'TypeScript', load: () => import('highlight.js/lib/languages/typescript') },
-  xml: { name: 'HTML / XML', load: () => import('highlight.js/lib/languages/xml') },
-  yaml: { name: 'YAML', load: () => import('highlight.js/lib/languages/yaml') }
+/** What each language the components can colour is called. */
+const NAMES: Record<string, string> = {
+  bash: 'Bash',
+  c: 'C',
+  cpp: 'C++',
+  csharp: 'C#',
+  css: 'CSS',
+  dart: 'Dart',
+  diff: 'Diff',
+  dockerfile: 'Dockerfile',
+  go: 'Go',
+  graphql: 'GraphQL',
+  ini: 'INI / TOML',
+  java: 'Java',
+  javascript: 'JavaScript',
+  json: 'JSON',
+  kotlin: 'Kotlin',
+  less: 'Less',
+  lua: 'Lua',
+  markdown: 'Markdown',
+  nginx: 'Nginx',
+  objectivec: 'Objective-C',
+  perl: 'Perl',
+  php: 'PHP',
+  powershell: 'PowerShell',
+  python: 'Python',
+  r: 'R',
+  ruby: 'Ruby',
+  rust: 'Rust',
+  scala: 'Scala',
+  scss: 'SCSS',
+  sql: 'SQL',
+  swift: 'Swift',
+  typescript: 'TypeScript',
+  xml: 'HTML / XML',
+  yaml: 'YAML'
 };
 
 /**
@@ -70,7 +65,7 @@ export const LANGUAGES: Record<string, LanguageEntry> = {
  */
 export const DIFFINE_LANGUAGES: readonly DiffineLanguageOption[] = [
   { id: PLAIN, name: 'Plain' },
-  ...Object.entries(LANGUAGES).map(([id, entry]) => ({ id, name: entry.name }))
+  ...Object.entries(NAMES).map(([id, name]) => ({ id, name }))
 ];
 
 /** What to call a language, which for one nobody knows is what it was called. */
@@ -79,5 +74,5 @@ export function languageName(language: string | undefined): string {
     return 'Plain';
   }
 
-  return LANGUAGES[language]?.name ?? language;
+  return NAMES[language] ?? language;
 }

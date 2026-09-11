@@ -3,7 +3,31 @@
 import * as React from 'react';
 import type { DiffineHighlight } from '../../types.js';
 import { PLAIN } from './catalogue.js';
-import { isLoaded, loadLanguage, tokenizeLines } from './engine.js';
+
+/** Everything the colouring needs, once the module holding it has arrived. */
+type Engine = typeof import('./engine.js');
+
+/**
+ * The highlighter, which is itself fetched rather than imported.
+ *
+ * `engine.ts` reaches highlight.js and thirty-four grammars, and a bundler that
+ * saw a plain import of it would write all of that into the build of every page
+ * with a viewer on it — most of which colour nothing. Behind an `import()` the
+ * cost belongs to the first viewer that is given a `language`, and a build that
+ * never mentions one carries none of it.
+ *
+ * It is a module-level pair rather than state because it is a fact about the
+ * page rather than about a component: the second viewer to ask finds the
+ * library already here, and a render is allowed to read that.
+ */
+let engine: Engine | null = null;
+let fetching: Promise<Engine | null> | null = null;
+
+function highlighter(): Promise<Engine | null> {
+  fetching ??= import('./engine.js').then((module) => (engine = module)).catch(() => null);
+
+  return fetching;
+}
 
 /**
  * The `highlight` a `language` amounts to, or nothing while there is no grammar.
@@ -18,6 +42,10 @@ import { isLoaded, loadLanguage, tokenizeLines } from './engine.js';
  * The two documents are tokenised once per comparison rather than once per
  * render, and the lines they are tokenised from are the comparison's own — so
  * entry `n` is line `n`, with no second opinion about where a line ends.
+ *
+ * The library itself arrives the same way and before any of it, so a viewer
+ * given a language paints three times rather than twice: the document, then the
+ * document with the grammar's colours, and nothing in between waits on either.
  *
  * That tokenising is the expensive part of an editor keystroke, and by a long
  * way: a grammar over five thousand lines costs tens of milliseconds where
@@ -42,20 +70,23 @@ export function useSyntaxHighlight(
    * again: a grammar that arrived after the last one did.
    */
   const [, arrived] = React.useReducer((count: number) => count + 1, 0);
-  const ready = wanted && isLoaded(wanted) ? wanted : null;
+  const loaded = engine;
+  const ready = wanted && loaded?.isLoaded(wanted) ? wanted : null;
 
   React.useEffect(() => {
-    if (!wanted || isLoaded(wanted)) {
+    if (!wanted || engine?.isLoaded(wanted)) {
       return;
     }
 
     let live = true;
 
-    void loadLanguage(wanted).then((loaded) => {
-      if (live && loaded) {
-        arrived();
-      }
-    });
+    void highlighter()
+      .then((module) => module?.loadLanguage(wanted) ?? false)
+      .then((coloured) => {
+        if (live && coloured) {
+          arrived();
+        }
+      });
 
     return () => {
       live = false;
@@ -66,12 +97,12 @@ export function useSyntaxHighlight(
   const settledAfter = React.useDeferredValue(after);
 
   const beforeTokens = React.useMemo(
-    () => (ready ? tokenizeLines(settled, ready) : null),
-    [ready, settled]
+    () => (ready ? (loaded?.tokenizeLines(settled, ready) ?? null) : null),
+    [loaded, ready, settled]
   );
   const afterTokens = React.useMemo(
-    () => (ready ? tokenizeLines(settledAfter, ready) : null),
-    [ready, settledAfter]
+    () => (ready ? (loaded?.tokenizeLines(settledAfter, ready) ?? null) : null),
+    [loaded, ready, settledAfter]
   );
 
   return React.useMemo(() => {
