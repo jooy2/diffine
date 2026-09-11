@@ -20,6 +20,7 @@ import type {
   DiffImageRegion,
   DiffineImageUnchanged,
   DiffineImageViewport,
+  DiffineImageWheel,
   DiffineImageStrings
 } from '../../types.js';
 import { useIsomorphicLayoutEffect } from '../../internal/layout.js';
@@ -58,6 +59,11 @@ export interface ImageDiffPaneProps {
   /** Whether a picture can be dropped on it, and what to do with one. */
   editable: boolean;
   onFile?: (file: File) => void;
+  /**
+   * What the wheel does: zoom about the pointer, or move the picture and leave
+   * the page to scroll once the whole frame is in view.
+   */
+  wheel: DiffineImageWheel;
   /** Whether there is anything to draw at all. */
   blank: boolean;
   /** Nothing to draw yet, and why. */
@@ -90,6 +96,7 @@ export function ImageDiffPane({
   chequer,
   editable,
   onFile,
+  wheel,
   blank,
   loading,
   failed,
@@ -109,10 +116,10 @@ export function ImageDiffPane({
    * refuse the page a scroll, and one that was torn down and put back on every
    * render would be a listener missing during the render that moved it.
    */
-  const latest = React.useRef({ viewport, frame, box, onViewport });
+  const latest = React.useRef({ viewport, frame, box, onViewport, wheel });
 
   useIsomorphicLayoutEffect(() => {
-    latest.current = { viewport, frame, box, onViewport };
+    latest.current = { viewport, frame, box, onViewport, wheel };
   });
 
   /** The pane's size, in the pixels CSS counts in. */
@@ -198,12 +205,13 @@ export function ImageDiffPane({
   ]);
 
   /**
-   * The wheel, which does one of three things.
+   * The wheel.
    *
-   * Held with the modifier, it zooms about the pointer. On a picture larger
-   * than the pane it moves it. On a picture that is already all in view it does
-   * nothing at all — the page it is on scrolls instead, which is what a reader
-   * scrolling past a comparison meant.
+   * What it does is {@link ImageDiffPaneProps.wheel}: zoom about the pointer,
+   * which is what a picture viewer does, or move a picture larger than its pane
+   * and leave the page to scroll when the whole frame is already in view. Shift
+   * pans in the first, the modifier zooms in the second, so either way both are
+   * within reach.
    */
   React.useEffect(() => {
     const element = paneRef.current;
@@ -214,15 +222,26 @@ export function ImageDiffPane({
 
     const onWheel = (event: WheelEvent) => {
       const held = latest.current;
-      const zooming = event.ctrlKey || event.metaKey;
+      const zooming = held.wheel === 'zoom' ? !event.shiftKey : event.ctrlKey || event.metaKey;
 
-      if (!zooming && held.viewport.scale <= fitScale(held.frame, held.box)) {
+      if (
+        !zooming &&
+        held.wheel === 'pan' &&
+        held.viewport.scale <= fitScale(held.frame, held.box)
+      ) {
         return;
       }
 
       event.preventDefault();
 
       const bounds = element.getBoundingClientRect();
+      /*
+       * What a wheel reports is not pixels unless it says it is. A mouse on
+       * Windows and Firefox counts in lines and a page-up counts in pages, and
+       * reading either as a pixel is the difference between a notch that zooms
+       * and a notch that does nothing at all.
+       */
+      const step = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? held.box.height : 1;
 
       if (zooming) {
         held.onViewport(
@@ -234,7 +253,7 @@ export function ImageDiffPane({
             // size on two devices. Reading it as an exponent is what keeps a
             // trackpad's hundred small deltas smooth and a mouse's three large
             // ones from crossing the whole range.
-            scale: held.viewport.scale * Math.exp(-event.deltaY / 320),
+            scale: held.viewport.scale * Math.exp((-event.deltaY * step) / 400),
             paneX: event.clientX - bounds.left,
             paneY: event.clientY - bounds.top
           })
@@ -243,7 +262,7 @@ export function ImageDiffPane({
         return;
       }
 
-      held.onViewport(panBy(held.viewport, held.frame, -event.deltaX, -event.deltaY));
+      held.onViewport(panBy(held.viewport, held.frame, -event.deltaX * step, -event.deltaY * step));
     };
 
     element.addEventListener('wheel', onWheel, { passive: false });

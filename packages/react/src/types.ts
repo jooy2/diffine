@@ -992,6 +992,21 @@ export type DiffineImageView = 'split' | 'overlay' | 'wipe' | 'mask';
 export type DiffineImageUnchanged = 'keep' | 'dim' | 'hide';
 
 /**
+ * What the wheel does over a picture comparison.
+ *
+ * - `zoom` — it zooms about the pointer, a notch at a time, which is what a
+ *   picture viewer does. Shift with it moves the picture instead. The page a
+ *   comparison is on does not scroll while the pointer is over it.
+ * - `pan` — it moves a picture larger than its pane and lets the page scroll
+ *   when the whole frame is already in view, so a reader scrolling past a
+ *   comparison scrolls past it. The modifier zooms.
+ *
+ * Both are the right answer to different pages. A comparison that is the page
+ * wants the first; one sitting in the middle of an article wants the second.
+ */
+export type DiffineImageWheel = 'zoom' | 'pan';
+
+/**
  * A picture, as an application hands one over.
  *
  * A `Blob` is the usual answer, which is what a `<input type="file">` gives and

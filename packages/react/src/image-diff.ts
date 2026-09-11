@@ -22,6 +22,7 @@ export type {
   DiffineImageUnchanged,
   DiffineImageView,
   DiffineImageViewport,
+  DiffineImageWheel,
   DiffineLocale,
   DiffineSide
 } from './types.js';

@@ -239,9 +239,33 @@ ImageDiff(
 Both panes share one viewport, so there is nothing to keep in step: a drag, a wheel or a button moves the pair.
 
 - Drag to move, anywhere in a pane.
-- Ctrl or Cmd with the wheel to zoom about the pointer. Plain wheel moves a picture larger than its pane, and scrolls the page when the whole frame is already in view.
+- The wheel zooms about the pointer, a notch at a time. Shift with it moves the picture instead.
 - The buttons in the bar zoom about the middle, and the last of them fits the frame back into the pane.
 - With the keyboard: the arrows move, `+` and `−` zoom, and Shift makes the arrows move further.
+
+`wheel` is the one of those worth a second thought. It is `zoom` by default, which is what a picture viewer does and what a comparison that is the page wants — and it means the page does not scroll while the pointer is over a pane. A comparison sitting in the middle of an article wants the other answer, because a reader scrolling past it should scroll past it:
+
+::: fw react
+
+```tsx
+<ImageDiff before={saved} after={rendered} wheel="pan" />
+```
+
+:::
+
+::: fw flutter
+
+```dart
+ImageDiff(
+  before: DiffineEncodedImage(saved),
+  after: DiffineEncodedImage(rendered),
+  wheel: DiffineImageWheel.pan,
+);
+```
+
+:::
+
+`pan` moves a picture larger than its pane, lets the page scroll once the whole frame is in view, and zooms with Ctrl or Cmd held.
 
 Above its own size the picture is drawn crisp rather than smooth. At four hundred per cent the individual pixels are the thing being looked at, and interpolation blurs them.
 

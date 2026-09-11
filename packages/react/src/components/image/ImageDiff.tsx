@@ -9,6 +9,7 @@ import type {
   DiffineImageInput,
   DiffineImageUnchanged,
   DiffineImageView,
+  DiffineImageWheel,
   DiffineImageViewport,
   DiffineLocale,
   DiffineMode,
@@ -149,6 +150,20 @@ export interface ImageDiffProps extends Omit<
   onWipeChange?: (wipe: number) => void;
 
   /**
+   * What the wheel does over a pane.
+   *
+   * `zoom` zooms about the pointer a notch at a time, which is what a picture
+   * viewer does, and Shift with it moves the picture instead. `pan` moves a
+   * picture larger than its pane and lets the page scroll once the whole frame
+   * is in view, with the modifier to zoom — which is what a comparison sitting
+   * in the middle of an article wants, because a reader scrolling past it
+   * should scroll past it.
+   *
+   * @default 'zoom'
+   */
+  wheel?: DiffineImageWheel;
+
+  /**
    * How many pixels a picture is decoded at, at most.
    *
    * A photograph out of a modern camera is twenty-four million pixels, and two
@@ -286,6 +301,7 @@ export function ImageDiff({
   onFadeChange,
   wipe: wipeProp,
   onWipeChange,
+  wheel = 'zoom',
   maxPixels = 4_000_000,
   marks = true,
   outlines = true,
@@ -540,6 +556,7 @@ export function ImageDiff({
     ground: palette?.ground ?? 'transparent',
     chequer: palette?.chequer ?? 'transparent',
     editable: editing,
+    wheel,
     strings
   };
 

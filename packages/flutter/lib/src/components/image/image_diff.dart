@@ -62,6 +62,7 @@ class ImageDiff extends StatefulWidget {
     this.diff = kDiffineImageDefaults,
     this.view = DiffineImageView.split,
     this.unchanged = DiffineImageUnchanged.keep,
+    this.wheel = DiffineImageWheel.zoom,
     this.fade,
     this.onFadeChanged,
     this.wipe,
@@ -145,6 +146,16 @@ class ImageDiff extends StatefulWidget {
   /// It is not part of [view] because it is a different question and holds
   /// across all four of those.
   final DiffineImageUnchanged unchanged;
+
+  /// What the wheel does over a pane.
+  ///
+  /// [DiffineImageWheel.zoom] zooms about the pointer a notch at a time, which
+  /// is what a picture viewer does, and Shift with it moves the picture
+  /// instead. [DiffineImageWheel.pan] moves a picture larger than its pane and
+  /// lets the screen scroll once the whole frame is in view, with the modifier
+  /// to zoom — which is what a comparison sitting in the middle of an article
+  /// wants, because a reader scrolling past it should scroll past it.
+  final DiffineImageWheel wheel;
 
   /// How much of the second picture is let through in
   /// [DiffineImageView.overlay], from 0 to 1.
@@ -761,6 +772,7 @@ class _ImageDiffState extends State<ImageDiff> {
       mask: widget.marks ? _mask : null,
       unchanged: widget.unchanged,
       stencil: _stencil,
+      wheel: widget.wheel,
       regions: widget.outlines ? regions : const <DiffImageRegion>[],
       current: current,
       blank: blank,

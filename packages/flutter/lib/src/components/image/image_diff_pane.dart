@@ -44,6 +44,7 @@ class ImageDiffPane extends StatefulWidget {
     this.mask,
     this.unchanged = DiffineImageUnchanged.keep,
     this.stencil,
+    this.wheel = DiffineImageWheel.zoom,
     this.editable = false,
     this.onChoose,
     this.wipe,
@@ -98,6 +99,10 @@ class ImageDiffPane extends StatefulWidget {
   /// The mask as something to cut the pictures down to, for the modes that do.
   final ui.Image? stencil;
 
+  /// What the wheel does: zoom about the pointer, or move the picture and leave
+  /// the screen to scroll once the whole frame is in view.
+  final DiffineImageWheel wheel;
+
   /// Whether a picture can be put into it.
   final bool editable;
 
@@ -138,21 +143,25 @@ class _ImageDiffPaneState extends State<ImageDiffPane> {
     });
   }
 
-  /// The wheel, which does one of three things.
+  /// The wheel.
   ///
-  /// Held with the modifier, it zooms about the pointer. On a picture larger
-  /// than the pane it moves it. On a picture that is already all in view it
-  /// does nothing at all — the screen it is on scrolls instead, which is what a
-  /// reader scrolling past a comparison meant.
+  /// What it does is [ImageDiffPane.wheel]: zoom about the pointer, which is
+  /// what a picture viewer does, or move a picture larger than its pane and
+  /// leave the screen to scroll when the whole frame is already in view. Shift
+  /// moves it in the first, the modifier zooms in the second, so either way
+  /// both are within reach.
   void _onPointerSignal(PointerSignalEvent event) {
     if (event is! PointerScrollEvent) {
       return;
     }
 
-    final bool zooming =
-        HardwareKeyboard.instance.isControlPressed || HardwareKeyboard.instance.isMetaPressed;
+    final bool zooming = widget.wheel == DiffineImageWheel.zoom
+        ? !HardwareKeyboard.instance.isShiftPressed
+        : HardwareKeyboard.instance.isControlPressed || HardwareKeyboard.instance.isMetaPressed;
 
-    if (!zooming && widget.viewport.scale <= fitScale(widget.frame, _box)) {
+    if (!zooming &&
+        widget.wheel == DiffineImageWheel.pan &&
+        widget.viewport.scale <= fitScale(widget.frame, _box)) {
       return;
     }
 
@@ -166,7 +175,7 @@ class _ImageDiffPaneState extends State<ImageDiffPane> {
           // size on two devices. Reading it as an exponent is what keeps a
           // trackpad's hundred small deltas smooth and a mouse's three large
           // ones from crossing the whole range.
-          scale: widget.viewport.scale * math.exp(-event.scrollDelta.dy / 320),
+          scale: widget.viewport.scale * math.exp(-event.scrollDelta.dy / 400),
           paneX: event.localPosition.dx,
           paneY: event.localPosition.dy,
         ),

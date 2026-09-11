@@ -18,6 +18,8 @@ The first release. Diffine for Flutter is the React package's engine and view, w
 
 - **`ImageDiff` compares two pictures and draws what changed over both of them.** Four views rather than one — side by side, faded over each other, wiped across, or the mask on its own — because no single one of them answers "did this move, or did it change colour". `tolerance` sets how much of a difference counts, `ignoreAntialiasing` drops what a renderer's smoothing left behind, and `align` finds the offset between two shots that are not lined up.
 
+  The wheel zooms about the pointer, which `wheel` turns back into moving the picture for a comparison sitting in the middle of a screen that scrolls.
+
   `unchanged` decides what happens to the parts nothing happened to: drawn faint with the change at full strength, or not drawn at all so that the change is read as a picture on a plain ground rather than as a mark on one.
 
   A picture arrives as the bytes of a file, as a `ui.Image`, or as a buffer of pixels. There is no URL among them: fetching one is the application's to do. `onChoose` is the same refusal for opening a file — the widget draws the button and the application answers it, because a picker is a plugin and which plugin is the application's choice.

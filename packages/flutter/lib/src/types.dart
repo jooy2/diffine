@@ -1199,6 +1199,23 @@ enum DiffineImageUnchanged {
   hide,
 }
 
+/// What the wheel does over a picture comparison.
+///
+/// Both are the right answer to different screens. A comparison that is the
+/// screen wants the first; one sitting in the middle of an article wants the
+/// second.
+enum DiffineImageWheel {
+  /// It zooms about the pointer, a notch at a time, which is what a picture
+  /// viewer does. Shift with it moves the picture instead, and the screen a
+  /// comparison is on does not scroll while the pointer is over it.
+  zoom,
+
+  /// It moves a picture larger than its pane and lets the screen scroll when
+  /// the whole frame is already in view, so a reader scrolling past a
+  /// comparison scrolls past it. The modifier zooms.
+  pan,
+}
+
 /// A picture, as an application hands one over.
 ///
 /// There is no URL among the three, and that is deliberate rather than missing.
