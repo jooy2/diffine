@@ -17,6 +17,8 @@
       "diffine-react/diff": ["../src/diff.ts"],
       "diffine-react/image": ["../src/image.ts"],
       "diffine-react/patch": ["../src/patch.ts"],
+      "diffine-react/text-diff": ["../src/text-diff.ts"],
+      "diffine-react/image-diff": ["../src/image-diff.ts"],
       "diffine-react/types": ["../src/types.ts"]
     }
   },
