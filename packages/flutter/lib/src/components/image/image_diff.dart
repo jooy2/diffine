@@ -58,6 +58,11 @@ class ImageDiff extends StatefulWidget {
     this.mode = DiffineMode.viewer,
     this.before,
     this.after,
+    this.pictures,
+    this.pictureLabels,
+    this.baseline = 0,
+    this.picturesResult,
+    this.onPicturesDiff,
     this.beforeLabel,
     this.afterLabel,
     this.onDiff,
@@ -129,6 +134,44 @@ class ImageDiff extends StatefulWidget {
   /// The pictures are still needed. A result says what happened to each pixel
   /// and holds none of them, so both sides go on being decoded to be drawn.
   final DiffImageResult? result;
+
+  /// Several pictures rather than two, compared all at once.
+  ///
+  /// Three renderings of one screen from three machines, four exports of one
+  /// asset, a saved version against the last five runs. Each is drawn in a pane
+  /// of its own with what it disagrees with the baseline about marked on it,
+  /// and the pane holding the baseline is marked with everywhere anything
+  /// disagrees — because the baseline disagrees with nothing, and a pane with
+  /// nothing on it reads as a pane nobody looked at.
+  ///
+  /// Passing it is what turns the list on: [before] and [after] are then
+  /// ignored, and so is everything that names one of them. At most
+  /// [kMostPictures], which is what the comparison holds.
+  ///
+  /// [DiffineImageView.overlay] and [DiffineImageView.wipe] are a question
+  /// about two pictures and fall back to [DiffineImageView.split] for more than
+  /// two. The other two work for any number.
+  final List<DiffineImageContent>? pictures;
+
+  /// What each of them is called, in the same order. A name it has no entry for
+  /// falls back to its place in the list.
+  final List<String>? pictureLabels;
+
+  /// Which of them the rest are counted against, as an index into [pictures].
+  ///
+  /// Ignored without [pictures], where the first picture is always the one the
+  /// second is compared with.
+  final int baseline;
+
+  /// A comparison of the list that has already been worked out, drawn as it is.
+  final DiffImagesResult? picturesResult;
+
+  /// The comparison of the list, every time it is worked out again.
+  ///
+  /// `onDiff` for a list. A comparison of several is a different answer from a
+  /// comparison of two rather than a longer one, so it arrives through a
+  /// different callback.
+  final ValueChanged<DiffImagesResult?>? onPicturesDiff;
 
   /// How the two are compared.
   final DiffImageOptions diff;
@@ -264,19 +307,27 @@ class ImageDiff extends StatefulWidget {
 }
 
 class _ImageDiffState extends State<ImageDiff> {
-  Picture? _beforePicture;
-  Picture? _afterPicture;
-  DiffineImageContent? _beforeContent;
-  DiffineImageContent? _afterContent;
+  /*
+   * Every picture, in the order the panes draw them.
+   *
+   * A pair is the list of two the arguments name, so the loading, the frame and
+   * the panes are written once for a list and a pair is a list of two. What the
+   * pair keeps of its own is the comparison: `diffImage` answers more about two
+   * pictures than `diffImages` does — which of them a pixel arrived in, and how
+   * far apart the two are on average — and a list has nowhere to put either.
+   */
+  final List<Picture?> _held = <Picture?>[];
+  final List<DiffineImageContent?> _contents = <DiffineImageContent?>[];
+  final List<bool> _loading = <bool>[];
+  final List<bool> _failed = <bool>[];
+
   DiffineImageContent? _beforeChosen;
   DiffineImageContent? _afterChosen;
-  bool _beforeLoading = false;
-  bool _afterLoading = false;
-  bool _beforeFailed = false;
-  bool _afterFailed = false;
 
   DiffImageResult? _comparison;
+  DiffImagesResult? _several;
   ui.Image? _mask;
+  List<ui.Image?> _masks = const <ui.Image?>[];
   Brightness? _maskBrightness;
   ui.Image? _stencil;
 
@@ -325,140 +376,230 @@ class _ImageDiffState extends State<ImageDiff> {
 
   @override
   void dispose() {
-    releasePicture(_beforePicture);
-    releasePicture(_afterPicture);
+    for (final Picture? picture in _held) {
+      releasePicture(picture);
+    }
+
     _mask?.dispose();
     _stencil?.dispose();
+    _disposeMasks();
     super.dispose();
+  }
+
+  void _disposeMasks() {
+    for (final ui.Image? mask in _masks) {
+      mask?.dispose();
+    }
+
+    _masks = const <ui.Image?>[];
   }
 
   DiffineImageContent? get _wantedBefore => _beforeChosen ?? widget.before;
 
   DiffineImageContent? get _wantedAfter => _afterChosen ?? widget.after;
 
-  bool get _split => widget.view == DiffineImageView.split;
+  /// Whether the comparison is of a list rather than of a pair.
+  bool get _many => widget.pictures != null;
+
+  /// Every picture the arguments ask for, in the order the panes draw them.
+  List<DiffineImageContent?> get _wanted => _many
+      ? List<DiffineImageContent?>.of(widget.pictures!)
+      : <DiffineImageContent?>[_wantedBefore, _wantedAfter];
+
+  /// What each pane is called.
+  List<String> get _labels {
+    if (!_many) {
+      final DiffineStrings strings = stringsFor(widget.locale, widget.strings);
+
+      return <String>[widget.beforeLabel ?? strings.before, widget.afterLabel ?? strings.after];
+    }
+
+    final DiffineStrings strings = stringsFor(widget.locale, widget.strings);
+    final List<String>? given = widget.pictureLabels;
+
+    return <String>[
+      for (int at = 0; at < widget.pictures!.length; at += 1)
+        given != null && at < given.length
+            ? given[at]
+            : fill(strings.picture, <String, String>{'number': '${at + 1}'}),
+    ];
+  }
+
+  /// How the pictures are laid out, which is [ImageDiff.view] unless that is a
+  /// question about two of them.
+  ///
+  /// Fading one over another and wiping one across another both ask "which
+  /// two", and a list of more than two has no answer — so they fall back to the
+  /// panes, which is the view that says what every picture is.
+  DiffineImageView get _laid =>
+      _held.length > 2 &&
+          (widget.view == DiffineImageView.overlay || widget.view == DiffineImageView.wipe)
+      ? DiffineImageView.split
+      : widget.view;
+
+  bool get _laidSplit => _laid == DiffineImageView.split;
 
   void _load() {
-    _loadSide(DiffineSide.before);
-    _loadSide(DiffineSide.after);
+    final List<DiffineImageContent?> wanted = _wanted;
+
+    // The list can grow and shrink, and what is dropped off the end is a
+    // picture nothing is going to draw again.
+    while (_held.length > wanted.length) {
+      releasePicture(_held.removeLast());
+      _contents.removeLast();
+      _loading.removeLast();
+      _failed.removeLast();
+    }
+
+    while (_held.length < wanted.length) {
+      _held.add(null);
+      _contents.add(null);
+      _loading.add(false);
+      _failed.add(false);
+    }
+
+    for (int at = 0; at < wanted.length; at += 1) {
+      _loadOne(at, wanted[at]);
+    }
   }
 
-  void _loadSide(DiffineSide side) {
-    final DiffineImageContent? wanted = side == DiffineSide.before ? _wantedBefore : _wantedAfter;
-    final DiffineImageContent? held = side == DiffineSide.before ? _beforeContent : _afterContent;
-
-    if (wanted == held) {
+  void _loadOne(int at, DiffineImageContent? wanted) {
+    if (wanted == _contents[at]) {
       return;
     }
 
-    if (side == DiffineSide.before) {
-      _beforeContent = wanted;
-      _beforeFailed = false;
-      _beforeLoading = wanted != null;
-    } else {
-      _afterContent = wanted;
-      _afterFailed = false;
-      _afterLoading = wanted != null;
-    }
+    _contents[at] = wanted;
+    _failed[at] = false;
+    _loading[at] = wanted != null;
 
     if (wanted == null) {
-      _settle(side, null, failed: false);
+      _settle(at, null, failed: false);
 
       return;
     }
 
-    unawaited(_decode(side, wanted));
+    unawaited(_decode(at, wanted));
   }
 
-  Future<void> _decode(DiffineSide side, DiffineImageContent content) async {
+  Future<void> _decode(int at, DiffineImageContent content) async {
     try {
       final Picture picture = await decodeImage(content, widget.maxPixels);
 
-      if (!mounted) {
+      if (!mounted || at >= _contents.length || _contents[at] != content) {
         releasePicture(picture);
 
         return;
       }
 
-      final DiffineImageContent? still = side == DiffineSide.before
-          ? _beforeContent
-          : _afterContent;
-
-      if (still != content) {
-        releasePicture(picture);
-
-        return;
-      }
-
-      _settle(side, picture, failed: false);
+      _settle(at, picture, failed: false);
     } on Object {
-      if (mounted) {
-        _settle(side, null, failed: true);
+      if (mounted && at < _contents.length && _contents[at] == content) {
+        _settle(at, null, failed: true);
       }
     }
   }
 
-  void _settle(DiffineSide side, Picture? picture, {required bool failed}) {
+  void _settle(int at, Picture? picture, {required bool failed}) {
     setState(() {
-      if (side == DiffineSide.before) {
-        releasePicture(_beforePicture);
-        _beforePicture = picture;
-        _beforeLoading = false;
-        _beforeFailed = failed;
-      } else {
-        releasePicture(_afterPicture);
-        _afterPicture = picture;
-        _afterLoading = false;
-        _afterFailed = failed;
-      }
+      releasePicture(_held[at]);
+      _held[at] = picture;
+      _loading[at] = false;
+      _failed[at] = failed;
     });
 
     _recompare();
   }
 
   void _recompare() {
-    final Picture? before = _beforePicture;
-    final Picture? after = _afterPicture;
-    final DiffImageResult? given = widget.result;
-    final DiffImageResult? worked =
-        given ??
-        (before == null || after == null
-            ? null
-            : diffImage(before.pixels, after.pixels, widget.diff));
+    final List<Picture?> held = List<Picture?>.of(_held);
+    final bool ready = held.length >= 2 && held.every((Picture? one) => one != null);
+    final DiffImageResult? pair = _many || widget.result != null || !ready
+        ? widget.result
+        : diffImage(held[0]!.pixels, held[1]!.pixels, widget.diff);
+    final DiffImagesResult? several = !_many || widget.picturesResult != null || !ready
+        ? widget.picturesResult
+        : diffImages(
+            <DiffPixels>[for (final Picture? one in held) one!.pixels],
+            DiffImagesOptions(
+              baseline: widget.baseline.clamp(0, held.length - 1),
+              tolerance: widget.diff.tolerance,
+              ignoreAntialiasing: widget.diff.ignoreAntialiasing,
+              align: widget.diff.align,
+              alignRadius: widget.diff.alignRadius,
+              blockSize: widget.diff.blockSize,
+              maxRegions: widget.diff.maxRegions,
+            ),
+          );
 
     setState(() {
-      _comparison = worked;
+      _comparison = _many ? null : pair;
+      _several = _many ? several : null;
       _mask?.dispose();
       _mask = null;
+      _disposeMasks();
       _stencil?.dispose();
       _stencil = null;
     });
 
     WidgetsBinding.instance.addPostFrameCallback((Duration _) {
       if (mounted) {
-        widget.onDiff?.call(worked);
+        if (_many) {
+          widget.onPicturesDiff?.call(several);
+        } else {
+          widget.onDiff?.call(pair);
+        }
       }
     });
   }
 
   Future<void> _buildMask(DiffineTheme theme) async {
     final DiffImageResult? found = _comparison;
+    final DiffImagesResult? several = _several;
 
-    if (found == null) {
+    if (found != null) {
+      final ui.Image? painted = await paintMask(found, theme.image);
+
+      if (!mounted || painted == null) {
+        painted?.dispose();
+
+        return;
+      }
+
+      setState(() {
+        _mask?.dispose();
+        _mask = painted;
+        _maskBrightness = theme.brightness;
+      });
+
       return;
     }
 
-    final ui.Image? painted = await paintMask(found, theme.image);
+    if (several == null) {
+      return;
+    }
 
-    if (!mounted || painted == null) {
-      painted?.dispose();
+    /*
+     * One drawable per picture: where that picture disagrees with the baseline,
+     * and everywhere anything disagrees for the pane holding the baseline —
+     * because the baseline disagrees with nothing, and a pane with nothing
+     * marked on it reads as a pane nobody looked at.
+     */
+    final List<ui.Image?> painted = <ui.Image?>[
+      for (int at = 0; at < several.areas.length; at += 1)
+        await paintBits(several, theme.image.changed, at == several.baseline ? 0xff : 1 << at),
+    ];
+
+    if (!mounted) {
+      for (final ui.Image? one in painted) {
+        one?.dispose();
+      }
 
       return;
     }
 
     setState(() {
-      _mask?.dispose();
-      _mask = painted;
+      _disposeMasks();
+      _masks = painted;
       _maskBrightness = theme.brightness;
     });
   }
@@ -468,12 +609,12 @@ class _ImageDiffState extends State<ImageDiff> {
   /// drawn the usual way has no use for one.
   Future<void> _buildStencil() async {
     final DiffImageResult? found = _comparison;
-
-    if (found == null) {
-      return;
-    }
-
-    final ui.Image? painted = await paintStencil(found);
+    final DiffImagesResult? several = _several;
+    final ui.Image? painted = found != null
+        ? await paintStencil(found)
+        : several != null
+        ? await stencilBits(several)
+        : null;
 
     if (!mounted || painted == null) {
       painted?.dispose();
@@ -512,15 +653,44 @@ class _ImageDiffState extends State<ImageDiff> {
 
   Size get _frame {
     final DiffImageResult? found = _comparison;
+    final DiffImagesResult? several = _several;
 
     if (found != null) {
       return Size(found.width.toDouble(), found.height.toDouble());
     }
 
+    if (several != null) {
+      return Size(several.width.toDouble(), several.height.toDouble());
+    }
+
     return Size(
-      math.max(_beforePicture?.width ?? 0, _afterPicture?.width ?? 0).toDouble(),
-      math.max(_beforePicture?.height ?? 0, _afterPicture?.height ?? 0).toDouble(),
+      _held.fold<int>(0, (int most, Picture? one) => math.max(most, one?.width ?? 0)).toDouble(),
+      _held.fold<int>(0, (int most, Picture? one) => math.max(most, one?.height ?? 0)).toDouble(),
     );
+  }
+
+  /// Where each picture sits in the frame, in the order the panes draw them.
+  ///
+  /// The comparison answers this once it has run, offsets and all. Until then —
+  /// and there is always an until then, because the pictures are drawn before
+  /// they are compared — every one of them is laid corner to corner, which is
+  /// where they would be with no offset anyway.
+  List<DiffImageArea> get _areas {
+    final DiffImageResult? found = _comparison;
+    final DiffImagesResult? several = _several;
+
+    if (found != null) {
+      return <DiffImageArea>[found.before, found.after];
+    }
+
+    if (several != null) {
+      return several.areas;
+    }
+
+    return <DiffImageArea>[
+      for (final Picture? one in _held)
+        DiffImageArea(x: 0, y: 0, width: one?.width ?? 0, height: one?.height ?? 0),
+    ];
   }
 
   DiffineImageViewport get _look {
@@ -602,24 +772,32 @@ class _ImageDiffState extends State<ImageDiff> {
     final int current = _current(regions);
     final Size frame = _frame;
     final DiffineImageViewport viewport = _look;
-    final _Layers layers = _layers(frame);
+    final _Layers layers = _layers();
+    final List<DiffImageArea> areas = _areas;
+    final List<String> labels = _labels;
     /*
-     * Both sides for the loupe, whichever pane the pointer ends up over. The
+     * Every picture for the loupe, whichever pane the pointer ends up over. The
      * areas are the frame's, so the same point of the frame reads the same
-     * pixel of each picture however far apart the two were held.
+     * pixel of each picture however far apart they were held.
      */
     final List<LoupeSample> samples = !widget.loupe
         ? const <LoupeSample>[]
         : <LoupeSample>[
-            if (_beforePicture != null)
-              LoupeSample(label: beforeLabel, picture: _beforePicture!, area: _areas.before),
-            if (_afterPicture != null)
-              LoupeSample(label: afterLabel, picture: _afterPicture!, area: _areas.after),
+            for (int at = 0; at < _held.length; at += 1)
+              if (_held[at] != null)
+                LoupeSample(label: labels[at], picture: _held[at]!, area: areas[at]),
           ];
     final _Looking? looking = _looking;
-    final bool blank = _beforePicture == null && _afterPicture == null;
+    final bool blank = _held.every((Picture? one) => one == null);
     final bool tools =
-        (widget.navigation && regions.isNotEmpty) || widget.zoom || (editing && !_split);
+        (widget.navigation && regions.isNotEmpty) || widget.zoom || (editing && !_laidSplit);
+    /*
+     * Where the controls go. A title has room for a name and a row of buttons
+     * when there are two of them and none when there are five, so past two they
+     * get a row of their own rather than squeezing the name out of the last
+     * one.
+     */
+    final bool stacked = _laidSplit && labels.length > 2;
 
     final Widget frameBox = DecoratedBox(
       decoration: BoxDecoration(
@@ -632,7 +810,7 @@ class _ImageDiffState extends State<ImageDiff> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            if (widget.header || tools)
+            if (widget.header || (tools && !stacked))
               _header(
                 theme: theme,
                 strings: strings,
@@ -640,10 +818,31 @@ class _ImageDiffState extends State<ImageDiff> {
                 current: current,
                 viewport: viewport,
                 editing: editing,
-                tools: tools,
-                beforeLabel: beforeLabel,
-                afterLabel: afterLabel,
+                tools: tools && !stacked,
+                labels: labels,
                 bothLabel: bothLabel,
+              ),
+            if (tools && stacked)
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  color: theme.gutter,
+                  border: Border(bottom: BorderSide(color: theme.border)),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: _tools(
+                      theme: theme,
+                      strings: strings,
+                      regions: regions,
+                      current: current,
+                      viewport: viewport,
+                      fading: false,
+                      chooser: null,
+                    ),
+                  ),
+                ),
               ),
             Expanded(
               child: MouseRegion(
@@ -655,51 +854,34 @@ class _ImageDiffState extends State<ImageDiff> {
                 child: Stack(
                   children: <Widget>[
                     Positioned.fill(
-                      child: _split
+                      child: _laidSplit
                           ? Row(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: <Widget>[
-                                Expanded(
-                                  child: _pane(
-                                    samples: samples,
-                                    theme: theme,
-                                    strings: strings,
-                                    name: beforeLabel,
-                                    frame: frame,
-                                    viewport: viewport,
-                                    layers: layers.before,
-                                    regions: regions,
-                                    current: current,
-                                    blank: _beforePicture == null,
-                                    loading: _beforeLoading,
-                                    failed: _beforeFailed,
-                                    editing: editing,
-                                    side: DiffineSide.before,
+                                for (int at = 0; at < _held.length; at += 1) ...<Widget>[
+                                  if (at > 0) _Rule(colour: theme.border),
+                                  Expanded(
+                                    child: _pane(
+                                      at: at,
+                                      theme: theme,
+                                      strings: strings,
+                                      name: labels[at],
+                                      frame: frame,
+                                      viewport: viewport,
+                                      layers: layers.each[at],
+                                      regions: regions,
+                                      current: current,
+                                      blank: _held[at] == null,
+                                      loading: _loading[at],
+                                      failed: _failed[at],
+                                      editing: editing,
+                                    ),
                                   ),
-                                ),
-                                _Rule(colour: theme.border),
-                                Expanded(
-                                  child: _pane(
-                                    samples: samples,
-                                    theme: theme,
-                                    strings: strings,
-                                    name: afterLabel,
-                                    frame: frame,
-                                    viewport: viewport,
-                                    layers: layers.after,
-                                    regions: regions,
-                                    current: current,
-                                    blank: _afterPicture == null,
-                                    loading: _afterLoading,
-                                    failed: _afterFailed,
-                                    editing: editing,
-                                    side: DiffineSide.after,
-                                  ),
-                                ),
+                                ],
                               ],
                             )
                           : _pane(
-                              samples: samples,
+                              at: -1,
                               theme: theme,
                               strings: strings,
                               name: bothLabel,
@@ -709,11 +891,10 @@ class _ImageDiffState extends State<ImageDiff> {
                               regions: regions,
                               current: current,
                               blank: blank,
-                              loading: _beforeLoading || _afterLoading,
-                              failed: _beforeFailed || _afterFailed,
+                              loading: _loading.any((bool one) => one),
+                              failed: _failed.any((bool one) => one),
                               editing: editing,
-                              side: _beforePicture == null ? DiffineSide.before : DiffineSide.after,
-                              wipe: widget.view == DiffineImageView.wipe ? _wipeValue : null,
+                              wipe: _laid == DiffineImageView.wipe ? _wipeValue : null,
                             ),
                     ),
                     if (looking != null && samples.isNotEmpty && !blank)
@@ -730,12 +911,16 @@ class _ImageDiffState extends State<ImageDiff> {
             if (widget.summary)
               ImageDiffSummary(
                 theme: theme,
-                split: _split,
+                split: _laidSplit,
                 locale: widget.locale,
                 strings: strings,
-                before: _metricsOf(_beforePicture, beforeLabel),
-                after: _metricsOf(_afterPicture, afterLabel),
-                result: comparison,
+                pictures: <ImageMetrics?>[
+                  for (int at = 0; at < _held.length; at += 1) _metricsOf(_held[at], labels[at]),
+                ],
+                changed: _ratio,
+                regions: regions.length,
+                complete: _whole,
+                compared: _comparison != null || _several != null,
               ),
           ],
         ),
@@ -764,51 +949,32 @@ class _ImageDiffState extends State<ImageDiff> {
     );
   }
 
-  /// Where each picture sits in the frame.
-  ///
-  /// The comparison answers this once it has run, offset and all. Until then —
-  /// and there is always an until then, because the pictures are drawn before
-  /// they are compared — both are laid corner to corner, which is where they
-  /// would be with no offset anyway.
-  ({DiffImageArea before, DiffImageArea after}) get _areas {
-    final DiffImageResult? found = _comparison;
+  _Layers _layers() {
+    final List<DiffImageArea> areas = _areas;
+    final List<Layer?> each = <Layer?>[
+      for (int at = 0; at < _held.length; at += 1)
+        if (_held[at] == null) null else Layer(picture: _held[at]!, area: areas[at]),
+    ];
+    final List<List<Layer>> alone = <List<Layer>>[
+      for (final Layer? layer in each)
+        if (layer == null) const <Layer>[] else <Layer>[layer],
+    ];
 
-    return (
-      before:
-          found?.before ??
-          DiffImageArea(
-            x: 0,
-            y: 0,
-            width: _beforePicture?.width ?? 0,
-            height: _beforePicture?.height ?? 0,
-          ),
-      after:
-          found?.after ??
-          DiffImageArea(
-            x: 0,
-            y: 0,
-            width: _afterPicture?.width ?? 0,
-            height: _afterPicture?.height ?? 0,
-          ),
-    );
-  }
-
-  _Layers _layers(Size frame) {
-    final DiffImageArea beforeArea = _areas.before;
-    final DiffImageArea afterArea = _areas.after;
-
-    final Picture? before = _beforePicture;
-    final Picture? after = _afterPicture;
-    final Layer? first = before == null ? null : Layer(picture: before, area: beforeArea);
-    final Layer? second = after == null ? null : Layer(picture: after, area: afterArea);
-
-    if (widget.view == DiffineImageView.mask) {
-      return const _Layers(<Layer>[], <Layer>[], <Layer>[]);
+    if (_laid == DiffineImageView.mask) {
+      return _Layers(<List<Layer>>[for (final Layer? _ in each) const <Layer>[]], const <Layer>[]);
     }
 
+    /*
+     * The fade and the wipe are a question about two pictures — which of these
+     * two is underneath, and where does one stop and the other start — so they
+     * draw the first two and nothing else. A list of more than two never
+     * reaches here: `_laid` sends it to the panes instead.
+     */
+    final Layer? first = each.isEmpty ? null : each[0];
+    final Layer? second = each.length < 2 ? null : each[1];
     final List<Layer> both;
 
-    switch (widget.view) {
+    switch (_laid) {
       case DiffineImageView.overlay:
         both = <Layer>[
           ?first,
@@ -821,18 +987,12 @@ class _ImageDiffState extends State<ImageDiff> {
         ];
       case DiffineImageView.split:
       case DiffineImageView.mask:
-        both = <Layer>[?first, ?second];
+        both = <Layer>[for (final Layer? layer in each) ?layer];
     }
 
-    return _Layers(
-      first == null ? const <Layer>[] : <Layer>[first],
-      second == null ? const <Layer>[] : <Layer>[second],
-      both,
-    );
+    return _Layers(alone, both);
   }
 
-  /// The loupe, against the edge away from the side being read until a reader
-  /// drags it somewhere of their own.
   Widget _placedLoupe({
     required DiffineTheme theme,
     required DiffineStrings strings,
@@ -840,7 +1000,7 @@ class _ImageDiffState extends State<ImageDiff> {
     required _Looking looking,
   }) {
     final Offset? place = _loupePlace;
-    final bool left = looking.side != DiffineSide.before;
+    final bool left = looking.side != 0;
 
     return Positioned(
       left: place?.dx ?? (left ? 8 : null),
@@ -860,11 +1020,15 @@ class _ImageDiffState extends State<ImageDiff> {
   }
 
   /// Where a pointer is over one of the panes, in the frame's own coordinates.
-  void _onLook(DiffineSide side, Offset? at) {
+  ///
+  /// `side` is the pane's place in the list, or -1 for a pane drawing every
+  /// picture at once.
+  void _onLook(int side, Offset? at) {
     setState(() => _looking = at == null ? null : _Looking(side: side, at: at));
   }
 
   Widget _pane({
+    required int at,
     required DiffineTheme theme,
     required DiffineStrings strings,
     required String name,
@@ -877,10 +1041,19 @@ class _ImageDiffState extends State<ImageDiff> {
     required bool loading,
     required bool failed,
     required bool editing,
-    required DiffineSide side,
-    required List<LoupeSample> samples,
     double? wipe,
   }) {
+    /*
+     * What this pane draws over its own picture. A pair's two panes draw the
+     * same mask, because a pair's mask says what happened between them and
+     * belongs to neither; a list's pane draws what its own picture disagrees
+     * with the baseline about.
+     */
+    final ui.Image? mask = _many
+        ? (at >= 0 && at < _masks.length ? _masks[at] : _unionMask)
+        : _mask;
+    final DiffineSide side = at <= 0 ? DiffineSide.before : DiffineSide.after;
+
     return ImageDiffPane(
       theme: theme,
       name: name,
@@ -889,11 +1062,11 @@ class _ImageDiffState extends State<ImageDiff> {
       onViewport: _setLook,
       onBox: _onBox,
       layers: layers,
-      mask: widget.marks ? _mask : null,
+      mask: widget.marks ? mask : null,
       unchanged: widget.unchanged,
       stencil: _stencil,
       wheel: widget.wheel,
-      onLook: samples.isEmpty ? null : (Offset? at) => _onLook(side, at),
+      onLook: widget.loupe ? (Offset? where) => _onLook(at, where) : null,
       regions: widget.outlines ? regions : const <DiffImageRegion>[],
       current: current,
       blank: blank,
@@ -915,6 +1088,23 @@ class _ImageDiffState extends State<ImageDiff> {
     );
   }
 
+  /// The mask a pane drawing every picture draws: everywhere anything
+  /// disagrees, which is the baseline's own.
+  ui.Image? get _unionMask {
+    final DiffImagesResult? several = _several;
+
+    if (several == null || _masks.isEmpty) {
+      return null;
+    }
+
+    return _masks[several.baseline.clamp(0, _masks.length - 1)];
+  }
+
+  /// How much of the frame moved, and whether the list of areas is all of them.
+  double get _ratio => _comparison?.stats.ratio ?? _several?.stats.ratio ?? 0;
+
+  bool get _whole => _comparison?.complete ?? _several?.complete ?? true;
+
   Widget _header({
     required DiffineTheme theme,
     required DiffineStrings strings,
@@ -923,57 +1113,22 @@ class _ImageDiffState extends State<ImageDiff> {
     required DiffineImageViewport viewport,
     required bool editing,
     required bool tools,
-    required String beforeLabel,
-    required String afterLabel,
+    required List<String> labels,
     required String bothLabel,
   }) {
+    final List<String> titles = _laidSplit ? labels : <String>[bothLabel];
+
     return Container(
       height: _headerHeight,
       decoration: BoxDecoration(
         color: theme.gutter,
         border: Border(bottom: BorderSide(color: theme.border)),
       ),
+      // One title a pane, so that a name sits over the picture it belongs to
+      // and the controls sit at the end of the row.
       child: Row(
         children: <Widget>[
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Row(
-                children: <Widget>[
-                  if (widget.header)
-                    Flexible(
-                      child: Text(
-                        _split ? beforeLabel : bothLabel,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: theme.text,
-                        ),
-                      ),
-                    ),
-                  const Spacer(),
-                  if (editing && _split && widget.onChoose != null)
-                    DiffineTextButton(
-                      theme: theme,
-                      label: strings.choose,
-                      onPressed: () => _choose(DiffineSide.before),
-                    ),
-                  if (!_split && tools)
-                    ..._tools(
-                      theme: theme,
-                      strings: strings,
-                      regions: regions,
-                      current: current,
-                      viewport: viewport,
-                      fading: widget.view == DiffineImageView.overlay,
-                      editing: editing,
-                    ),
-                ],
-              ),
-            ),
-          ),
-          if (_split)
+          for (int at = 0; at < titles.length; at += 1)
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -982,7 +1137,7 @@ class _ImageDiffState extends State<ImageDiff> {
                     if (widget.header)
                       Flexible(
                         child: Text(
-                          afterLabel,
+                          titles[at],
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             fontSize: 12,
@@ -992,21 +1147,28 @@ class _ImageDiffState extends State<ImageDiff> {
                         ),
                       ),
                     const Spacer(),
-                    if (editing && widget.onChoose != null)
+                    if (editing && _laidSplit && at < titles.length - 1 && widget.onChoose != null)
                       DiffineTextButton(
                         theme: theme,
                         label: strings.choose,
-                        onPressed: () => _choose(DiffineSide.after),
+                        onPressed: () => _choose(DiffineSide.before),
                       ),
-                    if (tools)
+                    if (at == titles.length - 1 && tools)
                       ..._tools(
                         theme: theme,
                         strings: strings,
                         regions: regions,
                         current: current,
                         viewport: viewport,
-                        fading: false,
-                        editing: editing,
+                        fading: _laid == DiffineImageView.overlay,
+                        chooser: editing && widget.onChoose != null
+                            ? DiffineTextButton(
+                                theme: theme,
+                                label: strings.choose,
+                                onPressed: () =>
+                                    _choose(_laidSplit ? DiffineSide.after : DiffineSide.before),
+                              )
+                            : null,
                       ),
                   ],
                 ),
@@ -1024,9 +1186,10 @@ class _ImageDiffState extends State<ImageDiff> {
     required int current,
     required DiffineImageViewport viewport,
     required bool fading,
-    required bool editing,
+    required Widget? chooser,
   }) {
     return <Widget>[
+      ?chooser,
       if (fading)
         SizedBox(
           width: 96,
@@ -1091,10 +1254,12 @@ class _ImageDiffState extends State<ImageDiff> {
 
 /// What each pane draws, and in what order.
 class _Layers {
-  const _Layers(this.before, this.after, this.both);
+  const _Layers(this.each, this.both);
 
-  final List<Layer> before;
-  final List<Layer> after;
+  /// What each pane draws, in the order the panes are drawn.
+  final List<List<Layer>> each;
+
+  /// What one pane drawing every picture draws.
   final List<Layer> both;
 }
 
@@ -1183,8 +1348,9 @@ class _Fade extends StatelessWidget {
 class _Looking {
   const _Looking({required this.side, required this.at});
 
-  /// The pane the pointer is over, which is the side the panel keeps away from.
-  final DiffineSide side;
+  /// The pane the pointer is over, as a place in the list, or -1 for a pane
+  /// drawing every picture. It is the side the panel keeps away from.
+  final int side;
 
   /// Where the pointer is, in the frame's own coordinates.
   final Offset at;

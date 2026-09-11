@@ -52,16 +52,18 @@ class ImageDiffSummary extends StatelessWidget {
     required this.split,
     required this.locale,
     required this.strings,
+    required this.pictures,
+    required this.changed,
+    required this.regions,
+    required this.complete,
+    required this.compared,
     super.key,
-    this.before,
-    this.after,
-    this.result,
   });
 
   /// The palette it is drawn in.
   final DiffineTheme theme;
 
-  /// Whether the panes are side by side, so the bar is halved as they are.
+  /// Whether the panes are side by side, so the bar is cut into as many parts.
   final bool split;
 
   /// The language its numbers are written in.
@@ -70,34 +72,37 @@ class ImageDiffSummary extends StatelessWidget {
   /// The words.
   final DiffineStrings strings;
 
-  /// The left picture's numbers, or `null` while there is no picture.
-  final ImageMetrics? before;
+  /// One entry a picture, in the order the panes are drawn, with `null` for a
+  /// pane that has none.
+  final List<ImageMetrics?> pictures;
 
-  /// The right one's.
-  final ImageMetrics? after;
+  /// How much of the frame moved, from 0 to 1.
+  final double changed;
 
-  /// The comparison, or `null` while there are not two pictures to compare.
-  final DiffImageResult? result;
+  /// How many areas that is.
+  final int regions;
+
+  /// Whether that count is all of them.
+  final bool complete;
+
+  /// Whether there is a comparison at all.
+  final bool compared;
 
   @override
   Widget build(BuildContext context) {
-    final DiffImageResult? found = result;
-    final double changed = found?.stats.ratio ?? 0;
     // Nothing has been compared, so there is nothing to say about it — and
-    // "the two are the same" is not the thing to say about two panes that are
-    // still empty.
-    final String sentence = found == null
+    // "they are the same" is not the thing to say about panes that are still
+    // empty.
+    final String sentence = !compared
         ? ''
         : changed == 0
         ? strings.identical
         : fill(strings.imageSummary, <String, Object>{
-            'regions': formatCount(found.regions.length, locale),
+            'regions': formatCount(regions, locale),
             'percent': formatNumber(changed * 100, locale),
           });
 
-    final Widget tally = found == null
-        ? const SizedBox.shrink()
-        : ExcludeSemantics(child: _tally(found, changed));
+    final Widget tally = !compared ? const SizedBox.shrink() : ExcludeSemantics(child: _tally());
 
     return Semantics(
       container: true,
@@ -110,17 +115,26 @@ class ImageDiffSummary extends StatelessWidget {
           color: theme.gutter,
           border: Border(top: BorderSide(color: theme.border)),
         ),
+        // One part of the bar per pane, so that each picture's size is written
+        // under the picture it belongs to. A view that draws every picture in
+        // one pane has one part, and the sizes run along it.
         child: split
             ? Row(
                 children: <Widget>[
-                  Expanded(child: _metrics(<Widget>[_metric(before)])),
-                  Expanded(child: _metrics(<Widget>[_metric(after), const Spacer(), tally])),
+                  for (int at = 0; at < pictures.length; at += 1)
+                    Expanded(
+                      child: _metrics(<Widget>[
+                        Flexible(child: _metric(pictures[at])),
+                        if (at == pictures.length - 1) ...<Widget>[const Spacer(), tally],
+                      ]),
+                    ),
                 ],
               )
             : _metrics(<Widget>[
-                _metric(before),
-                const SizedBox(width: 12),
-                _metric(after),
+                for (int at = 0; at < pictures.length; at += 1) ...<Widget>[
+                  if (at > 0) const SizedBox(width: 12),
+                  Flexible(child: _metric(pictures[at])),
+                ],
                 const Spacer(),
                 tally,
               ]),
@@ -135,7 +149,7 @@ class ImageDiffSummary extends StatelessWidget {
     );
   }
 
-  Widget _tally(DiffImageResult found, double changed) {
+  Widget _tally() {
     if (changed == 0) {
       return DiffineIcons(
         DiffineIcon.identical,
@@ -151,7 +165,7 @@ class ImageDiffSummary extends StatelessWidget {
         _item(
           DiffineIcon.region,
           theme.muted,
-          '${formatCount(found.regions.length, locale)}${found.complete ? '' : '+'}',
+          '${formatCount(regions, locale)}${complete ? '' : '+'}',
         ),
         _item(DiffineIcon.change, theme.muted, '${formatNumber(changed * 100, locale)}%'),
       ],
@@ -203,7 +217,17 @@ class ImageDiffSummary extends StatelessWidget {
           children: <Widget>[
             DiffineIcons(DiffineIcon.picture, size: 13, strokeWidth: 1.5, color: theme.muted),
             const SizedBox(width: 4),
-            Text('$width × $height · $size', style: TextStyle(fontSize: 11, color: theme.muted)),
+            // The size of a picture gives way to the counts beside it, because
+            // a count cut in half is a wrong number and a size cut in half is a
+            // shorter one.
+            Flexible(
+              child: Text(
+                '$width × $height · $size',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: 11, color: theme.muted),
+              ),
+            ),
           ],
         ),
       ),

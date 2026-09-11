@@ -547,6 +547,10 @@ ImageDiff(mode: DiffineMode.editor, view: DiffineImageView.wipe, onChoose: pick)
 | `mode` | `'viewer' \| 'editor'` | `'viewer'` | Whether the pictures are only looked at, or chosen as well. |
 | `before` | `DiffineImageInput` | — | The picture on the left. |
 | `after` | `DiffineImageInput` | — | The picture on the right. |
+| `pictures` | `readonly DiffineImageInput[]` | — | Several pictures rather than two. Turns the list on. |
+| `baseline` | `number` | `0` | Which of them the rest are counted against. |
+| `picturesResult` | `DiffImagesResult` | — | A comparison of the list already worked out. |
+| `onPicturesDiff` | `(result: DiffImagesResult \| null) => void` | — | The comparison of the list. |
 | `defaultBefore` | `DiffineImageInput` | — | What the left side starts with. Editor only. |
 | `defaultAfter` | `DiffineImageInput` | — | What the right side starts with. Editor only. |
 | `onBeforeChange` | `(value: File) => void` | — | A picture was chosen for the left side. |
@@ -571,6 +575,11 @@ ImageDiff(mode: DiffineMode.editor, view: DiffineImageView.wipe, onChoose: pick)
 | `after` | `DiffineImageContent?` | — | The picture on the right. |
 | `beforeLabel` | `String?` | — | What the header calls the left side. |
 | `afterLabel` | `String?` | — | What it calls the right side. |
+| `pictures` | `List<DiffineImageContent>?` | — | Several pictures rather than two. Turns the list on. |
+| `pictureLabels` | `List<String>?` | — | What each of them is called. |
+| `baseline` | `int` | `0` | Which of them the rest are counted against. |
+| `picturesResult` | `DiffImagesResult?` | — | A comparison of the list already worked out. |
+| `onPicturesDiff` | `ValueChanged<DiffImagesResult?>?` | — | The comparison of the list. |
 | `onChoose` | `Future<DiffineImageContent?> Function(DiffineSide)?` | — | A reader asked for a picture. Editor only. |
 | `onDiff` | `ValueChanged<DiffImageResult?>?` | — | The comparison, every time it is worked out again. |
 | `result` | `DiffImageResult?` | — | A comparison already worked out. The pictures are still drawn. |
@@ -1117,6 +1126,26 @@ A byte of `mask` is an index into <Fw react="`DIFF_PIXEL_KINDS`" flutter="`kDiff
 | `distance`  | How far apart two pixels are on average, over the pixels both cover. |
 
 The four counts add up to `covered` rather than to `pixels`. Two pictures one of which is wider and the other taller leave a corner of the frame neither of them reaches, and those pixels are nothing at all rather than pixels that agree.
+
+### `DiffImagesResult`
+
+`diffImages` returns this rather than a `DiffImageResult`: a list has no `before` and `after`, and the mask says which of them disagree rather than what happened to a pixel.
+
+| Field      | What it is                                                                          |
+| ---------- | ----------------------------------------------------------------------------------- |
+| `width`    | How wide the frame all of them were compared in is.                                 |
+| `height`   | How tall it is.                                                                     |
+| `areas`    | Where each picture sits in it, in the order they were given.                        |
+| `offsets`  | How far each was moved to line it up with the baseline.                             |
+| `baseline` | Which of them the rest were counted against.                                        |
+| `mask`     | A bit a picture: bit `i` is set where the picture at `i` differs from the baseline. |
+| `regions`  | Where the changes are, in reading order.                                            |
+| `stats`    | A `DiffImagesStats`.                                                                |
+| `complete` | Whether the list of regions holds all of them.                                      |
+
+`DiffImagesStats` is `pixels`, `covered`, `unchanged`, `changed` and `ratio` as a pair's is, with `apart` saying how many pixels each picture disagrees with the baseline about.
+
+`DiffImagesSimilarity` is `similarity`, `identical`, `pixels`, `matched`, `changed`, `baseline`, `each` — how alike each picture is to the baseline — and `sizes`.
 
 ## `imageSimilarity`
 

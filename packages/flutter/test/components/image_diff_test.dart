@@ -215,6 +215,68 @@ void main() {
     expect(find.text('rendered'), findsWidgets);
   });
 
+  testWidgets('draws a pane per picture when it is given a list', (WidgetTester tester) async {
+    await pumpPictures(
+      tester,
+      host(
+        ImageDiff(
+          pictures: <DiffineImageContent>[white, red, white],
+          pictureLabels: const <String>['saved', 'chrome', 'firefox'],
+        ),
+      ),
+    );
+
+    expect(find.byType(ImageDiffPane), findsNWidgets(3));
+    expect(find.text('saved'), findsOneWidget);
+    expect(find.text('chrome'), findsOneWidget);
+    expect(find.text('firefox'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('names a picture of a list that arrived without one', (WidgetTester tester) async {
+    await pumpPictures(tester, host(ImageDiff(pictures: <DiffineImageContent>[white, red, white])));
+
+    expect(find.text('Picture 1'), findsOneWidget);
+    expect(find.text('Picture 3'), findsOneWidget);
+  });
+
+  testWidgets('reports the comparison of a list through its own callback', (
+    WidgetTester tester,
+  ) async {
+    DiffImagesResult? reported;
+
+    await pumpPictures(
+      tester,
+      host(
+        ImageDiff(
+          pictures: <DiffineImageContent>[white, red, white],
+          onPicturesDiff: (DiffImagesResult? result) => reported = result,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // The second picture is the only one that disagrees, and its bit is the
+    // second one.
+    expect(reported, isNotNull);
+    expect(reported!.mask[0], 2);
+    expect(reported!.stats.apart, <int>[0, 64, 0]);
+  });
+
+  testWidgets('lays a list of more than two out in panes whatever the view asks for', (
+    WidgetTester tester,
+  ) async {
+    await pumpPictures(
+      tester,
+      host(
+        ImageDiff(pictures: <DiffineImageContent>[white, red, white], view: DiffineImageView.wipe),
+      ),
+    );
+
+    // Wiping one picture across another is a question about two of them.
+    expect(find.byType(ImageDiffPane), findsNWidgets(3));
+  });
+
   testWidgets('moves the line between the two pictures', (WidgetTester tester) async {
     double? wiped;
 

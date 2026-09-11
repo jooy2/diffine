@@ -18,6 +18,7 @@ import type {
   DiffImageArea,
   DiffImageRegion,
   DiffImageResult,
+  DiffImagesResult,
   DiffineImageUnchanged,
   DiffineImageViewport
 } from '../../types.js';
@@ -157,6 +158,53 @@ export function paintMask(result: DiffImageResult, colours: MaskColours): Canvas
   surface.putImageData(new ImageData(painted, width, height), 0, 0);
 
   return surface.canvas;
+}
+
+/**
+ * The mask of several pictures as something to draw over one of them.
+ *
+ * `wanted` is which of the bits count: one picture's, for the pane that draws
+ * that picture, or all of them for the pane that draws the baseline — because
+ * the baseline is the one picture that disagrees with nothing, and a pane with
+ * nothing marked on it is a pane that looks unchanged rather than agreed with.
+ *
+ * One colour rather than three. `added` and `removed` are a pair's words: whose
+ * arrival a pixel is depends on which picture is being asked about, and the
+ * answer for a list is that they disagree.
+ */
+export function paintBits(
+  result: DiffImagesResult,
+  colour: string,
+  wanted: number
+): CanvasImageSource | null {
+  const { width, height, mask } = result;
+
+  if (width <= 0 || height <= 0) {
+    return null;
+  }
+
+  const painted = new Uint8ClampedArray(width * height * 4);
+  const words = new Uint32Array(painted.buffer);
+  const paint = packed(colour);
+
+  for (let pixel = 0; pixel < words.length; pixel += 1) {
+    if ((mask[pixel] & wanted) !== 0) {
+      words[pixel] = paint;
+    }
+  }
+
+  const surface = surfaceOf(width, height);
+
+  surface.putImageData(new ImageData(painted, width, height), 0, 0);
+
+  return surface.canvas;
+}
+
+/**
+ * The same again, opaque, for cutting the pictures down to what disagrees.
+ */
+export function stencilBits(result: DiffImagesResult): CanvasImageSource | null {
+  return paintBits(result, '#ffffff', 0xff);
 }
 
 /**

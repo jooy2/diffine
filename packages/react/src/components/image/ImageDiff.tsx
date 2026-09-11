@@ -5,6 +5,7 @@ import type {
   DiffImageOptions,
   DiffImageRegion,
   DiffImageResult,
+  DiffImagesResult,
   DiffineColorScheme,
   DiffineImageInput,
   DiffineImageUnchanged,
@@ -25,10 +26,15 @@ import type { Layer } from '../../internal/image/paint.js';
 import { SPAN, type Sample } from '../../internal/image/loupe.js';
 import { imageContentOf, imageSourceOf } from '../../internal/image/source.js';
 import {
+  keyOf,
   useComparison,
+  useManyComparison,
+  useManyStencil,
   useMask,
+  useMasks,
   usePalette,
   usePicture,
+  usePictures,
   useStencil
 } from '../../internal/image/useImages.js';
 import {
@@ -71,6 +77,53 @@ export interface ImageDiffProps extends Omit<
   before?: DiffineImageInput;
   /** The picture on the right. */
   after?: DiffineImageInput;
+
+  /**
+   * Several pictures rather than two, compared all at once.
+   *
+   * Three renderings of one screen from three machines, four exports of one
+   * asset, a saved version against the last five runs. Each is drawn in a pane
+   * of its own with what it disagrees with the baseline about marked on it, and
+   * the pane holding the baseline is marked with everywhere anything disagrees
+   * — because the baseline disagrees with nothing, and a pane with nothing on
+   * it reads as a pane nobody looked at.
+   *
+   * Passing it is what turns the list on: `before` and `after` are then
+   * ignored, and so is everything that names one of them. At most
+   * {@link MOST_PICTURES}, which is what the comparison holds.
+   *
+   * `overlay` and `wipe` are a question about two pictures and fall back to
+   * `split` for more than two. `mask` and `split` both work for any number.
+   */
+  pictures?: readonly DiffineImageInput[];
+
+  /**
+   * Which of them the rest are counted against, as an index into `pictures`.
+   *
+   * Ignored without `pictures`, where the first picture is always the one the
+   * second is compared with.
+   *
+   * @default 0
+   */
+  baseline?: number;
+
+  /**
+   * A comparison of the list that has already been worked out, drawn as it is.
+   *
+   * `result` for a list, and ignored without `pictures` exactly as `result` is
+   * ignored with it.
+   */
+  picturesResult?: DiffImagesResult;
+
+  /**
+   * The comparison of the list, every time it is worked out again, and `null`
+   * while there are not enough pictures to compare.
+   *
+   * `onDiff` for a list. A comparison of several is a different answer from a
+   * comparison of two rather than a longer one, so it arrives through a
+   * different callback rather than as a union nobody can narrow.
+   */
+  onPicturesDiff?: (result: DiffImagesResult | null) => void;
 
   /** What the left side starts with, when the component is to keep it. Editor only. */
   defaultBefore?: DiffineImageInput;
@@ -309,6 +362,10 @@ export function ImageDiff({
   mode = 'viewer',
   before,
   after,
+  pictures,
+  baseline = 0,
+  picturesResult,
+  onPicturesDiff,
   defaultBefore,
   defaultAfter,
   onBeforeChange,
@@ -344,12 +401,29 @@ export function ImageDiff({
   style,
   ...rest
 }: ImageDiffProps): React.JSX.Element {
-  const editing = mode === 'editor';
-  const split = view === 'split';
+  /*
+   * A list or a pair, and everything below is written for a list.
+   *
+   * The pair keeps its own path through the comparison rather than being a list
+   * of two, because `diffImage` answers more about two pictures than
+   * `diffImages` does: which of them a pixel arrived in, and how far apart the
+   * two are on average. A list has nowhere to put either — whose arrival a
+   * pixel is has no answer when there are four of them — so the pair would lose
+   * something by being folded in.
+   */
+  const many = pictures !== undefined;
+  const editing = mode === 'editor' && !many;
   const strings = React.useMemo(() => imageStrings(locale, overrides), [locale, overrides]);
 
   const beforeSource = imageSourceOf(before ?? defaultBefore, strings.before);
   const afterSource = imageSourceOf(after ?? defaultAfter, strings.after);
+  const sources = React.useMemo(
+    () =>
+      (pictures ?? []).map((input, at) =>
+        imageSourceOf(input, fill(strings.picture, { number: String(at + 1) }))
+      ),
+    [pictures, strings]
+  );
 
   const [beforeHeld, setBeforeHeld] = useControlled(
     imageContentOf(before),
@@ -362,78 +436,119 @@ export function ImageDiff({
   const [rejected, setRejected] = React.useState<DiffineSide | null>(null);
 
   const root = React.useRef<HTMLDivElement>(null);
-  const firstPane = React.useRef<HTMLDivElement>(null);
-  const secondPane = React.useRef<HTMLDivElement>(null);
 
-  const beforeLoaded = usePicture(editing ? beforeHeld : beforeSource.content, maxPixels);
-  const afterLoaded = usePicture(editing ? afterHeld : afterSource.content, maxPixels);
-  const beforePicture = beforeLoaded.picture;
-  const afterPicture = afterLoaded.picture;
+  const beforeLoaded = usePicture(
+    many ? undefined : editing ? beforeHeld : beforeSource.content,
+    maxPixels
+  );
+  const afterLoaded = usePicture(
+    many ? undefined : editing ? afterHeld : afterSource.content,
+    maxPixels
+  );
+  const contents = React.useMemo(() => sources.map((source) => source.content), [sources]);
+  const picturesLoaded = usePictures(contents, maxPixels);
 
-  const comparison = useComparison({
-    before: beforePicture,
-    after: afterPicture,
+  const pair = useComparison({
+    before: many ? null : beforeLoaded.picture,
+    after: many ? null : afterLoaded.picture,
     options: diff ?? {},
-    given: result
+    given: many ? undefined : result
+  });
+  const all = useManyComparison({
+    pictures: React.useMemo(
+      () => (many ? picturesLoaded.map((loaded) => loaded.picture) : []),
+      [many, picturesLoaded]
+    ),
+    options: React.useMemo(() => ({ ...diff, baseline }), [diff, baseline]),
+    given: many ? picturesResult : undefined
   });
 
+  /** Every picture, in the order the panes draw them, whichever way they arrived. */
+  const loaded = many ? picturesLoaded : [beforeLoaded, afterLoaded];
+  const labels = many
+    ? sources.map((source) => source.label)
+    : [beforeSource.label, afterSource.label];
+  const shown = loaded.map((one) => one.picture);
+  const sizes = shown.map((one) => (one ? `${one.width}x${one.height}` : '-')).join();
+  const named = labels.join();
+  /** What says the pictures themselves changed, for the memos that read them. */
+  const drawn = keyOf(shown);
+  const compared = many ? all !== null : pair !== null;
+  /*
+   * How the pictures are laid out, which is `view` unless `view` is a question
+   * about two of them. Fading one over another and wiping one across another
+   * both ask "which two", and a list of more than two has no answer — so they
+   * fall back to the panes, which is the view that says what every picture is.
+   */
+  const laid = shown.length > 2 && (view === 'overlay' || view === 'wipe') ? 'split' : view;
+  const split = laid === 'split';
+  const regionsOf = (many ? all?.regions : pair?.regions) ?? NO_REGIONS;
+  const ratio = (many ? all?.stats.ratio : pair?.stats.ratio) ?? 0;
+  const whole = (many ? all?.complete : pair?.complete) ?? true;
+
   const palette = usePalette(root, colorScheme);
-  const mask = useMask(comparison, palette);
-  const stencil = useStencil(comparison, unchanged !== 'keep');
+  const pairMask = useMask(pair, palette);
+  const manyMasks = useMasks(all, palette);
+  /** What each pane draws over its own picture, and what one pane draws over all of them. */
+  const masks = many ? manyMasks : [pairMask, pairMask];
+  const union = many ? (manyMasks[all?.baseline ?? 0] ?? null) : pairMask;
+  const stencil = useStencil(pair, !many && unchanged !== 'keep');
+  const manyStencil = useManyStencil(all, many && unchanged !== 'keep');
 
   /*
    * The comparison, handed on once per comparison. The callback is kept in a
    * ref rather than depended on, so an application that writes the handler
    * inline is told when the pictures changed rather than on every render.
    */
-  const latest = React.useRef(onDiff);
+  const latest = React.useRef({ onDiff, onPicturesDiff });
 
   useIsomorphicLayoutEffect(() => {
-    latest.current = onDiff;
+    latest.current = { onDiff, onPicturesDiff };
   });
 
   React.useEffect(() => {
-    latest.current?.(comparison);
-  }, [comparison]);
+    latest.current.onDiff?.(pair);
+  }, [pair]);
+
+  React.useEffect(() => {
+    latest.current.onPicturesDiff?.(all);
+  }, [all]);
 
   /**
    * The frame, and where each picture sits in it.
    *
-   * The comparison answers this once it has run, offset and all. Until then —
+   * The comparison answers this once it has run, offsets and all. Until then —
    * and there is always an until then, because the pictures are drawn before
-   * they are compared — both are laid corner to corner in a frame as large as
-   * the larger of them, which is where they would be with no offset anyway.
+   * they are compared — every one of them is laid corner to corner in a frame
+   * as large as the largest, which is where they would be with no offset
+   * anyway.
    */
   const frame = React.useMemo(() => {
-    if (comparison) {
-      return {
-        width: comparison.width,
-        height: comparison.height,
-        before: comparison.before,
-        after: comparison.after
-      };
+    if (many && all) {
+      return { width: all.width, height: all.height, areas: all.areas };
     }
 
-    const first = {
+    if (!many && pair) {
+      return { width: pair.width, height: pair.height, areas: [pair.before, pair.after] };
+    }
+
+    const areas = shown.map((picture) => ({
       x: 0,
       y: 0,
-      width: beforePicture?.width ?? 0,
-      height: beforePicture?.height ?? 0
-    };
-    const second = {
-      x: 0,
-      y: 0,
-      width: afterPicture?.width ?? 0,
-      height: afterPicture?.height ?? 0
-    };
+      width: picture?.width ?? 0,
+      height: picture?.height ?? 0
+    }));
 
     return {
-      width: Math.max(first.width, second.width),
-      height: Math.max(first.height, second.height),
-      before: first,
-      after: second
+      width: Math.max(0, ...areas.map((area) => area.width)),
+      height: Math.max(0, ...areas.map((area) => area.height)),
+      areas
     };
-  }, [comparison, beforePicture, afterPicture]);
+    // `shown` is a new array every render out of the same pictures, and the
+    // only thing the fallback reads of them is how large they are — so `sizes`
+    // is what says it changed.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [many, all, pair, sizes]);
 
   const [box, setBox] = React.useState<Box>({ width: 0, height: 0 });
   const onBox = React.useCallback((measured: Box) => {
@@ -467,8 +582,8 @@ export function ImageDiff({
     onViewportChange?.(next === 'fit' ? fitViewport(frame, box) : next);
   }
 
-  const regions = outlines && comparison ? comparison.regions : NO_REGIONS;
-  const changes = comparison?.regions ?? NO_REGIONS;
+  const regions = outlines ? regionsOf : NO_REGIONS;
+  const changes = regionsOf;
   // A comparison with fewer changes than the last one leaves a reader pointing
   // at a change that is no longer there.
   const current = selected < changes.length ? selected : -1;
@@ -522,7 +637,7 @@ export function ImageDiff({
   }
 
   /** Which side a picture dropped on a pane drawing both of them belongs to. */
-  const bothTake = (file: File) => take(beforePicture ? 'after' : 'before', file);
+  const bothTake = (file: File) => take(shown[0] ? 'after' : 'before', file);
 
   /**
    * What each pane draws, and in what order.
@@ -532,57 +647,65 @@ export function ImageDiff({
    * somewhere else on the page.
    */
   const layers = React.useMemo(() => {
-    const first: Layer | null = beforePicture
-      ? { picture: beforePicture, area: frame.before }
-      : null;
-    const second: Layer | null = afterPicture ? { picture: afterPicture, area: frame.after } : null;
-    const both = (one: Layer | null, other: Layer | null) =>
-      [one, other].filter((layer) => layer !== null);
+    const each: (Layer | null)[] = shown.map((picture, at) =>
+      picture ? { picture, area: frame.areas[at] } : null
+    );
+    const alone = each.map((layer) => (layer ? [layer] : NO_LAYERS));
 
-    if (view === 'mask') {
-      return { before: NO_LAYERS, after: NO_LAYERS, both: NO_LAYERS };
+    if (laid === 'mask') {
+      return { each: shown.map(() => NO_LAYERS), both: NO_LAYERS };
     }
 
+    /*
+     * The fade and the wipe are a question about two pictures — which of these
+     * two is underneath, and where does one stop and the other start — so they
+     * draw the first two and nothing else. A list of more than two never
+     * reaches here: `laid` sends it to the panes instead.
+     */
     const together =
-      view === 'overlay'
-        ? both(first, second && { ...second, alpha: fade })
-        : view === 'wipe'
-          ? both(first && { ...first, to: wipe }, second && { ...second, from: wipe })
-          : both(first, second);
+      laid === 'overlay'
+        ? [each[0], each[1] && { ...each[1], alpha: fade }]
+        : laid === 'wipe'
+          ? [each[0] && { ...each[0], to: wipe }, each[1] && { ...each[1], from: wipe }]
+          : each;
 
-    return {
-      before: first ? [first] : NO_LAYERS,
-      after: second ? [second] : NO_LAYERS,
-      both: together
-    };
-  }, [view, fade, wipe, beforePicture, afterPicture, frame]);
+    return { each: alone, both: together.filter((layer) => layer !== null) };
+    // As in the frame above: `shown` is a new array every render, and `drawn`
+    // is what says the pictures in it changed.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [laid, fade, wipe, frame, drawn]);
 
   /**
-   * Both sides for the loupe, held so that a pane is not painted again for a
-   * new array of the same two pictures.
+   * Both sides for the loupe, whichever pane the pointer ends up over.
+   *
+   * The areas are the frame's, so the same point of the frame reads the same
+   * pixel of every picture however far apart they were held.
    */
   const samples = React.useMemo<readonly Sample[]>(() => {
     if (!loupe) {
       return NO_SAMPLES;
     }
 
-    return [
-      beforePicture && { label: beforeSource.label, picture: beforePicture, area: frame.before },
-      afterPicture && { label: afterSource.label, picture: afterPicture, area: frame.after }
-    ].filter((sample) => sample !== null);
-  }, [loupe, beforePicture, afterPicture, frame, beforeSource.label, afterSource.label]);
+    return shown.flatMap((picture, at) =>
+      picture ? [{ label: labels[at], picture, area: frame.areas[at] }] : []
+    );
+    // As above: `drawn` is what says the pictures changed, and `labels` is
+    // rebuilt from the same sources every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loupe, drawn, frame, named]);
 
   /**
-   * What the loupe is looking at, which side reported it, and where the panel
+   * What the loupe is looking at, which pane reported it, and where the panel
    * has been put.
    *
    * The panel belongs to the comparison rather than to a pane because it shows
-   * both pictures and sits over both of them — and because a panel that jumped
+   * every picture and sits over all of them — and because a panel that jumped
    * from pane to pane as the pointer crossed between them would be the thing a
    * reader watched.
    */
   const [looking, setLooking] = React.useState<{
-    side: DiffineSide | 'both';
+    /** Which pane reported it, as a place in the list, or -1 for a pane drawing all of them. */
+    side: number;
     at: { x: number; y: number };
   } | null>(null);
   const [span, setSpan] = React.useState(SPAN);
@@ -590,24 +713,23 @@ export function ImageDiff({
   /** Whether one of the panel's handles is being held, in which case it stays. */
   const grabbed = React.useRef(false);
 
-  const watching = (side: DiffineSide | 'both') =>
+  const watching = (side: number) =>
     loupe && samples.length > 0
       ? (at: { x: number; y: number } | null) => setLooking(at ? { side, at } : null)
       : null;
 
-  const blank = !beforePicture && !afterPicture;
-  const loading = beforeLoaded.loading || afterLoaded.loading;
-  const failed = beforeLoaded.failed || afterLoaded.failed || rejected !== null;
-  const bothLabel = `${beforeSource.label} → ${afterSource.label}`;
+  const blank = shown.every((picture) => picture === null);
+  const loading = loaded.some((one) => one.loading);
+  const failed = loaded.some((one) => one.failed) || rejected !== null;
+  const bothLabel = labels.join(' → ');
 
   const shared = {
     frame,
     viewport,
     onViewport: look,
     onBox,
-    mask: marks ? mask : null,
     unchanged,
-    stencil,
+    stencil: many ? manyStencil : stencil,
     regions,
     current,
     outline: palette?.outline ?? 'transparent',
@@ -621,87 +743,105 @@ export function ImageDiff({
   };
 
   const tools = (navigation && changes.length > 0) || zoom || (editing && !split);
-  const bar = header || tools;
+  /*
+   * Where the controls go. A title has room for a name and a row of buttons
+   * when there are two of them and none when there are five, so past two they
+   * get a row of their own rather than squeezing the name out of the last one.
+   */
+  const stacked = split && labels.length > 2;
+  const bar = header || (tools && !stacked);
 
   return (
     <div
       ref={root}
       className={['diffine diffine-image', className].filter(Boolean).join(' ')}
-      data-view={view}
+      data-view={laid}
       data-scheme={colorScheme}
-      style={style}
+      // How many parts the bars above and below are cut into, because a
+      // stylesheet cannot count panes.
+      style={{ ...style, '--diffine-panes': split ? shown.length : 1 } as React.CSSProperties}
       {...rest}
     >
       {bar ? (
         <div className="diffine-header">
-          <div className="diffine-title" data-side={split ? 'before' : 'both'}>
-            {header ? (
-              <span className="diffine-label">{split ? beforeSource.label : bothLabel}</span>
-            ) : null}
-            {editing && split ? (
-              <div className="diffine-tools">
-                <Chooser
-                  label={beforeSource.label}
-                  onFile={(file) => take('before', file)}
-                  strings={strings}
-                />
+          {/*
+           * One title a pane, so that a name sits over the picture it belongs
+           * to and the controls sit at the end of the row. A view that draws
+           * every picture in one pane has one title, and the names run along
+           * it.
+           */}
+          {(split ? labels : [bothLabel]).map((label, at) => {
+            const last = at === (split ? labels.length : 1) - 1;
+
+            return (
+              <div
+                key={at}
+                className="diffine-title"
+                data-side={split ? (at === 0 ? 'before' : last ? 'after' : 'between') : 'both'}
+              >
+                {header ? <span className="diffine-label">{label}</span> : null}
+                {editing && split && !last ? (
+                  <div className="diffine-tools">
+                    <Chooser
+                      label={label}
+                      onFile={(file) => take('before', file)}
+                      strings={strings}
+                    />
+                  </div>
+                ) : null}
+                {last && tools && !stacked ? (
+                  <Tools
+                    changes={changes}
+                    selected={current}
+                    onStep={step}
+                    onScale={scale}
+                    onFit={() => look('fit')}
+                    viewport={viewport}
+                    navigation={navigation}
+                    zoom={zoom}
+                    fading={laid === 'overlay'}
+                    fade={fade}
+                    onFade={(value) => {
+                      setFade(value);
+                      onFadeChange?.(value);
+                    }}
+                    chooser={
+                      editing ? (
+                        <Chooser
+                          label={split ? label : bothLabel}
+                          onFile={split ? (file) => take('after', file) : bothTake}
+                          strings={strings}
+                        />
+                      ) : null
+                    }
+                    locale={locale}
+                    strings={strings}
+                  />
+                ) : null}
               </div>
-            ) : null}
-            {!split && tools ? (
-              <Tools
-                changes={changes}
-                selected={current}
-                onStep={step}
-                onScale={scale}
-                onFit={() => look('fit')}
-                viewport={viewport}
-                navigation={navigation}
-                zoom={zoom}
-                fading={view === 'overlay'}
-                fade={fade}
-                onFade={(value) => {
-                  setFade(value);
-                  onFadeChange?.(value);
-                }}
-                chooser={
-                  editing ? <Chooser label={bothLabel} onFile={bothTake} strings={strings} /> : null
-                }
-                locale={locale}
-                strings={strings}
-              />
-            ) : null}
-          </div>
-          {split ? (
-            <div className="diffine-title" data-side="after">
-              {header ? <span className="diffine-label">{afterSource.label}</span> : null}
-              {tools ? (
-                <Tools
-                  changes={changes}
-                  selected={current}
-                  onStep={step}
-                  onScale={scale}
-                  onFit={() => look('fit')}
-                  viewport={viewport}
-                  navigation={navigation}
-                  zoom={zoom}
-                  fading={false}
-                  fade={fade}
-                  onFade={setFade}
-                  chooser={
-                    editing ? (
-                      <Chooser
-                        label={afterSource.label}
-                        onFile={(file) => take('after', file)}
-                        strings={strings}
-                      />
-                    ) : null
-                  }
-                  locale={locale}
-                  strings={strings}
-                />
-              ) : null}
-            </div>
-          ) : null}
+            );
+          })}
+        </div>
+      ) : null}
+
+      {tools && stacked ? (
+        <div className="diffine-image-controls">
+          <Tools
+            changes={changes}
+            selected={current}
+            onStep={step}
+            onScale={scale}
+            onFit={() => look('fit')}
+            viewport={viewport}
+            navigation={navigation}
+            zoom={zoom}
+            fading={false}
+            fade={fade}
+            onFade={setFade}
+            chooser={null}
+            locale={locale}
+            strings={strings}
+          />
         </div>
       ) : null}
 
@@ -714,54 +854,44 @@ export function ImageDiff({
         }}
       >
         {split ? (
-          <>
-            <ImageDiffPane
-              {...shared}
-              side="before"
-              name={beforeSource.label}
-              layers={layers.before}
-              blank={!beforePicture}
-              loading={beforeLoaded.loading}
-              failed={beforeLoaded.failed || rejected === 'before'}
-              onFile={(file) => take('before', file)}
-              onLook={watching('before')}
-              paneRef={firstPane}
-            />
-            <div className="diffine-image-gap" aria-hidden="true" />
-            <ImageDiffPane
-              {...shared}
-              side="after"
-              name={afterSource.label}
-              layers={layers.after}
-              blank={!afterPicture}
-              loading={afterLoaded.loading}
-              failed={afterLoaded.failed || rejected === 'after'}
-              onFile={(file) => take('after', file)}
-              onLook={watching('after')}
-              paneRef={secondPane}
-            />
-          </>
+          shown.map((picture, at) => (
+            <React.Fragment key={at}>
+              {at > 0 ? <div className="diffine-image-gap" aria-hidden="true" /> : null}
+              <ImageDiffPane
+                {...shared}
+                side={at === 0 ? 'before' : at === shown.length - 1 ? 'after' : 'between'}
+                name={labels[at]}
+                layers={layers.each[at]}
+                mask={marks ? (masks[at] ?? null) : null}
+                blank={!picture}
+                loading={loaded[at].loading}
+                failed={loaded[at].failed || rejected === (at === 0 ? 'before' : 'after')}
+                onFile={(file) => take(at === 0 ? 'before' : 'after', file)}
+                onLook={watching(at)}
+              />
+            </React.Fragment>
+          ))
         ) : (
           <ImageDiffPane
             {...shared}
             side="both"
             name={bothLabel}
             layers={layers.both}
+            mask={marks ? union : null}
             blank={blank}
             loading={loading}
             failed={failed}
             onFile={bothTake}
-            wipe={view === 'wipe' ? wipe : undefined}
+            wipe={laid === 'wipe' ? wipe : undefined}
             onWipe={
-              view === 'wipe'
+              laid === 'wipe'
                 ? (value) => {
                     setWipe(value);
                     onWipeChange?.(value);
                   }
                 : undefined
             }
-            onLook={watching('both')}
-            paneRef={firstPane}
+            onLook={watching(-1)}
           />
         )}
 
@@ -776,7 +906,7 @@ export function ImageDiff({
             // Away from the side being read, so that the panel is never over
             // the part of the picture the question is about. One pane has no
             // other side, so it starts where a panel starts.
-            start={looking.side === 'before' ? 'right' : 'left'}
+            start={looking.side === 0 ? 'right' : 'left'}
             onGrabbed={(held) => {
               grabbed.current = held;
             }}
@@ -790,27 +920,20 @@ export function ImageDiff({
 
       {summary ? (
         <ImageDiffSummary
-          before={
-            beforePicture
+          pictures={shown.map((picture, at) =>
+            picture
               ? {
-                  label: beforeSource.label,
-                  width: beforePicture.width,
-                  height: beforePicture.height,
-                  bytes: beforePicture.bytes
+                  label: labels[at],
+                  width: picture.width,
+                  height: picture.height,
+                  bytes: picture.bytes
                 }
               : null
-          }
-          after={
-            afterPicture
-              ? {
-                  label: afterSource.label,
-                  width: afterPicture.width,
-                  height: afterPicture.height,
-                  bytes: afterPicture.bytes
-                }
-              : null
-          }
-          result={comparison}
+          )}
+          changed={ratio}
+          regions={changes.length}
+          complete={whole}
+          compared={compared}
           split={split}
           locale={locale}
           strings={strings}

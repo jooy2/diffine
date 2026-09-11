@@ -242,6 +242,10 @@ ImageDiff(
 
 :::
 
+## More than two pictures
+
+<DiffinePictures sample="retouched" several height="22rem" />
+
 ## Moving around
 
 Both panes share one viewport, so there is nothing to keep in step: a drag, a wheel or a button moves the pair.
@@ -412,6 +416,40 @@ debugPrint('${result.regions.length} areas, ${(result.stats.ratio * 100).round()
 Both sides are <Fw react="`ImageData`, or anything shaped like it: `{ data, width, height }`" flutter="`DiffPixels`: `data`, `width` and `height`" />, four bytes a pixel, row by row from the top-left. What comes back is the frame the two were compared in, where each of them sits in it, a byte a pixel saying what happened to it, the changes as rectangles, and the counts. Opening a file is not part of it; decoding is a decoder's job.
 
 The whole of it is on the [API page](../api/#diffimage).
+
+## Comparing several at once
+
+`diffImages` is the engine behind `pictures`, with the same bargain `diffImage` makes:
+
+::: fw react
+
+```ts
+import { diffImages, imagesSimilarity } from 'diffine-react/image';
+
+const result = diffImages([saved, chrome, firefox]);
+const { similarity, each } = imagesSimilarity([saved, chrome, firefox]);
+```
+
+:::
+
+::: fw flutter
+
+```dart
+final DiffImagesResult result = diffImages(<DiffPixels>[saved, chrome, firefox]);
+final DiffImagesSimilarity alike = imagesSimilarity(<DiffPixels>[saved, chrome, firefox]);
+```
+
+:::
+
+Every option means what it means for a pair, because every pair is compared exactly as `diffImage` would compare it. A list of two gives the same answer in a different shape.
+
+The shape is the mask. It is a bit a picture rather than a kind: bit `i` is set where the picture at `i` differs from the baseline, so `mask[pixel] != 0` is "does anything disagree here" and `mask[pixel] & (1 << i)` is "does this one". That is what lets each pane be marked with its own disagreement rather than with everybody's. `added` and `removed` have no place in it — whose arrival a pixel is depends on which picture is being asked about, and the answer for a list is that they disagree.
+
+`stats` counts the frame the way a pair's does, with `apart` saying how many pixels each picture disagrees with the baseline about. `imagesSimilarity` turns that into shares: one number for the set, and `each` naming the odd one out, which the one number only says exists.
+
+`paintDiffImages` writes the mask out as a picture, of all of them at once or of one on its own — four files, one a picture, saying who is the odd one out where.
+
+A byte holds eight bits, so eight pictures is the most one comparison takes. <Fw react="`MOST_PICTURES`" flutter="`kMostPictures`" /> is that number, and the pair each of them makes with the baseline is still `diffImage`, which has no limit.
 
 ## How alike the two are
 

@@ -1546,6 +1546,7 @@ class DiffineStrings {
     required this.zoomLevel,
     required this.fade,
     required this.wipe,
+    required this.picture,
     required this.at,
     required this.loupeMove,
     required this.loupeSize,
@@ -1692,6 +1693,9 @@ class DiffineStrings {
   /// The name of the handle that wipes one picture across the other.
   final String wipe;
 
+  /// What a picture of a list is called when it arrived without a name.
+  final String picture;
+
   /// What goes before the coordinates under the magnified pixels.
   final String at;
 
@@ -1748,6 +1752,7 @@ class DiffineStrings {
     String? zoomLevel,
     String? fade,
     String? wipe,
+    String? picture,
     String? at,
     String? loupeMove,
     String? loupeSize,
@@ -1798,6 +1803,7 @@ class DiffineStrings {
       zoomLevel: zoomLevel ?? this.zoomLevel,
       fade: fade ?? this.fade,
       wipe: wipe ?? this.wipe,
+      picture: picture ?? this.picture,
       at: at ?? this.at,
       loupeMove: loupeMove ?? this.loupeMove,
       loupeSize: loupeSize ?? this.loupeSize,

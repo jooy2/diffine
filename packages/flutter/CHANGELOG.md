@@ -22,6 +22,8 @@ The first release. Diffine for Flutter is the React package's engine and view, w
 
   The wheel zooms about the pointer, which `wheel` turns back into moving the picture for a comparison sitting in the middle of a screen that scrolls.
 
+  `pictures` is several rather than two, and passing it is what turns the list on: each gets a pane of its own with what that picture disagrees with the baseline about marked on it, and the pane holding the baseline is marked with everywhere anything disagrees.
+
   `unchanged` decides what happens to the parts nothing happened to: drawn faint with the change at full strength, or not drawn at all so that the change is read as a picture on a plain ground rather than as a mark on one.
 
   A picture arrives as the bytes of a file, as a `ui.Image`, or as a buffer of pixels. There is no URL among them: fetching one is the application's to do. `onChoose` is the same refusal for opening a file — the widget draws the button and the application answers it, because a picker is a plugin and which plugin is the application's choice.

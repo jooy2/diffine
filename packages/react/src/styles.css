@@ -1489,11 +1489,16 @@ button.diffine-fold:focus-visible {
  * is different.
  * ----------------------------------------------------------------------- */
 
-/* One pane rather than two, so the name over it and the numbers under it run
-   the whole width. The split view keeps the halves the header already has. */
-.diffine-image:not([data-view='split']) .diffine-header,
-.diffine-image:not([data-view='split']) .diffine-summary {
-  grid-template-columns: 1fr;
+/* One part of the bar per pane, however many panes there are. A comparison of
+   two is two, a comparison of five is five, and a view that draws every picture
+   in one pane is one — so the name over a pane and the numbers under it are
+   always over and under the picture they are about.
+
+   The number is written on the element by the component, because a stylesheet
+   cannot count children. */
+.diffine-image .diffine-header,
+.diffine-image .diffine-summary {
+  grid-template-columns: repeat(var(--diffine-panes, 2), 1fr);
 }
 
 /* Both sizes on one row, and the counts held at the far end of it. */
@@ -1504,6 +1509,30 @@ button.diffine-fold:focus-visible {
 
 .diffine-image:not([data-view='split']) .diffine-tally {
   margin-inline-start: auto;
+}
+
+/* The controls, where a title has no room for them. Two panes leave room in the
+   last one; five do not, and a name squeezed to nothing is worse than a row. */
+.diffine-image-controls {
+  display: flex;
+  flex: 0 0 auto;
+  justify-content: flex-end;
+  padding: 0.25rem 0.75rem;
+  border-bottom: 1px solid var(--diffine-border);
+  background: var(--diffine-gutter);
+}
+
+/* The size of a picture gives way to the counts beside it, because a count cut
+   in half is a wrong number and a size cut in half is a shorter one. */
+.diffine-image .diffine-metric {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.diffine-image .diffine-tally {
+  flex: none;
 }
 
 .diffine-image .diffine-body {

@@ -13,10 +13,16 @@
  */
 
 import * as React from 'react';
-import type { DiffImageOptions, DiffImageResult, DiffineImageContent } from '../../types.js';
-import { diffImage } from '../../image.js';
+import type {
+  DiffImageOptions,
+  DiffImageResult,
+  DiffImagesOptions,
+  DiffImagesResult,
+  DiffineImageContent
+} from '../../types.js';
+import { diffImage, diffImages } from '../../image.js';
 import { decodeImage, releasePicture, type Picture } from './decode.js';
-import { paintMask, paintStencil, type MaskColours } from './paint.js';
+import { paintBits, paintMask, paintStencil, stencilBits, type MaskColours } from './paint.js';
 import { useIsomorphicLayoutEffect } from '../layout.js';
 
 /** A picture on its way in, or the reason it never arrived. */
@@ -269,4 +275,207 @@ export function useStencil(
   wanted: boolean
 ): CanvasImageSource | null {
   return React.useMemo(() => (result && wanted ? paintStencil(result) : null), [result, wanted]);
+}
+
+/* ---------------------------------------------------------------------------
+ * Several pictures
+ * ------------------------------------------------------------------------- */
+
+/**
+ * A number for each picture that has been handed over, so that a list of them
+ * has a key an effect — or a memo — can depend on.
+ *
+ * A dependency list has to be the same length on every render, and a list of
+ * pictures is not — so the list is turned into one string of the numbers below.
+ * The map is weak and the number is only ever read, so asking for one during a
+ * render changes nothing about what is rendered.
+ */
+const NUMBERS = new WeakMap<object, number>();
+
+let counted = 0;
+
+export function keyOf(things: readonly (object | null | undefined)[]): string {
+  return things
+    .map((content) => {
+      if (!content) {
+        return '-';
+      }
+
+      let number = NUMBERS.get(content);
+
+      if (number === undefined) {
+        counted += 1;
+        number = counted;
+        NUMBERS.set(content, number);
+      }
+
+      return number;
+    })
+    .join(',');
+}
+
+/** Nothing decoded, held rather than built so an empty list is one value. */
+const NOTHING: ReadonlyMap<DiffineImageContent, Decoded> = new Map();
+
+/**
+ * A list of pictures, decoded.
+ *
+ * The same bargain {@link usePicture} makes, made for a list that can change
+ * length. Which is why it is a second hook rather than the first one called
+ * several times: a component calls the same hooks in the same order on every
+ * render, and "one per picture" is not that.
+ */
+export function usePictures(
+  contents: readonly (DiffineImageContent | undefined)[],
+  maxPixels: number
+): readonly Loaded[] {
+  const [decoded, setDecoded] = React.useState<ReadonlyMap<DiffineImageContent, Decoded>>(NOTHING);
+  const key = keyOf(contents);
+
+  React.useEffect(() => {
+    let gone = false;
+    const mine: Picture[] = [];
+
+    for (const content of contents) {
+      if (!content) {
+        continue;
+      }
+
+      decodeImage(content, maxPixels).then(
+        (picture) => {
+          if (gone) {
+            releasePicture(picture);
+
+            return;
+          }
+
+          mine.push(picture);
+          setDecoded((held) => new Map(held).set(content, { content, picture, failed: false }));
+        },
+        () => {
+          if (!gone) {
+            setDecoded((held) =>
+              new Map(held).set(content, { content, picture: null, failed: true })
+            );
+          }
+        }
+      );
+    }
+
+    return () => {
+      gone = true;
+
+      for (const picture of mine) {
+        releasePicture(picture);
+      }
+
+      setDecoded(NOTHING);
+    };
+    // The list itself is not on the list: `key` is what says it changed, and
+    // an array built inline by the caller is a new array every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key, maxPixels]);
+
+  return contents.map((content) => {
+    const held = content ? decoded.get(content) : undefined;
+
+    return {
+      picture: held?.picture ?? null,
+      loading: Boolean(content) && !held,
+      failed: held?.failed ?? false
+    };
+  });
+}
+
+/**
+ * The comparison of a list, worked out once per list rather than per render.
+ *
+ * The same deferral {@link useComparison} makes, and the same refusal of an
+ * answer about the pictures before these ones.
+ */
+export function useManyComparison({
+  pictures,
+  options,
+  given
+}: {
+  pictures: readonly (Picture | null)[];
+  options: DiffImagesOptions;
+  given: DiffImagesResult | undefined;
+}): DiffImagesResult | null {
+  const { tolerance, ignoreAntialiasing, align, alignRadius, blockSize, maxRegions, baseline } =
+    options;
+  const settled = React.useDeferredValue(pictures);
+  const ready = settled.length >= 2 && settled.every((picture) => picture !== null);
+  const key = keyOf(settled);
+
+  const worked = React.useMemo(() => {
+    const pixels = settled.flatMap((picture) => (picture ? [picture.pixels] : []));
+
+    if (given || !ready || pixels.length !== settled.length) {
+      return null;
+    }
+
+    return {
+      pictures: settled,
+      result: diffImages(pixels, {
+        tolerance,
+        ignoreAntialiasing,
+        align,
+        alignRadius,
+        blockSize,
+        maxRegions,
+        baseline
+      })
+    };
+    // `settled` is the list itself and `key` is what says it changed.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    key,
+    ready,
+    given,
+    tolerance,
+    ignoreAntialiasing,
+    align,
+    alignRadius,
+    blockSize,
+    maxRegions,
+    baseline
+  ]);
+
+  return given ?? (worked && sameList(worked.pictures, pictures) ? worked.result : null);
+}
+
+/** Whether two lists hold the same pictures, in the same order. */
+function sameList(one: readonly (Picture | null)[], other: readonly (Picture | null)[]): boolean {
+  return one.length === other.length && one.every((picture, at) => picture === other[at]);
+}
+
+/**
+ * One drawable per picture: where that picture disagrees with the baseline.
+ *
+ * The baseline's own is everywhere anything disagrees, because the baseline
+ * disagrees with nothing and a pane with nothing marked on it reads as a pane
+ * nobody looked at.
+ */
+export function useMasks(
+  result: DiffImagesResult | null,
+  palette: Palette | null
+): readonly (CanvasImageSource | null)[] {
+  return React.useMemo(() => {
+    if (!result || !palette) {
+      return [];
+    }
+
+    return result.areas.map((_, at) =>
+      paintBits(result, palette.changed, at === result.baseline ? 0xff : 1 << at)
+    );
+  }, [result, palette]);
+}
+
+/** The same list as one shape to cut the pictures down to, for the modes that do. */
+export function useManyStencil(
+  result: DiffImagesResult | null,
+  wanted: boolean
+): CanvasImageSource | null {
+  return React.useMemo(() => (result && wanted ? stencilBits(result) : null), [result, wanted]);
 }

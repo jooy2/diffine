@@ -1001,6 +1001,8 @@ export interface DiffineImageStrings extends DiffineCommonStrings {
   fade: string;
   /** The name of the handle that wipes one picture across the other. */
   wipe: string;
+  /** What a picture of a list is called when it arrived without a name. */
+  picture: string;
   /** What goes before the coordinates under the magnified pixels. */
   at: string;
   /** The name of the handle that moves the magnified pixels somewhere else. */

@@ -36,6 +36,8 @@ const props = withDefaults(
     height?: string;
     /** Whether the reader gets the two switches worth turning here. */
     controls?: boolean;
+    /** Whether all three of the pair's pictures are compared at once. */
+    several?: boolean;
   }>(),
   {
     sample: 'retouched',
@@ -49,7 +51,8 @@ const props = withDefaults(
     navigation: true,
     summary: true,
     height: '22rem',
-    controls: false
+    controls: false,
+    several: false
   }
 );
 
@@ -89,8 +92,18 @@ function draw() {
     // The pictures arrive after the first render, and a component that holds
     // its own will not take a second pair — so their arrival is a new one.
     key: loaded ? 'ready' : 'waiting',
-    before: loaded ? { content: loaded.before, label: loaded.beforeLabel } : undefined,
-    after: loaded ? { content: loaded.after, label: loaded.afterLabel } : undefined,
+    before:
+      loaded && !props.several ? { content: loaded.before, label: loaded.beforeLabel } : undefined,
+    after:
+      loaded && !props.several ? { content: loaded.after, label: loaded.afterLabel } : undefined,
+    pictures:
+      loaded && props.several
+        ? [
+            { content: loaded.before, label: loaded.beforeLabel },
+            { content: loaded.after, label: loaded.afterLabel },
+            { content: loaded.third ?? loaded.after, label: loaded.thirdLabel ?? 'third' }
+          ]
+        : undefined,
     view: props.view,
     unchanged: props.unchanged,
     diff: {
@@ -98,6 +111,9 @@ function draw() {
       align: chosen.value.align ? ('shift' as const) : ('none' as const),
       ignoreAntialiasing: chosen.value.smoothing
     },
+    // The demos sit in the middle of an article, and a reader scrolling past
+    // one should scroll past it — see the `wheel` prop on the image page.
+    wheel: 'pan' as const,
     marks: props.marks,
     outlines: props.outlines,
     navigation: props.navigation,

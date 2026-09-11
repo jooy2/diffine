@@ -23,6 +23,9 @@ export interface PicturePair {
   after: Blob;
   beforeLabel: string;
   afterLabel: string;
+  /** A third, for the demo that compares more than two. */
+  third?: Blob;
+  thirdLabel?: string;
 }
 
 const TEAPOT = '/samples/teapot.jpg';
@@ -97,27 +100,36 @@ function blobOf(canvas: HTMLCanvasElement, type: string, quality?: number): Prom
  */
 async function retouched(): Promise<PicturePair> {
   const bitmap = await bitmapOf(TEAPOT);
-  const context = surfaceOf(bitmap.width, bitmap.height);
   const patch = Math.round(bitmap.width / 6);
 
-  context.drawImage(bitmap, 0, 0);
-  context.drawImage(
-    bitmap,
-    Math.round(bitmap.width * 0.1),
-    Math.round(bitmap.height * 0.55),
-    patch,
-    patch,
-    Math.round(bitmap.width * 0.62),
-    Math.round(bitmap.height * 0.2),
-    patch,
-    patch
-  );
+  /** The photograph with a square of itself cloned from one place to another. */
+  const cloneInto = async (from: [number, number], onto: [number, number]) => {
+    const context = surfaceOf(bitmap.width, bitmap.height);
+
+    context.drawImage(bitmap, 0, 0);
+    context.drawImage(
+      bitmap,
+      Math.round(bitmap.width * from[0]),
+      Math.round(bitmap.height * from[1]),
+      patch,
+      patch,
+      Math.round(bitmap.width * onto[0]),
+      Math.round(bitmap.height * onto[1]),
+      patch,
+      patch
+    );
+
+    return blobOf(context.canvas, 'image/png');
+  };
 
   return {
     before: await fileOf(TEAPOT),
-    after: await blobOf(context.canvas, 'image/png'),
+    after: await cloneInto([0.1, 0.55], [0.62, 0.2]),
+    // A third, edited somewhere else, for the demo that compares more than two.
+    third: await cloneInto([0.62, 0.2], [0.08, 0.12]),
     beforeLabel: 'teapot.jpg',
-    afterLabel: 'retouched.png'
+    afterLabel: 'retouched.png',
+    thirdLabel: 'second-pass.png'
   };
 }
 

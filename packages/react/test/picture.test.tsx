@@ -74,6 +74,41 @@ describe('ImageDiff', () => {
     );
   });
 
+  it('draws a pane per picture when it is given a list', () => {
+    const markup = render({
+      pictures: [
+        { content: pixels(4, 4), label: 'saved' },
+        { content: pixels(4, 4), label: 'chrome' },
+        { content: pixels(4, 4), label: 'firefox' }
+      ]
+    });
+
+    expect(markup.split('diffine-image-pane')).toHaveLength(4);
+    expect(markup).toContain('>saved<');
+    expect(markup).toContain('>chrome<');
+    expect(markup).toContain('>firefox<');
+    // The bars above and below are cut into as many parts as there are panes.
+    expect(markup).toContain('--diffine-panes:3');
+  });
+
+  it('names a picture of a list that arrived without one', () => {
+    const markup = render({ pictures: [pixels(4, 4), pixels(4, 4), pixels(4, 4)] });
+
+    expect(markup).toContain('>Picture 1<');
+    expect(markup).toContain('>Picture 3<');
+  });
+
+  it('lays a list of more than two out in panes whatever the view asks for', () => {
+    // Wiping one picture across another is a question about two of them.
+    const markup = render({
+      pictures: [pixels(4, 4), pixels(4, 4), pixels(4, 4)],
+      view: 'wipe'
+    });
+
+    expect(markup).toContain('data-view="split"');
+    expect(markup.split('diffine-image-pane')).toHaveLength(4);
+  });
+
   it('says there is nothing to compare before a picture has arrived', () => {
     // Nothing is decoded on a server, so this is also what the first paint of
     // every comparison looks like.

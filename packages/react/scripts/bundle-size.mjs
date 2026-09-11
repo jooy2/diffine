@@ -38,7 +38,7 @@ const BUDGETS = [
   { entry: 'diffine-react/image', take: '*', gzip: 4500 },
   { entry: 'diffine-react/patch', take: '*', gzip: 3600 },
   { entry: 'diffine-react/text-diff', take: '{ TextDiff }', gzip: 18500 },
-  { entry: 'diffine-react/image-diff', take: '{ ImageDiff }', gzip: 13900 }
+  { entry: 'diffine-react/image-diff', take: '{ ImageDiff }', gzip: 15700 }
 ];
 
 /** The package's own entries, resolved to what a build of it produced. */

@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import type { DiffImageResult, DiffineLocale, DiffineImageStrings } from '../../types.js';
+import type { DiffineLocale, DiffineImageStrings } from '../../types.js';
 import { fill } from '../../internal/strings/common.js';
 import { formatBytes, formatCount, formatNumber } from '../../internal/measure.js';
 import { TallyIcon } from '../shared/DiffineIcons.js';
@@ -15,10 +15,15 @@ export interface ImageMetrics {
 }
 
 export interface ImageDiffSummaryProps {
-  before: ImageMetrics | null;
-  after: ImageMetrics | null;
-  result: DiffImageResult | null;
-  /** Whether the panes are side by side, so the bar is halved as they are. */
+  /** One entry a picture, in the order the panes are drawn, or `null` for a pane with none. */
+  pictures: readonly (ImageMetrics | null)[];
+  /** How much of the frame moved, how many areas it is, and whether that is all of them. */
+  changed: number;
+  regions: number;
+  complete: boolean;
+  /** Whether there is a comparison at all. */
+  compared: boolean;
+  /** Whether the panes are side by side, so the bar is cut into as many parts. */
   split: boolean;
   locale: DiffineLocale;
   strings: DiffineImageStrings;
@@ -39,27 +44,28 @@ export interface ImageDiffSummaryProps {
  * or forty.
  */
 export function ImageDiffSummary({
-  before,
-  after,
-  result,
+  pictures,
+  changed,
+  regions,
+  complete,
+  compared,
   split,
   locale,
   strings
 }: ImageDiffSummaryProps): React.JSX.Element {
-  const changed = result ? result.stats.ratio : 0;
   // Nothing has been compared, so there is nothing to say about it — and
-  // "the two are the same" is not the thing to say about two panes that are
-  // still empty.
-  const sentence = !result
+  // "they are the same" is not the thing to say about panes that are still
+  // empty.
+  const sentence = !compared
     ? ''
     : changed === 0
       ? strings.identical
       : fill(strings.imageSummary, {
-          regions: formatCount(result.regions.length, locale),
+          regions: formatCount(regions, locale),
           percent: formatNumber(changed * 100, locale)
         });
 
-  const tally = !result ? null : (
+  const tally = !compared ? null : (
     <div className="diffine-tally" title={sentence} aria-hidden="true">
       {changed === 0 ? (
         <span className="diffine-tally-item" data-kind="identical">
@@ -69,8 +75,8 @@ export function ImageDiffSummary({
         <>
           <span className="diffine-tally-item" data-kind="region">
             <TallyIcon kind="region" />
-            {formatCount(result.regions.length, locale)}
-            {result.complete ? '' : '+'}
+            {formatCount(regions, locale)}
+            {complete ? '' : '+'}
           </span>
           <span className="diffine-tally-item" data-kind="change">
             <TallyIcon kind="change" />
@@ -87,14 +93,18 @@ export function ImageDiffSummary({
     </span>
   );
 
-  // One row when there is one pane, because each half of a split bar is under
-  // the pane it is talking about and there is nothing to be under here.
+  /*
+   * One part of the bar per pane, so that each picture's size is written under
+   * the picture it belongs to. A view that draws every picture in one pane has
+   * one part, and the sizes run along it.
+   */
   if (!split) {
     return (
       <div className="diffine-summary">
         <div className="diffine-metrics" data-side="both">
-          <Metric picture={before} locale={locale} strings={strings} />
-          <Metric picture={after} locale={locale} strings={strings} />
+          {pictures.map((picture, at) => (
+            <Metric key={at} picture={picture} locale={locale} strings={strings} />
+          ))}
           {tally}
         </div>
         {said}
@@ -104,13 +114,16 @@ export function ImageDiffSummary({
 
   return (
     <div className="diffine-summary">
-      <div className="diffine-metrics" data-side="before">
-        <Metric picture={before} locale={locale} strings={strings} />
-      </div>
-      <div className="diffine-metrics" data-side="after">
-        <Metric picture={after} locale={locale} strings={strings} />
-        {tally}
-      </div>
+      {pictures.map((picture, at) => (
+        <div
+          key={at}
+          className="diffine-metrics"
+          data-side={at === 0 ? 'before' : at === pictures.length - 1 ? 'after' : 'between'}
+        >
+          <Metric picture={picture} locale={locale} strings={strings} />
+          {at === pictures.length - 1 ? tally : null}
+        </div>
+      ))}
       {said}
     </div>
   );

@@ -242,6 +242,43 @@ ImageDiff(
 
 :::
 
+## 이미지가 셋 이상일 때
+
+두 장이 늘 질문인 것은 아닙니다. 같은 화면을 기기 셋에서 그린 것, 같은 자산을 네 가지로 내보낸 것, 저장본과 최근 다섯 번의 실행. 이럴 때 필요한 것은 모든 불일치가 한 프레임에 올라온 화면인데, 창 두 개에는 세 번째가 들어갈 자리가 없습니다.
+
+`pictures`는 쌍이 아니라 목록이고, 이것을 넘기는 것이 목록 모드를 켜는 방법입니다. 그러면 `before`와 `after`는 무시됩니다.
+
+::: fw react
+
+```tsx
+<ImageDiff pictures={[saved, chrome, firefox]} />
+```
+
+:::
+
+::: fw flutter
+
+```dart
+ImageDiff(
+  pictures: <DiffineImageContent>[saved, chrome, firefox],
+  pictureLabels: <String>['saved', 'chrome', 'firefox'],
+);
+```
+
+:::
+
+각 이미지는 자기 창을 가지고, 그 창에는 **그 이미지가** 기준과 다른 자리만 표시됩니다. 기준 이미지의 창에는 누구든 다른 자리가 모두 표시됩니다. 기준은 자기 자신과 다를 수 없고, 아무것도 표시되지 않은 창은 아무도 안 본 창처럼 보이기 때문입니다.
+
+<DiffinePictures sample="retouched" several height="22rem" />
+
+위의 첫 번째가 기준이고, 나머지 둘은 같은 사진에 사각형을 서로 다른 자리에 복제해 붙인 것입니다. 첫 번째 창에는 두 표시가 다 있고, 나머지 창에는 각자의 것만 있습니다.
+
+`baseline`은 나머지를 무엇에 견줄지 정하며 기본값은 첫 번째입니다. 특별히 정할 기준이 없다면 질문은 "이것들이 어디서 갈리는가"이고, 그 답은 누구를 기준으로 삼든 같습니다. 모두가 같은 픽셀은 어느 창에도 표시되지 않습니다.
+
+`overlay`와 `wipe`는 두 장에 대한 질문입니다. 이 둘 중 어느 쪽이 아래인가, 하나가 어디서 끝나고 다른 하나가 어디서 시작하는가. 셋 이상인 목록에는 답이 없어서 `split`으로 돌아갑니다. `mask`는 모든 불일치를 한 바탕에 그리므로 장수와 무관하게 동작합니다.
+
+최대 여덟 장입니다. 비교가 담을 수 있는 수이고, 아래 [`diffImages`](#여러-장을-한-번에-비교하기)를 보세요.
+
 ## 움직이기
 
 두 창은 하나의 뷰포트를 함께 씁니다. 맞출 것이 애초에 없습니다. 끌든 굴리든 버튼을 누르든 두 장이 같이 움직입니다.
@@ -412,6 +449,40 @@ debugPrint('${result.regions.length}곳, ${(result.stats.ratio * 100).round()}%'
 양쪽 모두 <Fw react="`ImageData`이거나 같은 모양이면 됩니다. `{ data, width, height }`에" flutter="`DiffPixels`입니다. `data`, `width`, `height`에" /> 픽셀당 4바이트, 왼쪽 위부터 한 줄씩입니다. 돌아오는 것은 두 이미지를 비교한 프레임, 그 안에서 각자가 놓인 자리, 픽셀마다 한 바이트씩의 결과, 사각형으로 묶인 변경, 그리고 집계입니다. 파일을 여는 일은 여기 없습니다. 해석은 디코더의 몫입니다.
 
 전체는 [API 문서](../api/#diffimage)에 있습니다.
+
+## 여러 장을 한 번에 비교하기
+
+`diffImages`가 `pictures` 뒤에서 도는 엔진이고, `diffImage`와 같은 약속을 지킵니다.
+
+::: fw react
+
+```ts
+import { diffImages, imagesSimilarity } from 'diffine-react/image';
+
+const result = diffImages([saved, chrome, firefox]);
+const { similarity, each } = imagesSimilarity([saved, chrome, firefox]);
+```
+
+:::
+
+::: fw flutter
+
+```dart
+final DiffImagesResult result = diffImages(<DiffPixels>[saved, chrome, firefox]);
+final DiffImagesSimilarity alike = imagesSimilarity(<DiffPixels>[saved, chrome, firefox]);
+```
+
+:::
+
+모든 쌍을 `diffImage`가 비교하듯 그대로 비교하므로 옵션의 뜻도 쌍에서와 같습니다. 두 장짜리 목록은 같은 답을 다른 모양으로 돌려줍니다.
+
+그 모양이 마스크입니다. 종류가 아니라 이미지당 비트 하나입니다. `i`번째 비트는 `i`번째 이미지가 기준과 다른 자리에 켜지므로, `mask[pixel] != 0`은 "여기서 뭔가 갈리는가"이고 `mask[pixel] & (1 << i)`는 "이 이미지가 갈리는가"입니다. 각 창에 모두의 표시가 아니라 자기 표시만 그릴 수 있는 이유가 이것입니다. `added`와 `removed`는 여기 들어갈 자리가 없습니다. 어떤 픽셀이 누구의 등장인지는 어느 이미지를 두고 묻느냐에 달렸고, 목록에 대한 답은 "갈린다"뿐입니다.
+
+`stats`는 쌍에서와 같은 방식으로 프레임을 세고, `apart`가 각 이미지가 기준과 다른 픽셀 수를 말합니다. `imagesSimilarity`는 그것을 비율로 바꿉니다. 전체에 대한 숫자 하나와, 어느 것이 유별난지 짚어 주는 `each`입니다. 숫자 하나만으로는 유별난 것이 있다는 사실까지만 알 수 있습니다.
+
+`paintDiffImages`는 마스크를 이미지로 내보냅니다. 전부를 한 장에 그리거나, 하나씩 따로 그립니다. 네 장이면 네 파일이고, 각각이 어디서 유별난지를 그림으로 말합니다.
+
+바이트 하나는 비트 여덟 개이므로 한 번에 비교할 수 있는 것은 여덟 장까지입니다. <Fw react="`MOST_PICTURES`" flutter="`kMostPictures`" />가 그 수이고, 각 이미지가 기준과 이루는 쌍은 여전히 제한이 없는 `diffImage`입니다.
 
 ## 두 이미지가 얼마나 닮았는지
 

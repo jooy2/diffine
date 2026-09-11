@@ -22,6 +22,8 @@ Guides and the full API, in English and Korean. This README is the map; each pac
 - **Reading and writing in one component.** The editor mode lays a field over each pane and works the comparison out again on every keystroke, with the platform's own undo, input method and selection left alone.
 - **Four ways of comparing two pictures.** Side by side, faded over each other, wiped across, or the mask on its own — and `unchanged` pushes the rest of the picture back or drops it, so the change is read as a picture rather than as a mark on one. `tolerance` sets how much of a difference counts, `ignoreAntialiasing` drops what a renderer's smoothing left behind, and `align` finds the offset between two shots that are not lined up. The wheel zooms about the pointer, and the pixels under it are drawn magnified with their colours written out, both sides at once.
 
+- **More than two, when two is not the question.** `diffImages` compares a list — three renderings of one screen, four exports of one asset — in one frame, with a mask that says which of them disagree rather than that two of them do, and `ImageDiff` draws a pane per picture marked with what that one got wrong.
+
 - **How alike two pictures are, in one number.** `imageSimilarity` is the short question a build with a threshold in it asks, where `diffImage` is the long one a reader looking at two pictures asks: a share from 0 to 1, the counts behind it, and how far apart the pixels are on average.
 - **The same library twice.** The two packages share the engine, the reading of a comparison and the palette down to the colour values, so a screen written against one reads the same written against the other.
 

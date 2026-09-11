@@ -75,6 +75,45 @@ Future<ui.Image?> paintMask(DiffImageResult result, DiffineImageColours colours)
   return done.future;
 }
 
+/// The mask of several pictures as something to draw over one of them.
+///
+/// [wanted] is which of the bits count: one picture's, for the pane that draws
+/// that picture, or all of them for the pane that draws the baseline — because
+/// the baseline is the one picture that disagrees with nothing, and a pane with
+/// nothing marked on it is a pane that looks unchanged rather than agreed with.
+///
+/// One colour rather than three. `added` and `removed` are a pair's words:
+/// whose arrival a pixel is depends on which picture is being asked about, and
+/// the answer for a list is that they disagree.
+Future<ui.Image?> paintBits(DiffImagesResult result, ui.Color colour, int wanted) {
+  final int width = result.width;
+  final int height = result.height;
+
+  if (width <= 0 || height <= 0) {
+    return Future<ui.Image?>.value();
+  }
+
+  final Uint8List painted = Uint8List(width * height * 4);
+  final Uint32List words = Uint32List.view(painted.buffer);
+  final int paint = _packed(colour);
+
+  for (int pixel = 0; pixel < words.length; pixel += 1) {
+    if ((result.mask[pixel] & wanted) != 0) {
+      words[pixel] = paint;
+    }
+  }
+
+  final Completer<ui.Image?> done = Completer<ui.Image?>();
+
+  ui.decodeImageFromPixels(painted, width, height, ui.PixelFormat.rgba8888, done.complete);
+
+  return done.future;
+}
+
+/// The same again, opaque, for cutting the pictures down to what disagrees.
+Future<ui.Image?> stencilBits(DiffImagesResult result) =>
+    paintBits(result, const ui.Color(0xffffffff), 0xff);
+
 /// The mask again, opaque wherever anything happened and see-through
 /// everywhere else.
 ///

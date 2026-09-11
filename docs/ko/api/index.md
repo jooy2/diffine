@@ -547,6 +547,10 @@ ImageDiff(mode: DiffineMode.editor, view: DiffineImageView.wipe, onChoose: pick)
 | `mode` | `'viewer' \| 'editor'` | `'viewer'` | 이미지를 보기만 할지 고르기도 할지. |
 | `before` | `DiffineImageInput` | — | 왼쪽 이미지. |
 | `after` | `DiffineImageInput` | — | 오른쪽 이미지. |
+| `pictures` | `readonly DiffineImageInput[]` | — | 두 장 대신 여러 장. 목록 모드를 켭니다. |
+| `baseline` | `number` | `0` | 나머지를 무엇에 견줄지. |
+| `picturesResult` | `DiffImagesResult` | — | 이미 구해 둔 목록 비교 결과. |
+| `onPicturesDiff` | `(result: DiffImagesResult \| null) => void` | — | 목록 비교 결과. |
 | `defaultBefore` | `DiffineImageInput` | — | 왼쪽이 처음에 보여 줄 이미지. 에디터 전용. |
 | `defaultAfter` | `DiffineImageInput` | — | 오른쪽이 처음에 보여 줄 이미지. 에디터 전용. |
 | `onBeforeChange` | `(value: File) => void` | — | 왼쪽에 이미지를 골랐을 때. |
@@ -571,6 +575,11 @@ ImageDiff(mode: DiffineMode.editor, view: DiffineImageView.wipe, onChoose: pick)
 | `after` | `DiffineImageContent?` | — | 오른쪽 이미지. |
 | `beforeLabel` | `String?` | — | 헤더가 왼쪽을 부르는 이름. |
 | `afterLabel` | `String?` | — | 오른쪽을 부르는 이름. |
+| `pictures` | `List<DiffineImageContent>?` | — | 두 장 대신 여러 장. 목록 모드를 켭니다. |
+| `pictureLabels` | `List<String>?` | — | 각 이미지의 이름. |
+| `baseline` | `int` | `0` | 나머지를 무엇에 견줄지. |
+| `picturesResult` | `DiffImagesResult?` | — | 이미 구해 둔 목록 비교 결과. |
+| `onPicturesDiff` | `ValueChanged<DiffImagesResult?>?` | — | 목록 비교 결과. |
 | `onChoose` | `Future<DiffineImageContent?> Function(DiffineSide)?` | — | 이미지를 골라 달라고 할 때. 에디터 전용. |
 | `onDiff` | `ValueChanged<DiffImageResult?>?` | — | 비교를 다시 할 때마다 그 결과. |
 | `result` | `DiffImageResult?` | — | 이미 계산해 둔 비교. 이미지는 그래도 그립니다. |
@@ -1117,6 +1126,26 @@ final DiffImageResult result = diffImage(
 | `distance`  | 둘 다 덮는 픽셀의 평균 색 거리.                        |
 
 네 개의 수를 더하면 `pixels`가 아니라 `covered`가 됩니다. 하나는 더 넓고 다른 하나는 더 높으면 어느 쪽도 닿지 않는 모서리가 프레임에 남고, 그 픽셀은 값이 같은 픽셀이 아니라 아무것도 아닌 자리입니다.
+
+### `DiffImagesResult`
+
+`diffImages`는 `DiffImageResult`가 아니라 이것을 돌려줍니다. 목록에는 `before`와 `after`가 없고, 마스크는 픽셀에 무슨 일이 있었는지가 아니라 어느 이미지가 갈리는지를 말합니다.
+
+| 필드       | 무엇인지                                                              |
+| ---------- | --------------------------------------------------------------------- |
+| `width`    | 전부를 비교한 프레임의 너비.                                          |
+| `height`   | 높이.                                                                 |
+| `areas`    | 각 이미지가 그 안에서 놓인 자리, 넘긴 순서대로.                       |
+| `offsets`  | 기준에 맞추려고 각 이미지를 얼마나 옮겼는지.                          |
+| `baseline` | 나머지를 견준 기준.                                                   |
+| `mask`     | 이미지당 비트 하나. `i`번째 비트는 `i`번째가 기준과 다를 때 켜집니다. |
+| `regions`  | 변경이 있는 자리, 읽는 순서대로.                                      |
+| `stats`    | `DiffImagesStats`.                                                    |
+| `complete` | 영역 목록이 전부인지.                                                 |
+
+`DiffImagesStats`는 쌍에서와 같은 `pixels`, `covered`, `unchanged`, `changed`, `ratio`에 더해, 각 이미지가 기준과 다른 픽셀 수를 말하는 `apart`를 가집니다.
+
+`DiffImagesSimilarity`는 `similarity`, `identical`, `pixels`, `matched`, `changed`, `baseline`, 각 이미지가 기준과 얼마나 닮았는지를 말하는 `each`, 그리고 `sizes`입니다.
 
 ## `imageSimilarity`
 

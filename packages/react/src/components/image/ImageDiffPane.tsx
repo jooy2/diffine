@@ -38,8 +38,11 @@ import {
 const NUDGE = 48;
 
 export interface ImageDiffPaneProps {
-  /** Which side this is, or `both` for a view that draws the two together. */
-  side: 'before' | 'after' | 'both';
+  /**
+   * Which side this is: the first, the last, one in between, or `both` for a
+   * view that draws every picture together.
+   */
+  side: 'before' | 'after' | 'between' | 'both';
   /** What it is called, which is what a screen reader is told it is. */
   name: string;
   frame: Box;
@@ -90,7 +93,6 @@ export interface ImageDiffPaneProps {
   wipe?: number;
   onWipe?: (wipe: number) => void;
   strings: DiffineImageStrings;
-  paneRef: React.RefObject<HTMLDivElement | null>;
 }
 
 export function ImageDiffPane({
@@ -120,9 +122,15 @@ export function ImageDiffPane({
   failed,
   wipe,
   onWipe,
-  strings,
-  paneRef
+  strings
 }: ImageDiffPaneProps): React.JSX.Element {
+  /*
+   * The pane's own element, rather than one the comparison hands down. The
+   * comparison never read it, and a list of pictures is a list of panes — which
+   * is a number of refs a component cannot make, because it makes the same ones
+   * in the same order on every render.
+   */
+  const paneRef = React.useRef<HTMLDivElement>(null);
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
   const dragging = React.useRef<{ x: number; y: number } | null>(null);
   const [box, setBox] = React.useState<Box>({ width: 0, height: 0 });
