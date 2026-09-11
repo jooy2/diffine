@@ -500,7 +500,7 @@ const NOTHING_OPENED: OpenedRuns = { of: null, rows: new Set() };
  * way to type into either of them.
  *
  * ```tsx
- * import { TextDiff } from 'diffine-react';
+ * import { TextDiff } from 'diffine-react/text-diff';
  * import 'diffine-react/styles.css';
  *
  * <TextDiff before={saved} after={draft} />;

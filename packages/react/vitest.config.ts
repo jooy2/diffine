@@ -6,10 +6,16 @@ const rootDir = dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   resolve: {
-    alias: {
-      // Tests import from 'diffine-react' exactly as a consumer would.
-      'diffine-react': resolve(rootDir, 'src/index.ts')
-    }
+    // Tests import from 'diffine-react' exactly as a consumer would, which
+    // means one entry apiece. The list is in order and the bare name is last,
+    // because it is a prefix of every other name on it.
+    alias: [
+      ...['diff', 'image', 'patch', 'text-diff', 'image-diff', 'types'].map((entry) => ({
+        find: `diffine-react/${entry}`,
+        replacement: resolve(rootDir, `src/${entry}.ts`)
+      })),
+      { find: 'diffine-react', replacement: resolve(rootDir, 'src/index.ts') }
+    ]
   },
   test: {
     include: ['test/**/*.test.{ts,tsx}'],

@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { TextDiff, diffText, parsePatch } from 'diffine-react';
-import type { TextDiffProps } from 'diffine-react';
+import { diffText, parsePatch } from 'diffine-react';
+import { TextDiff } from 'diffine-react/text-diff';
+import type { TextDiffProps } from 'diffine-react/text-diff';
 import { foldPlan } from '../src/internal/fold.js';
 
 const render = (props: TextDiffProps) => renderToStaticMarkup(<TextDiff {...props} />);

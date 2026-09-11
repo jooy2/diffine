@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { TextDiff } from 'diffine-react';
-import type { TextDiffProps } from 'diffine-react';
+import { TextDiff } from 'diffine-react/text-diff';
+import type { TextDiffProps } from 'diffine-react/text-diff';
 
 /**
  * The editing mode as markup, with no layout under it.

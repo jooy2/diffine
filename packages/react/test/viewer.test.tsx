@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { TextDiff, diffText } from 'diffine-react';
-import type { TextDiffProps } from 'diffine-react';
+import { diffText } from 'diffine-react';
+import { TextDiff } from 'diffine-react/text-diff';
+import type { TextDiffProps } from 'diffine-react/text-diff';
 
 /**
  * The reading mode as markup, with no layout under it.

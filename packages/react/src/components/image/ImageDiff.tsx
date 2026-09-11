@@ -225,7 +225,7 @@ const NO_REGIONS: readonly DiffImageRegion[] = [];
  * Two pictures, what changed between them, and every way of looking at that.
  *
  * ```tsx
- * import { ImageDiff } from 'diffine-react';
+ * import { ImageDiff } from 'diffine-react/image-diff';
  * import 'diffine-react/styles.css';
  *
  * <ImageDiff before={saved} after={rendered} diff={{ align: 'shift' }} />;

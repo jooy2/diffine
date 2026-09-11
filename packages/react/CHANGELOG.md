@@ -6,6 +6,10 @@
 
 ### Breaking changes
 
+- **Each view is its own import.** `import { TextDiff } from 'diffine-react'` becomes `import { TextDiff } from 'diffine-react/text-diff'`, and `ImageDiff` the same way from `diffine-react/image-diff`. `DIFFINE_LANGUAGES` moved with the component whose menu it builds, to `diffine-react/text-diff`. Everything else the root exported is still there: the comparison, the patch reader and writer, and every type.
+
+  What it buys is that the root is now functions and types and nothing else. A page that compares two documents to count what changed carries 2.6 kB and no React, where the same import used to reach a viewer, a stylesheet's worth of components and a menu of thirty-four languages, and got away with it only where a bundler was clever enough to throw all of that away again. Under one that emits a file per `import()` before it decides what the build contains — esbuild does — importing `diffText` used to write 164 kB of syntax grammars into the build. It now writes none.
+
 - **`DiffineStrings` is three types.** `DiffineCommonStrings` is what both views say, `DiffineTextStrings` and `DiffineImageStrings` each extend it with their own, and `DiffineStrings` is still the two together for an application keeping one table for both. `TextDiff` takes `Partial<DiffineTextStrings>` and `ImageDiff` takes `Partial<DiffineImageStrings>`, so a partial table written against the old name still fits; a variable annotated `DiffineStrings` still fits as well. What changed underneath is that the words are shipped the way they are used — a page with a picture comparison on it no longer carries the word for a regular expression.
 
 ### Added

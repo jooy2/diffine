@@ -1,13 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
-import {
-  TextDiff,
-  diffText,
-  formatPatch,
-  parsePatch,
-  type DiffResult,
-  type DiffRow
-} from 'diffine-react';
+import { diffText, formatPatch, parsePatch, type DiffResult, type DiffRow } from 'diffine-react';
+import { TextDiff } from 'diffine-react/text-diff';
 
 /** A row written the way a reader would describe it, for readable assertions. */
 function shape(row: DiffRow): string {

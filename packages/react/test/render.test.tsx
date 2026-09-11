@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { TextDiff } from 'diffine-react';
-import type { DiffLine, DiffineSide, TextDiffProps } from 'diffine-react';
+import { TextDiff } from 'diffine-react/text-diff';
+import type { DiffLine, DiffineSide } from 'diffine-react';
+import type { TextDiffProps } from 'diffine-react/text-diff';
 
 const render = (props: TextDiffProps) => renderToStaticMarkup(<TextDiff {...props} />);
 

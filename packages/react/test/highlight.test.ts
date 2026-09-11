@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DIFFINE_LANGUAGES } from 'diffine-react';
+import { DIFFINE_LANGUAGES } from 'diffine-react/text-diff';
 import { isLoaded, loadLanguage, tokenizeLines } from '../src/internal/highlight/engine.js';
 
 /**

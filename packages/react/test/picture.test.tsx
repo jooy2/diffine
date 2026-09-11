@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { ImageDiff, diffImage, type DiffPixels, type ImageDiffProps } from 'diffine-react';
+import { diffImage, type DiffPixels } from 'diffine-react';
+import { ImageDiff, type ImageDiffProps } from 'diffine-react/image-diff';
 
 /**
  * The picture comparison as markup, with no canvas under it.
