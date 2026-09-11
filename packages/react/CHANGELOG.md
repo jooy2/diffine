@@ -60,6 +60,10 @@
 
 - **A `highlight` of the application's own no longer fetches a grammar.** The prop replaces `language`'s colours rather than joining them, so a viewer given both was downloading a grammar whose runs it then threw away. `language` still names what the bar writes and what the menu starts on.
 
+- **The comparison walks the pixels each picture covers rather than every pixel of the frame.** The inner loop asked, for each pixel, whether it was inside the first picture and inside the second — six pieces of arithmetic to answer a question the rectangles already answer once a row. Each row is now three runs: the middle both pictures cover, and whatever is left at either end. For two pictures of the same size laid corner to corner, which is the usual pair, two of the three are empty. Four million identical pixels compare in 20ms where they took 29, and a photograph against an edited copy of itself in 48ms where it took 56.
+
+- **A picture comparison no longer repaints on every render.** `viewport` defaults to `fit`, and a fitted viewport was worked out afresh on each render — a new object each time, which is what the panes watch to decide whether to paint. So both canvases were painted again for every render of the page around them, whatever it was about. The fitted viewport is now held, and the Flutter pane compares what it is about to paint with what it painted instead of repainting on every build.
+
 - **`npm run size` measures what each entry costs, and CI fails a change that outgrows it.** Tree shaking is a property of the build rather than of the source and it is lost quietly — one plain import where an `import()` used to be, and a page that colours nothing is carrying a syntax highlighter again. The check bundles each entry the way an application would, counts what a page fetches before it draws anything, and compares it against a budget. What is behind an `import()` is not in that number.
 
 ### Fixed

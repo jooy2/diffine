@@ -288,6 +288,20 @@ export function comparePixels(
   // pixels that were going to be measured anyway.
   let apart = 0;
 
+  /*
+   * The columns each picture covers, which never change from row to row.
+   * Working them out here rather than per pixel is what turns the inner loop
+   * from "is this pixel in either picture" into three runs over the pixels that
+   * are — and for the usual pair, two pictures of the same size laid corner to
+   * corner, two of those three runs are empty.
+   */
+  const beforeFrom = Math.max(0, frame.before.x);
+  const beforeTo = Math.min(width, frame.before.x + before.width);
+  const afterFrom = Math.max(0, frame.after.x);
+  const afterTo = Math.min(width, frame.after.x + after.width);
+  const bothFrom = Math.max(beforeFrom, afterFrom);
+  const bothTo = Math.min(beforeTo, afterTo);
+
   for (let y = 0; y < height; y += 1) {
     const beforeRow = y - frame.before.y;
     const afterRow = y - frame.after.y;
@@ -300,15 +314,13 @@ export function comparePixels(
 
     const row = y * width;
 
-    for (let x = 0; x < width; x += 1) {
-      const beforeColumn = x - frame.before.x;
-      const afterColumn = x - frame.after.x;
-      const inBefore = onBefore && beforeColumn >= 0 && beforeColumn < before.width;
-      const inAfter = onAfter && afterColumn >= 0 && afterColumn < after.width;
+    if (onBefore && onAfter) {
+      const beforeAt = beforeRow * before.width - frame.before.x;
+      const afterAt = afterRow * after.width - frame.after.x;
 
-      if (inBefore && inAfter) {
-        const first = beforeRow * before.width + beforeColumn;
-        const second = afterRow * after.width + afterColumn;
+      for (let x = bothFrom; x < bothTo; x += 1) {
+        const first = beforeAt + x;
+        const second = afterAt + x;
 
         if (beforeWords[first] === afterWords[second]) {
           continue;
@@ -324,24 +336,57 @@ export function comparePixels(
 
         if (
           options.ignoreAntialiasing &&
-          isSmoothing(beforeColumn, beforeRow, afterColumn, afterRow, distance)
+          isSmoothing(x - frame.before.x, beforeRow, x - frame.after.x, afterRow, distance)
         ) {
           continue;
         }
 
         mask[row + x] = CHANGED;
         changed += 1;
-      } else if (inAfter) {
+        markPixel(cells, x, y);
+      }
+    }
+
+    /*
+     * Whatever one of them covers on its own, which is the run before the
+     * shared middle and the run after it. A row only one of them is on has no
+     * shared middle, and putting that middle past the end of the run is what
+     * leaves the whole run to the one picture that is there.
+     */
+    const sharing = onBefore && onAfter && bothFrom < bothTo;
+
+    if (onAfter) {
+      const untilShared = sharing ? bothFrom : afterTo;
+      const fromShared = sharing ? bothTo : afterTo;
+
+      for (let x = afterFrom; x < untilShared; x += 1) {
         mask[row + x] = ADDED;
         added += 1;
-      } else if (inBefore) {
-        mask[row + x] = REMOVED;
-        removed += 1;
-      } else {
-        continue;
+        markPixel(cells, x, y);
       }
 
-      markPixel(cells, x, y);
+      for (let x = fromShared; x < afterTo; x += 1) {
+        mask[row + x] = ADDED;
+        added += 1;
+        markPixel(cells, x, y);
+      }
+    }
+
+    if (onBefore) {
+      const untilShared = sharing ? bothFrom : beforeTo;
+      const fromShared = sharing ? bothTo : beforeTo;
+
+      for (let x = beforeFrom; x < untilShared; x += 1) {
+        mask[row + x] = REMOVED;
+        removed += 1;
+        markPixel(cells, x, y);
+      }
+
+      for (let x = fromShared; x < beforeTo; x += 1) {
+        mask[row + x] = REMOVED;
+        removed += 1;
+        markPixel(cells, x, y);
+      }
     }
   }
 

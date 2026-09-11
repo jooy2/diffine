@@ -317,7 +317,7 @@ class _PanePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_PanePainter old) => true;
+  bool shouldRepaint(_PanePainter old) => old.options != options;
 }
 
 /// The line between the two pictures, and the grip that moves it.

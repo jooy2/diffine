@@ -386,7 +386,17 @@ export function ImageDiff({
   const [wipe, setWipe] = useControlled(wipeProp, 0.5);
   const [selected, setSelected] = useControlled(selectedProp, defaultSelected);
 
-  const viewport = heldViewport === 'fit' ? fitViewport(frame, box) : heldViewport;
+  /*
+   * Held rather than worked out on every render. `fitViewport` builds a fresh
+   * object each time it is called, and the panes paint whenever the viewport
+   * they were handed is a different object — so a comparison left at its
+   * default of `fit` repainted both canvases for every render of whatever page
+   * it is on.
+   */
+  const viewport = React.useMemo(
+    () => (heldViewport === 'fit' ? fitViewport(frame, box) : heldViewport),
+    [heldViewport, frame, box]
+  );
 
   function look(next: DiffineImageViewport | 'fit'): void {
     setViewport(next);

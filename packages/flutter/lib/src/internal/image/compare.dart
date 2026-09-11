@@ -331,6 +331,18 @@ DiffImageResult comparePixels(DiffPixels before, DiffPixels after, CompareOption
   // pixels that were going to be measured anyway.
   double apart = 0;
 
+  // The columns each picture covers, which never change from row to row.
+  // Working them out here rather than per pixel is what turns the inner loop
+  // from "is this pixel in either picture" into three runs over the pixels that
+  // are — and for the usual pair, two pictures of the same size laid corner to
+  // corner, two of those three runs are empty.
+  final int beforeFrom = math.max(0, frame.before.x);
+  final int beforeTo = math.min(width, frame.before.x + before.width);
+  final int afterFrom = math.max(0, frame.after.x);
+  final int afterTo = math.min(width, frame.after.x + after.width);
+  final int bothFrom = math.max(beforeFrom, afterFrom);
+  final int bothTo = math.min(beforeTo, afterTo);
+
   for (int y = 0; y < height; y += 1) {
     final int beforeRow = y - frame.before.y;
     final int afterRow = y - frame.after.y;
@@ -343,15 +355,13 @@ DiffImageResult comparePixels(DiffPixels before, DiffPixels after, CompareOption
 
     final int row = y * width;
 
-    for (int x = 0; x < width; x += 1) {
-      final int beforeColumn = x - frame.before.x;
-      final int afterColumn = x - frame.after.x;
-      final bool inBefore = onBefore && beforeColumn >= 0 && beforeColumn < before.width;
-      final bool inAfter = onAfter && afterColumn >= 0 && afterColumn < after.width;
+    if (onBefore && onAfter) {
+      final int beforeAt = beforeRow * before.width - frame.before.x;
+      final int afterAt = afterRow * after.width - frame.after.x;
 
-      if (inBefore && inAfter) {
-        final int first = beforeRow * before.width + beforeColumn;
-        final int second = afterRow * after.width + afterColumn;
+      for (int x = bothFrom; x < bothTo; x += 1) {
+        final int first = beforeAt + x;
+        final int second = afterAt + x;
 
         if (beforeWords[first] == afterWords[second]) {
           continue;
@@ -371,9 +381,9 @@ DiffImageResult comparePixels(DiffPixels before, DiffPixels after, CompareOption
               beforeWords,
               after,
               afterWords,
-              beforeColumn,
+              x - frame.before.x,
               beforeRow,
-              afterColumn,
+              x - frame.after.x,
               afterRow,
               distance,
             )) {
@@ -382,17 +392,48 @@ DiffImageResult comparePixels(DiffPixels before, DiffPixels after, CompareOption
 
         mask[row + x] = kChanged;
         changed += 1;
-      } else if (inAfter) {
+        markPixel(cells, x, y);
+      }
+    }
+
+    // Whatever one of them covers on its own, which is the run before the
+    // shared middle and the run after it. A row only one of them is on has no
+    // shared middle, and putting that middle past the end of the run is what
+    // leaves the whole run to the one picture that is there.
+    final bool sharing = onBefore && onAfter && bothFrom < bothTo;
+
+    if (onAfter) {
+      final int untilShared = sharing ? bothFrom : afterTo;
+      final int fromShared = sharing ? bothTo : afterTo;
+
+      for (int x = afterFrom; x < untilShared; x += 1) {
         mask[row + x] = kAdded;
         added += 1;
-      } else if (inBefore) {
-        mask[row + x] = kRemoved;
-        removed += 1;
-      } else {
-        continue;
+        markPixel(cells, x, y);
       }
 
-      markPixel(cells, x, y);
+      for (int x = fromShared; x < afterTo; x += 1) {
+        mask[row + x] = kAdded;
+        added += 1;
+        markPixel(cells, x, y);
+      }
+    }
+
+    if (onBefore) {
+      final int untilShared = sharing ? bothFrom : beforeTo;
+      final int fromShared = sharing ? bothTo : beforeTo;
+
+      for (int x = beforeFrom; x < untilShared; x += 1) {
+        mask[row + x] = kRemoved;
+        removed += 1;
+        markPixel(cells, x, y);
+      }
+
+      for (int x = fromShared; x < beforeTo; x += 1) {
+        mask[row + x] = kRemoved;
+        removed += 1;
+        markPixel(cells, x, y);
+      }
     }
   }
 

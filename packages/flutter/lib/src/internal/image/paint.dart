@@ -93,6 +93,22 @@ class Layer {
 
   /// And where that slice ends.
   final double? to;
+
+  @override
+  bool operator ==(Object other) =>
+      other is Layer &&
+      other.picture == picture &&
+      other.area.x == area.x &&
+      other.area.y == area.y &&
+      other.area.width == area.width &&
+      other.area.height == area.height &&
+      other.alpha == alpha &&
+      other.from == from &&
+      other.to == to;
+
+  @override
+  int get hashCode =>
+      Object.hash(picture, area.x, area.y, area.width, area.height, alpha, from, to);
 }
 
 /// Everything one frame of a pane is painted from.
@@ -128,6 +144,54 @@ class PaneOptions {
 
   /// The mask as a picture, or `null` where the marks are turned off.
   final ui.Image? mask;
+
+  /// Whether the next frame would draw exactly what this one did.
+  ///
+  /// This is what `shouldRepaint` reads, and it is worth the lines. A pane is
+  /// handed a new options object on every build of whatever screen it is on,
+  /// and a comparison of two photographs painted again is three images through
+  /// a transform and a box for every change in them — for a rebuild that had
+  /// nothing to do with the pictures.
+  @override
+  bool operator ==(Object other) =>
+      other is PaneOptions &&
+      other.frame == frame &&
+      other.viewport == viewport &&
+      other.current == current &&
+      other.theme == theme &&
+      other.mask == mask &&
+      _same(other.layers, layers) &&
+      _same(other.regions, regions);
+
+  @override
+  int get hashCode => Object.hash(
+    frame,
+    viewport,
+    current,
+    theme,
+    mask,
+    Object.hashAll(layers),
+    Object.hashAll(regions),
+  );
+}
+
+/// Whether two lists hold the same things in the same order.
+bool _same<T>(List<T> one, List<T> other) {
+  if (identical(one, other)) {
+    return true;
+  }
+
+  if (one.length != other.length) {
+    return false;
+  }
+
+  for (int at = 0; at < one.length; at += 1) {
+    if (one[at] != other[at]) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 /// How large one square of the transparency chequer is, in pane pixels.

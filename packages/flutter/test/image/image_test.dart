@@ -1,7 +1,9 @@
+import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui' show Color;
 
 import 'package:diffine/diffine.dart';
+import 'package:diffine/src/internal/image/compare.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// A picture written as rows of characters, so that a test reads as the thing
@@ -115,6 +117,90 @@ void main() {
       expect(marks(result), <String>['...', '.~.', '...']);
       expect(result.stats.changed, 1);
       expect(result.regions.map(regionOf).toList(), <String>['1,1 1x1 (1)']);
+    });
+
+    test('puts every pixel of the frame in the right one of the four kinds', () {
+      // The frame arithmetic decides which picture covers which pixel, and it
+      // is the part of the loop that is written for speed rather than for
+      // reading. So it is checked against the plain answer: for every pixel of
+      // the frame, is it inside the first rectangle, the second, both, or
+      // neither.
+      const List<List<int>> sizes = <List<int>>[
+        <int>[4, 3],
+        <int>[3, 4],
+        <int>[5, 5],
+        <int>[1, 6],
+      ];
+      const List<List<int>> offsets = <List<int>>[
+        <int>[0, 0],
+        <int>[2, 1],
+        <int>[-2, 1],
+        <int>[1, -3],
+        <int>[-4, -4],
+        <int>[6, 6],
+      ];
+
+      DiffPixels flat(int width, int height, String mark) =>
+          picture(List<String>.filled(height, mark * width));
+
+      for (final List<int> first in sizes) {
+        for (final List<int> second in sizes) {
+          for (final List<int> offset in offsets) {
+            // Two colours nothing could call equal, so every shared pixel is a
+            // changed one and the four kinds are decided by the frame alone.
+            final DiffPixels before = flat(first[0], first[1], '#');
+            final DiffPixels after = flat(second[0], second[1], '.');
+            final int dx = offset[0];
+            final int dy = offset[1];
+            final int left = math.min(0, dx);
+            final int top = math.min(0, dy);
+            final DiffImageResult result = comparePixels(
+              before,
+              after,
+              CompareOptions(
+                tolerance: 0,
+                ignoreAntialiasing: false,
+                blockSize: 16,
+                maxRegions: 200,
+                offset: DiffImageOffset(dx, dy),
+              ),
+            );
+            final List<String> wanted = <String>[];
+
+            for (int y = 0; y < result.height; y += 1) {
+              final StringBuffer row = StringBuffer();
+
+              for (int x = 0; x < result.width; x += 1) {
+                final bool inBefore =
+                    x + left >= 0 && x + left < first[0] && y + top >= 0 && y + top < first[1];
+                final bool inAfter =
+                    x + left >= dx &&
+                    x + left < dx + second[0] &&
+                    y + top >= dy &&
+                    y + top < dy + second[1];
+
+                row.write(
+                  inBefore && inAfter
+                      ? '~'
+                      : inAfter
+                      ? '+'
+                      : inBefore
+                      ? '-'
+                      : '.',
+                );
+              }
+
+              wanted.add(row.toString());
+            }
+
+            expect(
+              marks(result),
+              wanted,
+              reason: '${first[0]}×${first[1]} ${second[0]}×${second[1]} $dx,$dy',
+            );
+          }
+        }
+      }
     });
 
     test('leaves out the corner of the frame neither picture reaches', () {

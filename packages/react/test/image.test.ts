@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { comparePixels } from '../src/internal/image/compare.js';
 import {
   DIFF_PIXEL_KINDS,
   diffImage,
@@ -113,6 +114,77 @@ describe('diffImage', () => {
     expect(marks(result)).toEqual(['...', '.~.', '...']);
     expect(result.stats.changed).toBe(1);
     expect(result.regions).toEqual([{ x: 1, y: 1, width: 1, height: 1, pixels: 1 }]);
+  });
+
+  it('puts every pixel of the frame in the right one of the four kinds', () => {
+    /*
+     * The frame arithmetic decides which picture covers which pixel, and it is
+     * the part of the loop that is written for speed rather than for reading.
+     * So it is checked against the plain answer: for every pixel of the frame,
+     * is it inside the first rectangle, the second, both, or neither.
+     */
+    const sizes = [
+      [4, 3],
+      [3, 4],
+      [5, 5],
+      [1, 6]
+    ] as const;
+    const offsets = [
+      [0, 0],
+      [2, 1],
+      [-2, 1],
+      [1, -3],
+      [-4, -4],
+      [6, 6]
+    ] as const;
+
+    const flat = (width: number, height: number, mark: string) =>
+      picture(...Array.from({ length: height }, () => mark.repeat(width)));
+
+    for (const [beforeWidth, beforeHeight] of sizes) {
+      for (const [afterWidth, afterHeight] of sizes) {
+        for (const [dx, dy] of offsets) {
+          // Two colours nothing could call equal, so every shared pixel is a
+          // changed one and the four kinds are decided by the frame alone.
+          const before = flat(beforeWidth, beforeHeight, '#');
+          const after = flat(afterWidth, afterHeight, '.');
+          const left = Math.min(0, dx);
+          const top = Math.min(0, dy);
+          const result = comparePixels(before, after, {
+            tolerance: 0,
+            ignoreAntialiasing: false,
+            blockSize: 16,
+            maxRegions: 200,
+            offset: { x: dx, y: dy }
+          });
+
+          const wanted: string[] = [];
+
+          for (let y = 0; y < result.height; y += 1) {
+            let row = '';
+
+            for (let x = 0; x < result.width; x += 1) {
+              const inBefore =
+                x + left >= 0 && x + left < beforeWidth && y + top >= 0 && y + top < beforeHeight;
+              const inAfter =
+                x + left >= dx &&
+                x + left < dx + afterWidth &&
+                y + top >= dy &&
+                y + top < dy + afterHeight;
+
+              row += inBefore && inAfter ? '~' : inAfter ? '+' : inBefore ? '-' : '.';
+            }
+
+            wanted.push(row);
+          }
+
+          expect(
+            marks(result),
+            `${beforeWidth}×${beforeHeight} ${afterWidth}×${afterHeight} ${dx},${dy}`
+          ).toEqual(wanted);
+        }
+      }
+    }
   });
 
   it('leaves out the corner of the frame neither picture reaches', () => {
