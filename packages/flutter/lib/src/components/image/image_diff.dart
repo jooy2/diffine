@@ -1126,6 +1126,11 @@ class _ImageDiffState extends State<ImageDiff> {
       ),
       // One title a pane, so that a name sits over the picture it belongs to
       // and the controls sit at the end of the row.
+      //
+      // A name takes whatever the controls beside it leave rather than only the
+      // room it needs, which is what holds those controls against the
+      // right-hand edge: a row packs from its start, so a short name would push
+      // them in from it and a long one would not.
       child: Row(
         children: <Widget>[
           for (int at = 0; at < titles.length; at += 1)
@@ -1135,7 +1140,7 @@ class _ImageDiffState extends State<ImageDiff> {
                 child: Row(
                   children: <Widget>[
                     if (widget.header)
-                      Flexible(
+                      Expanded(
                         child: Text(
                           titles[at],
                           overflow: TextOverflow.ellipsis,
@@ -1145,8 +1150,9 @@ class _ImageDiffState extends State<ImageDiff> {
                             color: theme.text,
                           ),
                         ),
-                      ),
-                    const Spacer(),
+                      )
+                    else
+                      const Spacer(),
                     if (editing && _laidSplit && at < titles.length - 1 && widget.onChoose != null)
                       DiffineTextButton(
                         theme: theme,

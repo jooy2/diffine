@@ -1047,6 +1047,13 @@ class _TextDiffState extends State<TextDiff> {
     }
   }
 
+  /// The bar over the panes: what each side is called, and the buttons.
+  ///
+  /// Each half gives the name everything the buttons beside it did not take,
+  /// which is what holds those buttons against the right-hand edge. A name that
+  /// only asked for the room it needed would leave the rest of the row empty
+  /// after the last button, because a row packs from its start — so a short name
+  /// would push the buttons in from the edge and a long one would not.
   Widget _header({
     required DiffineTheme theme,
     required DiffineStrings strings,
@@ -1075,7 +1082,7 @@ class _TextDiffState extends State<TextDiff> {
               child: Row(
                 children: <Widget>[
                   if (widget.header)
-                    Flexible(
+                    Expanded(
                       child: Text(
                         split ? beforeLabel : bothLabel,
                         overflow: TextOverflow.ellipsis,
@@ -1085,8 +1092,9 @@ class _TextDiffState extends State<TextDiff> {
                           color: theme.text,
                         ),
                       ),
-                    ),
-                  const Spacer(),
+                    )
+                  else
+                    const Spacer(),
                   if (searchable && split)
                     DiffineFindToggle(
                       theme: theme,
@@ -1106,7 +1114,7 @@ class _TextDiffState extends State<TextDiff> {
                 child: Row(
                   children: <Widget>[
                     if (widget.header)
-                      Flexible(
+                      Expanded(
                         child: Text(
                           afterLabel,
                           overflow: TextOverflow.ellipsis,
@@ -1116,8 +1124,9 @@ class _TextDiffState extends State<TextDiff> {
                             color: theme.text,
                           ),
                         ),
-                      ),
-                    const Spacer(),
+                      )
+                    else
+                      const Spacer(),
                     ..._tools(
                       theme: theme,
                       strings: strings,

@@ -118,24 +118,34 @@ class ImageDiffSummary extends StatelessWidget {
         // One part of the bar per pane, so that each picture's size is written
         // under the picture it belongs to. A view that draws every picture in
         // one pane has one part, and the sizes run along it.
+        //
+        // The sizes take whatever the counts leave rather than only the room
+        // they need, which is what holds the counts against the right-hand
+        // edge: a row packs from its start, so anything a size does not use
+        // would otherwise be left empty after the last count.
         child: split
             ? Row(
                 children: <Widget>[
                   for (int at = 0; at < pictures.length; at += 1)
                     Expanded(
                       child: _metrics(<Widget>[
-                        Flexible(child: _metric(pictures[at])),
-                        if (at == pictures.length - 1) ...<Widget>[const Spacer(), tally],
+                        Expanded(child: _metric(pictures[at])),
+                        if (at == pictures.length - 1) tally,
                       ]),
                     ),
                 ],
               )
             : _metrics(<Widget>[
-                for (int at = 0; at < pictures.length; at += 1) ...<Widget>[
-                  if (at > 0) const SizedBox(width: 12),
-                  Flexible(child: _metric(pictures[at])),
-                ],
-                const Spacer(),
+                Expanded(
+                  child: Row(
+                    children: <Widget>[
+                      for (int at = 0; at < pictures.length; at += 1) ...<Widget>[
+                        if (at > 0) const SizedBox(width: 12),
+                        Flexible(child: _metric(pictures[at])),
+                      ],
+                    ],
+                  ),
+                ),
                 tally,
               ]),
       ),

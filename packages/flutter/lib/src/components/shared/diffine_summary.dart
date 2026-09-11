@@ -144,31 +144,43 @@ class DiffineSummary extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 10),
                 child: Row(
                   children: <Widget>[
-                    Flexible(
-                      child: _Metric(
-                        theme: theme,
-                        icon: DiffineIcon.document,
-                        label: afterLabel,
-                        said: fill(strings.documentSize, <String, Object>{
-                          'label': afterLabel,
-                          'characters': formatCount(afterSize.characters, locale),
-                          'size': formatBytes(afterSize.bytes, locale),
-                        }),
-                        written:
-                            '${formatCount(afterSize.characters, locale)} · '
-                            '${formatBytes(afterSize.bytes, locale)}',
+                    // The size takes whatever the counts leave, so the counts
+                    // end at the right-hand edge whether it is long or short. A
+                    // size that only asked for the room it needed would leave
+                    // the rest of the row empty after the last count, because a
+                    // row packs from its start.
+                    Expanded(
+                      child: Row(
+                        children: <Widget>[
+                          Flexible(
+                            child: _Metric(
+                              theme: theme,
+                              icon: DiffineIcon.document,
+                              label: afterLabel,
+                              said: fill(strings.documentSize, <String, Object>{
+                                'label': afterLabel,
+                                'characters': formatCount(afterSize.characters, locale),
+                                'size': formatBytes(afterSize.bytes, locale),
+                              }),
+                              written:
+                                  '${formatCount(afterSize.characters, locale)} · '
+                                  '${formatBytes(afterSize.bytes, locale)}',
+                            ),
+                          ),
+                          if (difference != null)
+                            Flexible(
+                              child: Padding(
+                                padding: const EdgeInsets.only(left: 10),
+                                child: Text(
+                                  difference,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(fontSize: 11, color: theme.muted),
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                     ),
-                    if (difference != null)
-                      Padding(
-                        padding: const EdgeInsets.only(left: 10),
-                        child: Text(
-                          difference,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(fontSize: 11, color: theme.muted),
-                        ),
-                      ),
-                    const Spacer(),
                     ExcludeSemantics(
                       child: DiffineTally(
                         theme: theme,
