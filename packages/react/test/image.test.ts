@@ -262,6 +262,22 @@ describe('diffImage', () => {
     expect(diffImage(before, after).stats.changed).toBe(0);
   });
 
+  it('keeps the edge of something pasted over a level area', () => {
+    /*
+     * The edge arrived with the patch. The first picture is level here and has
+     * no edge to answer it with, so the step belongs to what changed rather
+     * than excusing it — taking the stronger of the two steps let the boundary
+     * of a cloned patch come back as pixels that had not changed.
+     */
+    const flat = '55555555';
+    const pasted = '55552100';
+    const before = picture(flat, flat, flat, flat, flat, flat);
+    const after = picture(pasted, pasted, pasted, pasted, pasted, pasted);
+
+    // Four columns differ, and every row of every one of them counts.
+    expect(diffImage(before, after).stats.changed).toBe(4 * 6);
+  });
+
   it('keeps a change inside a texture, where no edge runs', () => {
     // Every pixel of this lies between the pixels around it and nothing in it
     // is level, so there is no edge for a change to hide under. The pixel in

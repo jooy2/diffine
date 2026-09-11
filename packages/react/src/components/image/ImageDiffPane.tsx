@@ -170,6 +170,7 @@ export function ImageDiffPane({
     // `onBox` is the component's own function and is not on the list on
     // purpose: it is written inline up there, and depending on it would rebuild
     // the observer on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paneRef]);
 
   /** The frame itself, painted whenever anything about it has changed. */
@@ -216,6 +217,8 @@ export function ImageDiffPane({
     viewport,
     layers,
     mask,
+    unchanged,
+    stencil,
     regions,
     current,
     outline,

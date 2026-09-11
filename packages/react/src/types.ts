@@ -423,17 +423,18 @@ export interface DiffImageOptions {
    * either side of where the line really falls, and the part each one gets is
    * decided by the renderer — so the same page drawn by two browsers, or by one
    * browser on two machines, differs along every letter and every curve while
-   * showing the same thing. On, a differing pixel is dropped when three things
-   * hold: it is a blend of what surrounds it rather than a colour of its own,
-   * there is a level area within a pixel of it for that blend to be the edge
-   * of, and the change is no larger than the step in brightness it is sitting
-   * on.
+   * showing the same thing. On, a differing pixel is dropped when the *same
+   * edge* runs through it in both pictures and the change is no larger than the
+   * weaker of the two steps: an edge is a step with something level within a
+   * pixel of it, and the pixel has to be a blend of what surrounds it rather
+   * than a colour of its own in at least one of the two.
    *
-   * The middle test is what keeps a photograph honest. Nearly every pixel of a
-   * texture lies between the pixels around it, and the range across a texture
-   * is most of the scale, so without something level nearby to say there is an
-   * edge here, the allowance is wide enough to drop a change that really
-   * happened.
+   * Both pictures, and the weaker step, because that is what tells an edge
+   * drawn twice from an edge that arrived. A patch pasted over a flat part of a
+   * photograph brings an edge with it that the other picture has nothing to
+   * answer with, and the level test keeps a texture — where nearly every pixel
+   * lies between its neighbours and the range is most of the scale — from
+   * counting as an edge at all.
    *
    * It is not free: the pixels that differ are each read again with the pixels
    * around them. It costs nothing on two pictures that are alike and a good

@@ -321,6 +321,20 @@ void main() {
       expect(diffImage(before, after).stats.changed, 0);
     });
 
+    test('keeps the edge of something pasted over a level area', () {
+      // The edge arrived with the patch. The first picture is level here and
+      // has no edge to answer it with, so the step belongs to what changed
+      // rather than excusing it — taking the stronger of the two steps let the
+      // boundary of a cloned patch come back as pixels that had not changed.
+      const String flat = '55555555';
+      const String pasted = '55552100';
+      final DiffPixels before = picture(<String>[flat, flat, flat, flat, flat, flat]);
+      final DiffPixels after = picture(<String>[pasted, pasted, pasted, pasted, pasted, pasted]);
+
+      // Four columns differ, and every row of every one of them counts.
+      expect(diffImage(before, after).stats.changed, 4 * 6);
+    });
+
     test('keeps a change inside a texture, where no edge runs', () {
       // Every pixel of this lies between the pixels around it and nothing in it
       // is level, so there is no edge for a change to hide under. The pixel in

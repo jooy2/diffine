@@ -60,6 +60,10 @@ export function useMeasure(
     }
 
     return () => observer.disconnect();
+    // The list is the caller's, because what a measurement depends on is the
+    // caller's — and `refs` is left out of it on purpose, since a new array of
+    // the same refs a render is every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
 }
 

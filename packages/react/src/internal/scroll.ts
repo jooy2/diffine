@@ -149,5 +149,6 @@ export function useScrollWatch(
     };
     // The refs are read when the listeners go on, so anything that replaces the
     // elements they point at has to be on this list as well as `enabled`.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled, ...deps]);
 }

@@ -28,6 +28,19 @@ export default pluginTypeScriptESLint.config(
   // for that component.
   pluginReactHooks.configs.flat['recommended-latest'],
   {
+    /*
+     * `useIsomorphicLayoutEffect` is `useLayoutEffect` where there is a
+     * document and `useEffect` where there is not, and the rule has no way of
+     * knowing that — so every dependency list in one of them went unchecked. It
+     * is where most of this package's effects are, and a list missing a name is
+     * a canvas that stops being painted for a prop.
+     */
+    files: ['**/*.{ts,tsx}'],
+    rules: {
+      'react-hooks/exhaustive-deps': ['error', { additionalHooks: '(useIsomorphicLayoutEffect)' }]
+    }
+  },
+  {
     files: ['**/*.{js,mjs,cjs,ts,tsx}'],
     languageOptions: {
       ecmaVersion: 'latest',

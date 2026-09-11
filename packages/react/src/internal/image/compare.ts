@@ -184,24 +184,32 @@ function levelAround(
 }
 
 /**
- * How strong the edge one pixel is sitting on is, and zero when it is not
- * sitting on one.
+ * What one pixel's neighbourhood says, filled in place.
  *
- * Two things have to hold. The pixel has to lie between its neighbours rather
- * than be the brightest or the darkest thing among them, which is what a colour
- * of its own looks like. And there has to be something level in reach of it, so
- * that the step it lies across is the edge of something rather than two pixels
- * that happen to be unalike.
- *
- * The second test is the one that matters on a photograph. Nearly every pixel
- * of a textured picture lies between the pixels around it and the range across
- * a texture is most of the scale, so without it the allowance below is wide
- * enough to swallow a change that really happened — a patch cloned over a rainy
- * window came back as a fifth of the pixels it covers. What comes back is the
- * range of brightness across the neighbourhood, which is the largest change the
- * edge running through it could account for.
+ * Two of these are read for every pixel that differs, and a pair of objects a
+ * pixel is a pair of objects a few million times. The caller reads the first
+ * before asking for the second.
  */
-function blendAt(image: DiffPixels, words: Uint32Array, x: number, y: number): number {
+const edge = { range: 0, blend: false };
+
+/**
+ * How strong a step the pixel at `x, y` sits on, and whether it is a blend
+ * across that step.
+ *
+ * `range` is the spread of brightness across the eight pixels around it, and it
+ * is zero unless there is something level within a pixel — two pixels of
+ * exactly one colour side by side, which is what says an edge runs here at all
+ * rather than a texture happening to be uneven. Nearly every pixel of a
+ * photograph lies between the pixels around it and the spread across a texture
+ * is most of the scale, so without that test the allowance below is wide enough
+ * to swallow a change that really happened.
+ *
+ * `blend` is whether the pixel lies between its neighbours rather than being
+ * the brightest or the darkest thing among them, which is what a colour of its
+ * own looks like. A mark that arrived in the middle of a flat field is not a
+ * blend, and neither is a hole that opened in the middle of a letter.
+ */
+function readEdge(image: DiffPixels, words: Uint32Array, x: number, y: number): void {
   const centre = brightnessAt(image.data, indexIn(image, x, y));
 
   let low = 256;
@@ -228,11 +236,9 @@ function blendAt(image: DiffPixels, words: Uint32Array, x: number, y: number): n
     }
   }
 
-  if (centre <= low || centre >= high) {
-    return 0;
-  }
-
-  return levelAround(words, image.width, image.height, x, y) ? (high - low) / 255 : 0;
+  edge.blend = centre > low && centre < high;
+  edge.range =
+    high > low && levelAround(words, image.width, image.height, x, y) ? (high - low) / 255 : 0;
 }
 
 /**
@@ -244,12 +250,18 @@ function blendAt(image: DiffPixels, words: Uint32Array, x: number, y: number): n
  * every letter and every curve, in a way that has nothing to do with the page
  * having changed.
  *
- * What tells that apart from a real change is what the pixel is. It has to be
- * sitting on an edge in at least one of the two pictures — see {@link blendAt}
- * — and the change has to be no larger than the step that edge is, so that
- * moving the line under it accounts for what happened. A pixel that went from
- * white to black in the middle of a white field is on no edge at all, and a
- * pixel of a texture is on a step that belongs to no edge either.
+ * What tells that apart from a real change is that it is the *same edge* in
+ * both pictures, weighted two ways. So both have to have one — see
+ * {@link readEdge} — and the allowance is the weaker of the two steps, not the
+ * stronger. A patch pasted over a flat part of a photograph brings an edge with
+ * it that the other picture has nothing to answer with, and taking the stronger
+ * of the two would let that edge excuse its own arrival: half of the boundary
+ * column of a cloned patch came back as pixels that had not changed.
+ *
+ * The pixel also has to be a blend in at least one of the two, rather than in
+ * both, because an edge that moved far enough leaves the pixel flat on one
+ * side. A mark that arrived in the middle of a white field is a blend in
+ * neither, and so is a hole that opened in the middle of a letter.
  */
 function smoothingTest(
   before: DiffPixels,
@@ -258,7 +270,18 @@ function smoothingTest(
   afterWords: Uint32Array
 ): (bx: number, by: number, ax: number, ay: number, distance: number) => boolean {
   return (bx, by, ax, ay, distance) => {
-    const step = Math.max(blendAt(before, beforeWords, bx, by), blendAt(after, afterWords, ax, ay));
+    readEdge(before, beforeWords, bx, by);
+
+    const beforeRange = edge.range;
+    const beforeBlend = edge.blend;
+
+    readEdge(after, afterWords, ax, ay);
+
+    if (!beforeBlend && !edge.blend) {
+      return false;
+    }
+
+    const step = beforeRange < edge.range ? beforeRange : edge.range;
 
     return step > 0 && distance <= step;
   };

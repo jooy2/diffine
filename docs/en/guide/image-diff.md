@@ -321,9 +321,11 @@ Whether a pixel that only differs because an edge was drawn smooth is left out. 
 
 Text and diagonals are drawn by putting part of a colour into the pixels either side of where the line really falls, and how much each one gets is the renderer's own arithmetic. So the same page drawn by two browsers differs along every letter while showing the same thing.
 
-A pixel is called smoothing when three things hold. It is a blend of what surrounds it rather than a colour of its own. There is a level area within a pixel of it — somewhere with two pixels of exactly one colour side by side — so that the blend is the edge of something. And the change is no larger than the step in brightness it is sitting on. A pixel that went from white to black in the middle of a white field passes none of the three.
+A pixel is called smoothing when the **same edge** runs through it in both pictures and the change is no larger than the weaker of the two steps. An edge is a step in brightness with something level within a pixel of it — somewhere with two pixels of exactly one colour side by side — and the pixel has to be a blend of what surrounds it rather than a colour of its own in at least one of the two. A pixel that went from white to black in the middle of a white field is on no edge at all.
 
-The middle test is what keeps a photograph honest. Nearly every pixel of a rainy window or a knitted blanket lies between the pixels around it, and the range across a texture is most of the scale — so without something level nearby to say an edge runs here, the allowance is wide enough to drop a change that really happened. A patch cloned over the window of the photograph at the top of this page used to come back as four fifths of the pixels it covers.
+Both pictures, and the weaker of the two steps, is what tells an edge drawn twice from an edge that arrived. A patch pasted over a flat part of a photograph brings an edge with it that the other picture has nothing to answer with, and taking the stronger step would let that edge excuse its own arrival — half the boundary of the cloned patch at the top of this page used to come back as pixels that had not changed.
+
+The level test is what keeps a photograph honest. Nearly every pixel of a rainy window or a knitted blanket lies between the pixels around it, and the range across a texture is most of the scale, so without something level nearby the allowance would be wide enough to drop a change that really happened.
 
 It is not free: every pixel that differs is read again with the pixels around it.
 
