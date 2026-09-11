@@ -58,6 +58,10 @@
 
 - **`npm run size` measures what each entry costs, and CI fails a change that outgrows it.** Tree shaking is a property of the build rather than of the source and it is lost quietly — one plain import where an `import()` used to be, and a page that colours nothing is carrying a syntax highlighter again. The check bundles each entry the way an application would, counts what a page fetches before it draws anything, and compares it against a budget. What is behind an `import()` is not in that number.
 
+### Fixed
+
+- **`diffImage` says so when a buffer is shorter than the size it was given.** It read the buffer at `(y * width + x) * 4` and never asked whether the buffer reached that far, and a typed array hands back `undefined` past its end rather than throwing — so two reads off the end compared equal and a picture one row short came back as two pictures that agree about the row that is missing. Both sides are now measured once before anything reads them, and a buffer that is too small is a `RangeError` naming the side, the size and the two byte counts. A buffer with room to spare is still fine.
+
 ## v0.1.0 (2026-09-06)
 
 The viewer became a component that is also an editor, the text gained colour and a search of its own, and two pictures can now be compared where before only two documents could.

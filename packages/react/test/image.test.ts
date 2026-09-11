@@ -82,6 +82,23 @@ describe('diffImage', () => {
     expect(result.complete).toBe(true);
   });
 
+  it('refuses a buffer that is shorter than the size it was given', () => {
+    const short = { data: new Uint8ClampedArray(4 * 3), width: 2, height: 2 };
+    const whole = picture('..', '..');
+
+    // Without the check the reads past the end are `undefined` on both sides,
+    // which compare equal — so the row that is missing comes back as a row the
+    // two pictures agree about.
+    expect(() => diffImage(short, whole)).toThrow(/before picture/);
+    expect(() => diffImage(whole, short)).toThrow(/after picture/);
+  });
+
+  it('takes a buffer with room to spare', () => {
+    const roomy = { data: new Uint8ClampedArray(4 * 8), width: 2, height: 2 };
+
+    expect(diffImage(roomy, roomy).stats.changed).toBe(0);
+  });
+
   it('marks the pixel that changed and nothing else', () => {
     const result = diffImage(picture('...', '...', '...'), picture('...', '.r.', '...'));
 

@@ -73,6 +73,9 @@ export function diffImage(
   after: DiffPixels,
   options?: DiffImageOptions
 ): DiffImageResult {
+  check(before, 'before');
+  check(after, 'after');
+
   const align = options?.align ?? DIFFINE_IMAGE_DEFAULTS.align;
   const radius = options?.alignRadius ?? DIFFINE_IMAGE_DEFAULTS.alignRadius;
 
@@ -83,6 +86,35 @@ export function diffImage(
     maxRegions: options?.maxRegions ?? DIFFINE_IMAGE_DEFAULTS.maxRegions,
     offset: align === 'shift' ? findOffset(before, after, radius) : NO_OFFSET
   });
+}
+
+/**
+ * That a picture is as large as it says it is, checked once before anything
+ * reads it.
+ *
+ * The loop underneath reads a buffer at `(y * width + x) * 4` and never asks
+ * whether the buffer reaches that far, because asking a few million times is
+ * most of what a comparison would cost. So it is asked here instead, and it has
+ * to be asked somewhere: a typed array hands back `undefined` past its end
+ * rather than throwing, two of those compare equal, and a buffer one row short
+ * would come back as two pictures that agree about the row it is missing.
+ */
+function check(pixels: DiffPixels, side: 'before' | 'after'): void {
+  const { data, width, height } = pixels;
+
+  if (!Number.isInteger(width) || !Number.isInteger(height) || width < 0 || height < 0) {
+    throw new RangeError(
+      `diffine: the ${side} picture is ${width} × ${height}, which is not a size.`
+    );
+  }
+
+  const wanted = width * height * 4;
+
+  if (data.length < wanted) {
+    throw new RangeError(
+      `diffine: the ${side} picture is ${width} × ${height}, which is ${wanted} bytes, and ${data.length} arrived.`
+    );
+  }
 }
 
 /** What each kind of pixel is painted in, where nothing else was asked for. */

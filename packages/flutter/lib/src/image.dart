@@ -51,6 +51,9 @@ const DiffImageOptions kDiffineImageDefaults = DiffImageOptions();
 /// what only one of them covers comes back as added or removed rather than as
 /// an error.
 DiffImageResult diffImage(DiffPixels before, DiffPixels after, [DiffImageOptions? options]) {
+  _check(before, 'before');
+  _check(after, 'after');
+
   final DiffImageOptions settled = options ?? kDiffineImageDefaults;
 
   return comparePixels(
@@ -66,6 +69,31 @@ DiffImageResult diffImage(DiffPixels before, DiffPixels after, [DiffImageOptions
           : DiffImageOffset.zero,
     ),
   );
+}
+
+/// That a picture is as large as it says it is, checked once before anything
+/// reads it.
+///
+/// The loop underneath reads a buffer at `(y * width + x) * 4` and never asks
+/// whether the buffer reaches that far, because asking a few million times is
+/// most of what a comparison would cost. So it is asked here instead, where a
+/// buffer one row short is a sentence naming the side it arrived on rather than
+/// an index error out of the middle of the arithmetic.
+void _check(DiffPixels pixels, String side) {
+  if (pixels.width < 0 || pixels.height < 0) {
+    throw RangeError(
+      'diffine: the $side picture is ${pixels.width} × ${pixels.height}, which is not a size.',
+    );
+  }
+
+  final int wanted = pixels.width * pixels.height * 4;
+
+  if (pixels.data.length < wanted) {
+    throw RangeError(
+      'diffine: the $side picture is ${pixels.width} × ${pixels.height}, '
+      'which is $wanted bytes, and ${pixels.data.length} arrived.',
+    );
+  }
 }
 
 /// What each kind of pixel is painted in, where nothing else was asked for.

@@ -90,6 +90,20 @@ void main() {
       expect(result.complete, isTrue);
     });
 
+    test('refuses a buffer that is shorter than the size it was given', () {
+      final DiffPixels short = DiffPixels(data: Uint8List(4 * 3), width: 2, height: 2);
+      final DiffPixels whole = picture(<String>['..', '..']);
+
+      expect(() => diffImage(short, whole), throwsA(isA<RangeError>()));
+      expect(() => diffImage(whole, short), throwsA(isA<RangeError>()));
+    });
+
+    test('takes a buffer with room to spare', () {
+      final DiffPixels roomy = DiffPixels(data: Uint8List(4 * 8), width: 2, height: 2);
+
+      expect(diffImage(roomy, roomy).stats.changed, 0);
+    });
+
     test('marks the pixel that changed and nothing else', () {
       final DiffImageResult result = diffImage(
         picture(<String>['...', '...', '...']),
