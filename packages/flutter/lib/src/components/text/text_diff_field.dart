@@ -61,6 +61,7 @@ class TextDiffField extends StatelessWidget {
     required this.wrap,
     required this.current,
     required this.contentWidth,
+    required this.characterWidth,
     required this.gutterWidth,
     required this.readOnly,
     super.key,
@@ -123,6 +124,9 @@ class TextDiffField extends StatelessWidget {
   /// How wide its content is.
   final double contentWidth;
 
+  /// How wide one character of the monospaced typeface is, measured.
+  final double characterWidth;
+
   /// How wide the columns down its side are.
   final double gutterWidth;
 
@@ -171,6 +175,7 @@ class TextDiffField extends StatelessWidget {
                     markers: markers,
                     wrap: wrap,
                     current: current,
+                    characterWidth: characterWidth,
                     gutterWidth: gutterWidth,
                     invisibles: invisibles,
                     highlight: highlight,
@@ -334,6 +339,7 @@ class _BackdropPainter extends CustomPainter {
     required this.markers,
     required this.wrap,
     required this.current,
+    required this.characterWidth,
     required this.gutterWidth,
     required this.invisibles,
     required this.scroller,
@@ -352,6 +358,7 @@ class _BackdropPainter extends CustomPainter {
   final bool markers;
   final bool wrap;
   final int current;
+  final double characterWidth;
   final double gutterWidth;
   final bool invisibles;
   final ScrollController scroller;
@@ -365,7 +372,6 @@ class _BackdropPainter extends CustomPainter {
     final double measured = scrollViewportOf(scroller);
     final double viewport = measured > 0 ? measured : size.height;
     final int first = math.max(0, heights.at(offset) - 1);
-    final double characterWidth = theme.fontSize * 0.6;
     final TextStyle numbers = theme.lineStyle.copyWith(color: theme.muted);
 
     if (gutterWidth > 0) {

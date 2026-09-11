@@ -75,6 +75,7 @@ class DiffineLineWidget extends StatelessWidget {
     required this.theme,
     required this.drawn,
     required this.strings,
+    required this.characterWidth,
     required this.digits,
     required this.lineNumbers,
     required this.markers,
@@ -97,6 +98,9 @@ class DiffineLineWidget extends StatelessWidget {
 
   /// The words, for what a screen reader hears in front of a changed line.
   final DiffineStrings strings;
+
+  /// How wide one character of the monospaced typeface is, measured.
+  final double characterWidth;
 
   /// How wide the column of numbers has to be, in digits.
   final int digits;
@@ -151,6 +155,7 @@ class DiffineLineWidget extends StatelessWidget {
           _Gutter(
             theme: theme,
             drawn: drawn,
+            characterWidth: characterWidth,
             digits: digits,
             lineNumbers: lineNumbers,
             markers: markers,
@@ -207,6 +212,7 @@ class _Gutter extends StatelessWidget {
   const _Gutter({
     required this.theme,
     required this.drawn,
+    required this.characterWidth,
     required this.digits,
     required this.lineNumbers,
     required this.markers,
@@ -215,6 +221,7 @@ class _Gutter extends StatelessWidget {
 
   final DiffineTheme theme;
   final PaneLine drawn;
+  final double characterWidth;
   final int digits;
   final bool lineNumbers;
   final bool markers;
@@ -222,7 +229,6 @@ class _Gutter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final double characterWidth = theme.fontSize * 0.6;
     final TextStyle style = theme.lineStyle.copyWith(color: theme.muted);
     final String marker = drawn.line == null ? '' : _markers[drawn.side]?[drawn.kind] ?? '';
 

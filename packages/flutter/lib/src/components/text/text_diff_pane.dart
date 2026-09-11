@@ -80,12 +80,14 @@ class TextDiffPane extends StatelessWidget {
     required this.controller,
     required this.horizontal,
     required this.strings,
+    required this.characterWidth,
     required this.digits,
     required this.lineNumbers,
     required this.markers,
     required this.wrap,
     required this.current,
     required this.contentWidth,
+    required this.gutterWidth,
     super.key,
     this.highlight,
     this.matches,
@@ -120,6 +122,9 @@ class TextDiffPane extends StatelessWidget {
   /// The words.
   final DiffineStrings strings;
 
+  /// How wide one character of the monospaced typeface is, measured.
+  final double characterWidth;
+
   /// How wide the column of numbers has to be, in digits.
   final int digits;
 
@@ -138,6 +143,9 @@ class TextDiffPane extends StatelessWidget {
   /// How wide its content is, worked out by whatever holds both panes so that
   /// the two agree before either is laid out.
   final double contentWidth;
+
+  /// How wide the columns down its left-hand side come to.
+  final double gutterWidth;
 
   /// How a line is coloured beyond what the comparison says about it.
   final DiffineHighlight? highlight;
@@ -162,12 +170,19 @@ class TextDiffPane extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Widget list = ListView.builder(
-      controller: controller,
-      itemCount: layout.lines.length,
-      itemExtentBuilder: (int index, SliverLayoutDimensions dimensions) => heights.height(index),
-      padding: EdgeInsets.zero,
-      itemBuilder: (BuildContext context, int index) => _row(index),
+    final Widget list = CustomPaint(
+      painter: _GutterColumn(
+        colour: theme.gutter,
+        rule: theme.border,
+        width: lineNumbers || markers ? gutterWidth : 0,
+      ),
+      child: ListView.builder(
+        controller: controller,
+        itemCount: layout.lines.length,
+        itemExtentBuilder: (int index, SliverLayoutDimensions dimensions) => heights.height(index),
+        padding: EdgeInsets.zero,
+        itemBuilder: (BuildContext context, int index) => _row(index),
+      ),
     );
 
     return Semantics(
@@ -201,6 +216,7 @@ class TextDiffPane extends StatelessWidget {
       theme: theme,
       drawn: drawn,
       strings: strings,
+      characterWidth: characterWidth,
       digits: digits,
       lineNumbers: lineNumbers,
       markers: markers,
@@ -227,6 +243,41 @@ class TextDiffPane extends StatelessWidget {
             );
     };
   }
+}
+
+/// The gutter, carried on to the bottom of the pane.
+///
+/// A gutter is drawn by each line, so it stops where the document does — and a
+/// pane is nearly always taller than the document in it, which left the column
+/// a reader reads the numbers down ending part-way with bare paper under it.
+/// This is that column with no lines on it: the same width, the same rule down
+/// its right-hand side, painted under the rows rather than by anything in them.
+///
+/// It sits inside whatever scrolls the pane sideways, so it keeps step with the
+/// gutters above it when a long line is scrolled past. Only what the numbers
+/// and the marks come to is drawn: a column an application added with
+/// `renderGutter` is its own, and nothing here knows how wide it is.
+class _GutterColumn extends CustomPainter {
+  const _GutterColumn({required this.colour, required this.rule, required this.width});
+
+  final Color colour;
+  final Color rule;
+  final double width;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (width <= 0) {
+      return;
+    }
+
+    canvas
+      ..drawRect(Rect.fromLTWH(0, 0, width, size.height), Paint()..color = colour)
+      ..drawRect(Rect.fromLTWH(width - 1, 0, 1, size.height), Paint()..color = rule);
+  }
+
+  @override
+  bool shouldRepaint(_GutterColumn old) =>
+      old.colour != colour || old.rule != rule || old.width != width;
 }
 
 /// Tells its parent how tall its child turned out to be.
