@@ -209,8 +209,8 @@ final List<Demo> demos = <Demo>[
     'image/split',
     'Two pictures',
     (DiffineColorScheme scheme, DiffineLocale locale) => ImageDiff(
-      before: DiffinePixelImage(samples.drawing(changed: false)),
-      after: DiffinePixelImage(samples.drawing(changed: true)),
+      before: DiffinePixelImage(samples.drawing()),
+      after: DiffinePixelImage(samples.drawing(pass: 1)),
       beforeLabel: 'saved.png',
       afterLabel: 'rendered.png',
       colorScheme: scheme,
@@ -222,8 +222,8 @@ final List<Demo> demos = <Demo>[
     'image/wipe',
     'Wiped across',
     (DiffineColorScheme scheme, DiffineLocale locale) => ImageDiff(
-      before: DiffinePixelImage(samples.drawing(changed: false)),
-      after: DiffinePixelImage(samples.drawing(changed: true)),
+      before: DiffinePixelImage(samples.drawing()),
+      after: DiffinePixelImage(samples.drawing(pass: 1)),
       beforeLabel: 'saved.png',
       afterLabel: 'rendered.png',
       view: DiffineImageView.wipe,
@@ -236,11 +236,29 @@ final List<Demo> demos = <Demo>[
     'image/mask',
     'What changed, alone',
     (DiffineColorScheme scheme, DiffineLocale locale) => ImageDiff(
-      before: DiffinePixelImage(samples.drawing(changed: false)),
-      after: DiffinePixelImage(samples.drawing(changed: true)),
+      before: DiffinePixelImage(samples.drawing()),
+      after: DiffinePixelImage(samples.drawing(pass: 1)),
       beforeLabel: 'saved.png',
       afterLabel: 'rendered.png',
       view: DiffineImageView.mask,
+      colorScheme: scheme,
+      locale: locale,
+      height: double.infinity,
+    ),
+  ),
+  Demo(
+    'image/several',
+    'Three at once',
+    (DiffineColorScheme scheme, DiffineLocale locale) => ImageDiff(
+      // Two rounds of editing over one original, neither touching what the
+      // other did. The first pane is the one the other two are counted
+      // against, so it carries both sets of marks and they carry their own.
+      pictures: <DiffineImageContent>[
+        DiffinePixelImage(samples.drawing()),
+        DiffinePixelImage(samples.drawing(pass: 1)),
+        DiffinePixelImage(samples.drawing(pass: 2)),
+      ],
+      pictureLabels: const <String>['saved.png', 'rendered.png', 'second-pass.png'],
       colorScheme: scheme,
       locale: locale,
       height: double.infinity,

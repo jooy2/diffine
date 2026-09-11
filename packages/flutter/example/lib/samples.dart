@@ -161,7 +161,12 @@ const String patch = '''
 /// platform draws exactly the same pixels — which is also what makes the
 /// comparison worth looking at: the second picture is the first one with a few
 /// deliberate differences in it.
-DiffPixels drawing({required bool changed}) {
+///
+/// [pass] 0 is the original. 1 and 2 are two rounds of editing done to it, and
+/// neither touches what the other did — which is what a comparison of three
+/// pictures has to be able to show: a pane apiece, each marked where its own
+/// picture left the original.
+DiffPixels drawing({int pass = 0}) {
   const int width = 320;
   const int height = 200;
   final Uint8List data = Uint8List(width * height * 4);
@@ -187,9 +192,9 @@ DiffPixels drawing({required bool changed}) {
     }
   }
 
-  // The ground, and a band across the top.
+  // The ground, and a band across the top. The second pass restyled the band.
   box(0, 0, width, height, 246, 248, 251);
-  box(0, 0, width, 36, 27, 34, 44);
+  box(0, 0, width, 36, pass == 2 ? 18 : 27, pass == 2 ? 58 : 34, pass == 2 ? 92 : 44);
 
   // Three cards.
   for (int card = 0; card < 3; card += 1) {
@@ -198,23 +203,25 @@ DiffPixels drawing({required bool changed}) {
     box(left, 56, left + 82, 130, 255, 255, 255);
     box(left, 56, left + 82, 60, 14, 127, 252);
 
-    // A line of "text" in each.
+    // A line of "text" in each. The first pass lengthened the middle card's,
+    // the second cut the first card's back.
     for (int line = 0; line < 3; line += 1) {
-      final int width = 60 - line * 14 + (changed && card == 1 ? 10 : 0);
+      final int width =
+          60 - line * 14 + (pass == 1 && card == 1 ? 10 : 0) - (pass == 2 && card == 0 ? 16 : 0);
 
       box(left + 10, 74 + line * 14, left + 10 + width, 80 + line * 14, 200, 208, 220);
     }
   }
 
-  // A circle at the bottom, moved a little in the second picture.
-  final int centre = changed ? 178 : 160;
+  // A circle at the bottom, moved a little by the first pass.
+  final int centre = pass == 1 ? 178 : 160;
 
   for (int y = 148; y < 188; y += 1) {
     for (int x = centre - 20; x < centre + 20; x += 1) {
       final double distance = math.sqrt(math.pow(x - centre, 2) + math.pow(y - 168, 2));
 
       if (distance <= 18) {
-        paint(x, y, changed ? 232 : 26, changed ? 62 : 127, changed ? 140 : 75);
+        paint(x, y, pass == 1 ? 232 : 26, pass == 1 ? 62 : 127, pass == 1 ? 140 : 75);
       }
     }
   }
