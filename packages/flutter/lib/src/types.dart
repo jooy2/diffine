@@ -713,23 +713,31 @@ class DiffImageRegion extends DiffImageArea {
 /// How much of the frame ended up where.
 @immutable
 class DiffImageStats {
-  /// The five counts and the share they come to.
+  /// The counts, the share they come to, and how far apart the pixels are.
   const DiffImageStats({
     required this.pixels,
+    required this.covered,
     required this.unchanged,
     required this.changed,
     required this.added,
     required this.removed,
     required this.ratio,
+    required this.distance,
   });
 
-  /// How many pixels the frame holds, which is what the rest are counted out
-  /// of.
+  /// How many pixels the frame holds.
   final int pixels;
 
-  /// Pixels that came out the same — and, where an offset has left a corner of
-  /// the frame that neither picture reaches, the pixels that are nothing at
-  /// all.
+  /// How many of those at least one of the two pictures reaches, which is what
+  /// the rest are counted out of.
+  ///
+  /// The same as [pixels] for two pictures laid corner to corner with nothing
+  /// between them. Two pictures one of which is wider and the other taller, or
+  /// two held apart by an offset, leave a corner of the frame neither of them
+  /// covers, and those pixels are nothing at all rather than pixels that agree.
+  final int covered;
+
+  /// Pixels both pictures cover and agree about.
   final int unchanged;
 
   /// Pixels both pictures cover and disagree about.
@@ -741,8 +749,109 @@ class DiffImageStats {
   /// Pixels only the first one covers.
   final int removed;
 
-  /// Everything that is not unchanged, as a share of the frame, from 0 to 1.
+  /// Everything that is not unchanged, as a share of [covered], from 0 to 1.
+  ///
+  /// The four counts add up to [covered], so `1 - ratio` is how much of the two
+  /// pictures came out the same. [DiffImageSimilarity] is that number with the
+  /// rest of what goes with it.
   final double ratio;
+
+  /// How far apart two pixels are on average, over the pixels both pictures
+  /// cover, from 0 to 1.
+  ///
+  /// The other half of the answer [ratio] gives. A picture saved again by a
+  /// worse encoder and a picture with half of it painted over can differ in the
+  /// same number of pixels, and they do not differ by the same amount — this is
+  /// the amount, on the same scale the tolerance is measured on. Everything is
+  /// in it, including the pixels the tolerance and the smoothing test let
+  /// through.
+  final double distance;
+}
+
+/// How alike two pictures are, as one number and the counts behind it.
+///
+/// What [DiffImageResult] answers is "where did these two differ", and a build
+/// that keeps a threshold, a report that ranks a hundred screenshots and a
+/// badge on a screen are all asking the shorter question instead. This is the
+/// shorter question: see `imageSimilarity`.
+@immutable
+class DiffImageSimilarity {
+  /// The share and the counts behind it.
+  const DiffImageSimilarity({
+    required this.similarity,
+    required this.identical,
+    required this.pixels,
+    required this.matched,
+    required this.changed,
+    required this.added,
+    required this.removed,
+    required this.distance,
+    required this.before,
+    required this.after,
+  });
+
+  /// How alike the two are, from 0 for nothing in common to 1 for the same
+  /// picture, as a share of the pixels at least one of them covers.
+  ///
+  /// Times a hundred is the percentage. A pixel only one picture covers counts
+  /// against it, so two pictures of different sizes cannot reach 1.
+  final double similarity;
+
+  /// Whether not one pixel of either came out different.
+  final bool identical;
+
+  /// How many pixels at least one of the two covers.
+  final int pixels;
+
+  /// How many of those came out the same.
+  final int matched;
+
+  /// How many both cover and disagree about.
+  final int changed;
+
+  /// How many only the second covers.
+  final int added;
+
+  /// How many only the first covers.
+  final int removed;
+
+  /// How far apart two pixels are on average, over the pixels both cover, from
+  /// 0 to 1.
+  ///
+  /// [similarity] counts pixels and this measures them, which are two different
+  /// questions about the same pair. A photograph saved again is unalike in most
+  /// of its pixels and barely apart in any of them.
+  final double distance;
+
+  /// How large the first picture was, because a share means less when the two
+  /// differ.
+  final DiffImageSize before;
+
+  /// How large the second one was.
+  final DiffImageSize after;
+}
+
+/// How large a picture is, in pixels.
+@immutable
+class DiffImageSize {
+  /// One size.
+  const DiffImageSize({required this.width, required this.height});
+
+  /// How many pixels across.
+  final int width;
+
+  /// How many down.
+  final int height;
+
+  @override
+  bool operator ==(Object other) =>
+      other is DiffImageSize && other.width == width && other.height == height;
+
+  @override
+  int get hashCode => Object.hash(width, height);
+
+  @override
+  String toString() => '$width × $height';
 }
 
 /// What each kind of pixel is painted in, when the mask is turned into a

@@ -22,5 +22,11 @@
 
 export * from './types.js';
 export { DIFFINE_DEFAULTS, diffCharacters, diffSequence, diffText, diffWords } from './diff.js';
-export { DIFF_PIXEL_KINDS, DIFFINE_IMAGE_DEFAULTS, diffImage, paintDiffImage } from './image.js';
+export {
+  DIFF_PIXEL_KINDS,
+  DIFFINE_IMAGE_DEFAULTS,
+  diffImage,
+  imageSimilarity,
+  paintDiffImage
+} from './image.js';
 export { formatPatch, parsePatch } from './patch.js';

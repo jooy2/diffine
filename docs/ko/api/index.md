@@ -1096,14 +1096,51 @@ final DiffImageResult result = diffImage(
 
 ### `DiffImageStats`
 
-| 필드        | 무엇을 세는지                                       |
-| ----------- | --------------------------------------------------- |
-| `pixels`    | 프레임의 전체 픽셀 수.                              |
-| `unchanged` | 그대로인 픽셀.                                      |
-| `changed`   | 달라진 픽셀.                                        |
-| `added`     | 두 번째 이미지만 덮는 픽셀.                         |
-| `removed`   | 첫 번째 이미지만 덮는 픽셀.                         |
-| `ratio`     | `unchanged`가 아닌 전부가 프레임에서 차지하는 비율. |
+| 필드        | 무엇을 세는지                                          |
+| ----------- | ------------------------------------------------------ |
+| `pixels`    | 프레임의 전체 픽셀 수.                                 |
+| `covered`   | 그중 두 이미지 가운데 하나라도 덮는 픽셀 수.           |
+| `unchanged` | 둘 다 덮고 값이 같은 픽셀.                             |
+| `changed`   | 둘 다 덮고 값이 다른 픽셀.                             |
+| `added`     | 두 번째 이미지만 덮는 픽셀.                            |
+| `removed`   | 첫 번째 이미지만 덮는 픽셀.                            |
+| `ratio`     | `unchanged`가 아닌 전부가 `covered`에서 차지하는 비율. |
+| `distance`  | 둘 다 덮는 픽셀의 평균 색 거리.                        |
+
+네 개의 수를 더하면 `pixels`가 아니라 `covered`가 됩니다. 하나는 더 넓고 다른 하나는 더 높으면 어느 쪽도 닿지 않는 모서리가 프레임에 남고, 그 픽셀은 값이 같은 픽셀이 아니라 아무것도 아닌 자리입니다.
+
+## `imageSimilarity`
+
+::: fw react
+
+```ts
+imageSimilarity(before: DiffPixels, after: DiffPixels, options?: DiffImageOptions): DiffImageSimilarity
+```
+
+:::
+
+::: fw flutter
+
+```dart
+DiffImageSimilarity imageSimilarity(DiffPixels before, DiffPixels after, [DiffImageOptions? options]);
+```
+
+:::
+
+| 필드         | 무엇을 말하는지                                                      |
+| ------------ | -------------------------------------------------------------------- |
+| `similarity` | 두 이미지가 얼마나 닮았는지, 0에서 1까지. 100을 곱하면 퍼센트입니다. |
+| `identical`  | 한 픽셀도 다르지 않은지.                                             |
+| `pixels`     | 둘 가운데 하나라도 덮는 픽셀 수.                                     |
+| `matched`    | 그중 값이 같은 픽셀 수.                                              |
+| `changed`    | 둘 다 덮고 값이 다른 픽셀 수.                                        |
+| `added`      | 두 번째만 덮는 픽셀 수.                                              |
+| `removed`    | 첫 번째만 덮는 픽셀 수.                                              |
+| `distance`   | 둘 다 덮는 픽셀의 평균 색 거리.                                      |
+| `before`     | 첫 번째 이미지의 크기.                                               |
+| `after`      | 두 번째 이미지의 크기.                                               |
+
+안에서 비교 전체가 돌아가므로 옵션의 뜻은 `diffImage`에서와 같습니다. 이미 구한 결과가 있다면 다시 돌릴 필요가 없습니다. `1 - result.stats.ratio`가 같은 값입니다.
 
 ## `paintDiffImage`
 

@@ -83,9 +83,11 @@ void main() {
       );
 
       expect(result.stats.pixels, 6);
+      expect(result.stats.covered, 6);
       expect(result.stats.unchanged, 6);
       expect(result.stats.changed, 0);
       expect(result.stats.ratio, 0);
+      expect(result.stats.distance, 0);
       expect(result.regions, isEmpty);
       expect(result.complete, isTrue);
     });
@@ -113,6 +115,34 @@ void main() {
       expect(marks(result), <String>['...', '.~.', '...']);
       expect(result.stats.changed, 1);
       expect(result.regions.map(regionOf).toList(), <String>['1,1 1x1 (1)']);
+    });
+
+    test('leaves out the corner of the frame neither picture reaches', () {
+      // One is wider and the other is taller, so the bottom-right corner of the
+      // frame is nothing at all rather than two pixels that agree.
+      final DiffImageResult result = diffImage(
+        picture(<String>['....', '....']),
+        picture(<String>['..', '..', '..', '..']),
+      );
+
+      expect(result.stats.pixels, 16);
+      expect(result.stats.covered, 12);
+      expect(result.stats.unchanged, 4);
+      expect(result.stats.added + result.stats.removed, 8);
+      expect(result.stats.ratio, 8 / 12);
+    });
+
+    test('measures how far apart the pixels both cover are', () {
+      final DiffImageResult result = diffImage(
+        picture(<String>['..', '..']),
+        picture(<String>['.8', '..']),
+        const DiffImageOptions(tolerance: 1),
+      );
+
+      // One pixel of four moved from white to a shade of grey, and the other
+      // three did not move at all.
+      expect(result.stats.distance, greaterThan(0));
+      expect(result.stats.distance, closeTo((255 - 226) / 255 / 4, 0.01));
     });
 
     test('counts a pixel that only one of the two pictures has', () {
@@ -353,6 +383,75 @@ void main() {
       );
 
       expect(painted.data.sublist(0, 4), <int>[0, 0, 255, 255]);
+    });
+  });
+
+  group('imageSimilarity', () {
+    test('says two copies of the same picture are the same picture', () {
+      final DiffImageSimilarity result = imageSimilarity(
+        picture(<String>['.#.', '#.#']),
+        picture(<String>['.#.', '#.#']),
+      );
+
+      expect(result.similarity, 1);
+      expect(result.identical, isTrue);
+      expect(result.pixels, 6);
+      expect(result.matched, 6);
+      expect(result.changed, 0);
+      expect(result.distance, 0);
+      expect(result.before, const DiffImageSize(width: 3, height: 2));
+      expect(result.after, const DiffImageSize(width: 3, height: 2));
+    });
+
+    test('counts a changed pixel against the share', () {
+      final DiffImageSimilarity result = imageSimilarity(
+        picture(<String>['....', '....']),
+        picture(<String>['....', '..r.']),
+      );
+
+      expect(result.changed, 1);
+      expect(result.matched, 7);
+      expect(result.similarity, 7 / 8);
+      expect(result.identical, isFalse);
+    });
+
+    test('counts a pixel only one of the two covers against it', () {
+      final DiffImageSimilarity result = imageSimilarity(
+        picture(<String>['..']),
+        picture(<String>['..', '..']),
+      );
+
+      expect(result.added, 2);
+      expect(result.pixels, 4);
+      expect(result.similarity, 0.5);
+      expect(result.before, const DiffImageSize(width: 2, height: 1));
+      expect(result.after, const DiffImageSize(width: 2, height: 2));
+    });
+
+    test('reads the options the comparison reads', () {
+      final DiffPixels before = picture(<String>['55', '55']);
+      final DiffPixels after = picture(<String>['56', '55']);
+
+      expect(imageSimilarity(before, after, const DiffImageOptions(tolerance: 0)).similarity, 0.75);
+      expect(imageSimilarity(before, after, const DiffImageOptions(tolerance: 0.2)).similarity, 1);
+    });
+
+    test('tells a picture that is unalike everywhere from one that is far apart', () {
+      final DiffPixels flat = picture(<String>['....', '....']);
+      // Every pixel moved, and only a little.
+      final DiffPixels dimmed = picture(<String>['8888', '8888']);
+      // A quarter of the pixels moved, and all the way.
+      final DiffPixels painted = picture(<String>['##..', '....']);
+
+      final DiffImageSimilarity little = imageSimilarity(
+        flat,
+        dimmed,
+        const DiffImageOptions(tolerance: 0),
+      );
+      final DiffImageSimilarity lot = imageSimilarity(flat, painted);
+
+      expect(little.similarity, lessThan(lot.similarity));
+      expect(little.distance, lessThan(lot.distance));
     });
   });
 }

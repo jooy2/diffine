@@ -328,6 +328,85 @@ debugPrint('${result.regions.length}곳, ${(result.stats.ratio * 100).round()}%'
 
 전체는 [API 문서](../api/#diffimage)에 있습니다.
 
+## 두 이미지가 얼마나 닮았는지
+
+`diffImage`는 "어디가 달라졌는지"에 답합니다. 두 이미지를 들여다보는 사람이 묻는 질문이 그것입니다. 기준선을 둔 빌드, 스크린샷 백 장을 줄 세우는 보고서, 화면 한쪽의 배지는 더 짧은 질문을 합니다. `imageSimilarity`가 그 짧은 질문입니다.
+
+::: fw react
+
+```ts
+import { imageSimilarity } from 'diffine-react/image';
+
+const { similarity, changed, distance } = imageSimilarity(before, after);
+
+if (similarity < 0.995) {
+  throw new Error(`${changed} pixels moved — ${(similarity * 100).toFixed(2)}% alike`);
+}
+```
+
+:::
+
+::: fw flutter
+
+```dart
+final DiffImageSimilarity alike = imageSimilarity(before, after);
+
+if (alike.similarity < 0.995) {
+  throw StateError('${alike.changed} pixels moved — '
+      '${(alike.similarity * 100).toStringAsFixed(2)}% alike');
+}
+```
+
+:::
+
+`similarity`는 두 이미지 가운데 하나라도 덮는 픽셀을 기준으로 한 비율입니다. 한쪽만 덮는 픽셀은 깎이는 쪽으로 세므로 크기가 다른 두 이미지는 1이 될 수 없습니다. 옆에는 그 비율이 나온 `matched`, `changed`, `added`, `removed`와 각 이미지의 크기가 함께 옵니다. 크기가 다르면 비율만으로는 말이 부족하기 때문입니다.
+
+`distance`가 나머지 절반입니다. `similarity`는 달라진 픽셀을 세고 `distance`는 얼마나 달라졌는지를 재며, 척도는 `tolerance`와 같습니다. 나쁜 인코더로 다시 저장한 사진은 거의 모든 픽셀이 다르면서 어느 픽셀도 멀지 않고, 패널 하나를 덮어 그린 스크린샷은 그 반대입니다. 한 숫자로는 둘 다 말할 수 없습니다.
+
+안에서 비교 전체가 돌아가므로 옵션의 뜻은 위와 같고, 이미 결과를 들고 있다면 다시 돌릴 필요가 없습니다. `1 - result.stats.ratio`가 같은 값입니다.
+
+여기서도 인자는 픽셀입니다. 파일을 픽셀로 바꾸는 일은 <Fw react="`createImageBitmap`과 캔버스" flutter="`decodeImageFromList`와 `toByteData`" />가 하며, `diffImage`와 마찬가지로 애플리케이션의 몫입니다.
+
+::: fw react
+
+```ts
+async function pixelsOf(file: Blob): Promise<ImageData> {
+  const bitmap = await createImageBitmap(file);
+  const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+  const context = canvas.getContext('2d');
+
+  context.drawImage(bitmap, 0, 0);
+
+  return context.getImageData(0, 0, bitmap.width, bitmap.height);
+}
+
+const alike = imageSimilarity(await pixelsOf(saved), await pixelsOf(rendered));
+```
+
+:::
+
+::: fw flutter
+
+```dart
+Future<DiffPixels> pixelsOf(Uint8List file) async {
+  final ui.Image image = await decodeImageFromList(file);
+  final ByteData? bytes = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
+
+  return DiffPixels(
+    data: bytes!.buffer.asUint8List(),
+    width: image.width,
+    height: image.height,
+  );
+}
+
+final DiffImageSimilarity alike = imageSimilarity(
+  await pixelsOf(saved),
+  await pixelsOf(rendered),
+);
+```
+
+:::
+
 ## 나머지
 
 `header`, `navigation`, `zoom`, `summary`는 각각 창 위의 이름, 변경 사이를 오가는 버튼, 확대 버튼, 그리고 이미지 크기와 달라진 비율이 적힌 아래 막대를 끕니다.

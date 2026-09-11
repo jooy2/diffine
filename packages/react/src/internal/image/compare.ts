@@ -282,6 +282,11 @@ export function comparePixels(
   let changed = 0;
   let added = 0;
   let removed = 0;
+  // How far apart the pixels both pictures cover are, added up. Every pixel
+  // settled by the word comparison is nought and adds nothing, and every pixel
+  // past it has already been measured — so the total costs one addition on the
+  // pixels that were going to be measured anyway.
+  let apart = 0;
 
   for (let y = 0; y < height; y += 1) {
     const beforeRow = y - frame.before.y;
@@ -311,6 +316,8 @@ export function comparePixels(
 
         const distance = distanceBetween(before.data, first * 4, after.data, second * 4);
 
+        apart += distance;
+
         if (distance <= options.tolerance) {
           continue;
         }
@@ -338,14 +345,34 @@ export function comparePixels(
     }
   }
 
-  const pixels = width * height;
+  /*
+   * How much of the frame each picture reaches, worked out from the rectangles
+   * rather than counted in the loop. A counter there would be an increment on
+   * every pixel of the picture to answer a question two multiplications answer
+   * — and the corner of a frame that neither picture reaches is a real corner,
+   * left by two pictures one of which is wider and the other taller.
+   */
+  const overlap =
+    Math.max(
+      0,
+      Math.min(frame.before.x + before.width, frame.after.x + after.width) -
+        Math.max(frame.before.x, frame.after.x)
+    ) *
+    Math.max(
+      0,
+      Math.min(frame.before.y + before.height, frame.after.y + after.height) -
+        Math.max(frame.before.y, frame.after.y)
+    );
+  const covered = before.width * before.height + after.width * after.height - overlap;
   const stats: DiffImageStats = {
-    pixels,
-    unchanged: pixels - changed - added - removed,
+    pixels: width * height,
+    covered,
+    unchanged: overlap - changed,
     changed,
     added,
     removed,
-    ratio: pixels === 0 ? 0 : (changed + added + removed) / pixels
+    ratio: covered === 0 ? 0 : (changed + added + removed) / covered,
+    distance: overlap === 0 ? 0 : apart / overlap
   };
   const { regions, complete } = regionsOf(cells, Math.max(1, Math.floor(options.maxRegions)));
 

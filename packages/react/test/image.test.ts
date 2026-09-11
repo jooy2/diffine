@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { DIFF_PIXEL_KINDS, diffImage, type DiffImageResult, type DiffPixels } from 'diffine-react';
+import {
+  DIFF_PIXEL_KINDS,
+  diffImage,
+  imageSimilarity,
+  type DiffImageResult,
+  type DiffPixels
+} from 'diffine-react';
 
 /**
  * A picture written as rows of characters, so that a test reads as the thing it
@@ -72,11 +78,13 @@ describe('diffImage', () => {
 
     expect(result.stats).toEqual({
       pixels: 6,
+      covered: 6,
       unchanged: 6,
       changed: 0,
       added: 0,
       removed: 0,
-      ratio: 0
+      ratio: 0,
+      distance: 0
     });
     expect(result.regions).toEqual([]);
     expect(result.complete).toBe(true);
@@ -105,6 +113,29 @@ describe('diffImage', () => {
     expect(marks(result)).toEqual(['...', '.~.', '...']);
     expect(result.stats.changed).toBe(1);
     expect(result.regions).toEqual([{ x: 1, y: 1, width: 1, height: 1, pixels: 1 }]);
+  });
+
+  it('leaves out the corner of the frame neither picture reaches', () => {
+    // One is wider and the other is taller, so the bottom-right corner of the
+    // frame is nothing at all rather than two pixels that agree.
+    const result = diffImage(picture('....', '....'), picture('..', '..', '..', '..'));
+
+    expect(result.stats.pixels).toBe(16);
+    expect(result.stats.covered).toBe(12);
+    expect(result.stats.unchanged).toBe(4);
+    expect(result.stats.added + result.stats.removed).toBe(8);
+    expect(result.stats.ratio).toBe(8 / 12);
+  });
+
+  it('measures how far apart the pixels both cover are', () => {
+    const flat = picture('..', '..');
+    const dimmer = picture('.8', '..');
+    const { distance } = diffImage(flat, dimmer, { tolerance: 1 }).stats;
+
+    // One pixel of four moved from white to a shade of grey, and the other
+    // three did not move at all.
+    expect(distance).toBeGreaterThan(0);
+    expect(distance).toBeCloseTo((255 - 226) / 255 / 4, 2);
   });
 
   it('counts a pixel that only one of the two pictures has', () => {
@@ -257,5 +288,65 @@ describe('diffImage', () => {
 
       expect(result.offset).toEqual({ x: 0, y: 0 });
     });
+  });
+});
+
+describe('imageSimilarity', () => {
+  it('says two copies of the same picture are the same picture', () => {
+    const result = imageSimilarity(picture('.#.', '#.#'), picture('.#.', '#.#'));
+
+    expect(result).toEqual({
+      similarity: 1,
+      identical: true,
+      pixels: 6,
+      matched: 6,
+      changed: 0,
+      added: 0,
+      removed: 0,
+      distance: 0,
+      before: { width: 3, height: 2 },
+      after: { width: 3, height: 2 }
+    });
+  });
+
+  it('counts a changed pixel against the share', () => {
+    const result = imageSimilarity(picture('....', '....'), picture('....', '..r.'));
+
+    expect(result.changed).toBe(1);
+    expect(result.matched).toBe(7);
+    expect(result.similarity).toBe(7 / 8);
+    expect(result.identical).toBe(false);
+  });
+
+  it('counts a pixel only one of the two covers against it', () => {
+    const result = imageSimilarity(picture('..'), picture('..', '..'));
+
+    expect(result.added).toBe(2);
+    expect(result.pixels).toBe(4);
+    expect(result.similarity).toBe(0.5);
+    expect(result.before).toEqual({ width: 2, height: 1 });
+    expect(result.after).toEqual({ width: 2, height: 2 });
+  });
+
+  it('reads the options the comparison reads', () => {
+    const before = picture('55', '55');
+    const after = picture('56', '55');
+
+    expect(imageSimilarity(before, after, { tolerance: 0 }).similarity).toBe(0.75);
+    expect(imageSimilarity(before, after, { tolerance: 0.2 }).similarity).toBe(1);
+  });
+
+  it('tells a picture that is unalike everywhere from one that is far apart', () => {
+    const flat = picture('....', '....');
+    // Every pixel moved, and only a little.
+    const dimmed = picture('8888', '8888');
+    // A quarter of the pixels moved, and all the way.
+    const painted = picture('##..', '....');
+
+    const little = imageSimilarity(flat, dimmed, { tolerance: 0 });
+    const lot = imageSimilarity(flat, painted);
+
+    expect(little.similarity).toBeLessThan(lot.similarity);
+    expect(little.distance).toBeLessThan(lot.distance);
   });
 });

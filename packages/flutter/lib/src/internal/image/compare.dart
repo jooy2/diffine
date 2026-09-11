@@ -325,6 +325,11 @@ DiffImageResult comparePixels(DiffPixels before, DiffPixels after, CompareOption
   int changed = 0;
   int added = 0;
   int removed = 0;
+  // How far apart the pixels both pictures cover are, added up. Every pixel
+  // settled by the word comparison is nought and adds nothing, and every pixel
+  // past it has already been measured — so the total costs one addition on the
+  // pixels that were going to be measured anyway.
+  double apart = 0;
 
   for (int y = 0; y < height; y += 1) {
     final int beforeRow = y - frame.before.y;
@@ -353,6 +358,8 @@ DiffImageResult comparePixels(DiffPixels before, DiffPixels after, CompareOption
         }
 
         final double distance = distanceBetween(before.data, first * 4, after.data, second * 4);
+
+        apart += distance;
 
         if (distance <= options.tolerance) {
           continue;
@@ -389,14 +396,32 @@ DiffImageResult comparePixels(DiffPixels before, DiffPixels after, CompareOption
     }
   }
 
-  final int pixels = width * height;
+  // How much of the frame each picture reaches, worked out from the rectangles
+  // rather than counted in the loop. A counter there would be an increment on
+  // every pixel of the picture to answer a question two multiplications answer
+  // — and the corner of a frame that neither picture reaches is a real corner,
+  // left by two pictures one of which is wider and the other taller.
+  final int overlap =
+      math.max<int>(
+        0,
+        math.min(frame.before.x + before.width, frame.after.x + after.width) -
+            math.max(frame.before.x, frame.after.x),
+      ) *
+      math.max<int>(
+        0,
+        math.min(frame.before.y + before.height, frame.after.y + after.height) -
+            math.max(frame.before.y, frame.after.y),
+      );
+  final int covered = before.width * before.height + after.width * after.height - overlap;
   final DiffImageStats stats = DiffImageStats(
-    pixels: pixels,
-    unchanged: pixels - changed - added - removed,
+    pixels: width * height,
+    covered: covered,
+    unchanged: overlap - changed,
     changed: changed,
     added: added,
     removed: removed,
-    ratio: pixels == 0 ? 0 : (changed + added + removed) / pixels,
+    ratio: covered == 0 ? 0 : (changed + added + removed) / covered,
+    distance: overlap == 0 ? 0 : apart / overlap,
   );
   final RegionResult found = regionsOf(cells, math.max(1, options.maxRegions));
 

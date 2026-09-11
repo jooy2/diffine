@@ -71,6 +71,51 @@ DiffImageResult diffImage(DiffPixels before, DiffPixels after, [DiffImageOptions
   );
 }
 
+/// How alike two pictures are, as one number and the counts behind it.
+///
+/// [diffImage] answers "where did these two differ", which is the question a
+/// reader looking at them has. A build with a threshold in it, a report ranking
+/// a hundred screenshots and a badge on a screen are all asking the shorter one
+/// instead, and this is the shorter one:
+///
+/// ```dart
+/// final DiffImageSimilarity alike = imageSimilarity(before, after);
+///
+/// if (alike.similarity < 0.995) {
+///   throw StateError('${alike.changed} pixels moved — '
+///       '${(alike.similarity * 100).toStringAsFixed(2)}% alike');
+/// }
+/// ```
+///
+/// It is the whole comparison underneath, so every option means what it means
+/// there: the tolerance decides how much of a difference counts against the
+/// number, [DiffImageAlign.shift] lines two shots up before anything is
+/// counted, and a pixel only one of the two covers counts against it — two
+/// pictures of different sizes cannot be 1.
+///
+/// A comparison already worked out has all of this on `result.stats` and needs
+/// no second pass: `1 - stats.ratio` is the same number.
+DiffImageSimilarity imageSimilarity(
+  DiffPixels before,
+  DiffPixels after, [
+  DiffImageOptions? options,
+]) {
+  final DiffImageStats stats = diffImage(before, after, options).stats;
+
+  return DiffImageSimilarity(
+    similarity: 1 - stats.ratio,
+    identical: stats.changed == 0 && stats.added == 0 && stats.removed == 0,
+    pixels: stats.covered,
+    matched: stats.unchanged,
+    changed: stats.changed,
+    added: stats.added,
+    removed: stats.removed,
+    distance: stats.distance,
+    before: DiffImageSize(width: before.width, height: before.height),
+    after: DiffImageSize(width: after.width, height: after.height),
+  );
+}
+
 /// That a picture is as large as it says it is, checked once before anything
 /// reads it.
 ///

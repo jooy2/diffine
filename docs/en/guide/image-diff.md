@@ -328,6 +328,85 @@ Both sides are <Fw react="`ImageData`, or anything shaped like it: `{ data, widt
 
 The whole of it is on the [API page](../api/#diffimage).
 
+## How alike the two are
+
+`diffImage` answers "where did these two differ", which is the question a reader looking at them has. A build with a threshold in it, a report ranking a hundred screenshots and a badge on a page are all asking the shorter one, and `imageSimilarity` is the shorter one:
+
+::: fw react
+
+```ts
+import { imageSimilarity } from 'diffine-react/image';
+
+const { similarity, changed, distance } = imageSimilarity(before, after);
+
+if (similarity < 0.995) {
+  throw new Error(`${changed} pixels moved — ${(similarity * 100).toFixed(2)}% alike`);
+}
+```
+
+:::
+
+::: fw flutter
+
+```dart
+final DiffImageSimilarity alike = imageSimilarity(before, after);
+
+if (alike.similarity < 0.995) {
+  throw StateError('${alike.changed} pixels moved — '
+      '${(alike.similarity * 100).toStringAsFixed(2)}% alike');
+}
+```
+
+:::
+
+`similarity` is a share of the pixels at least one of the two pictures covers, so a pixel only one of them reaches counts against it and two pictures of different sizes cannot be 1. Beside it are the counts it came from — `matched`, `changed`, `added`, `removed` — and the size of each picture, because a share means less when the two differ.
+
+`distance` is the other half of the answer. `similarity` counts the pixels that moved and `distance` measures how far they moved, on the same scale `tolerance` is on. A photograph saved again by a worse encoder is unalike in most of its pixels and barely apart in any of them; a screenshot with a panel painted over is the opposite. One number cannot say both.
+
+It is the whole comparison underneath, so every option means what it means above, and an application that already has a result needs no second pass — `1 - result.stats.ratio` is the same number.
+
+Both sides are pixels here as well. Turning a file into pixels is <Fw react="`createImageBitmap` and a canvas" flutter="`decodeImageFromList` and `toByteData`" />, which is the application's, exactly as it is for `diffImage`:
+
+::: fw react
+
+```ts
+async function pixelsOf(file: Blob): Promise<ImageData> {
+  const bitmap = await createImageBitmap(file);
+  const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+  const context = canvas.getContext('2d');
+
+  context.drawImage(bitmap, 0, 0);
+
+  return context.getImageData(0, 0, bitmap.width, bitmap.height);
+}
+
+const alike = imageSimilarity(await pixelsOf(saved), await pixelsOf(rendered));
+```
+
+:::
+
+::: fw flutter
+
+```dart
+Future<DiffPixels> pixelsOf(Uint8List file) async {
+  final ui.Image image = await decodeImageFromList(file);
+  final ByteData? bytes = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
+
+  return DiffPixels(
+    data: bytes!.buffer.asUint8List(),
+    width: image.width,
+    height: image.height,
+  );
+}
+
+final DiffImageSimilarity alike = imageSimilarity(
+  await pixelsOf(saved),
+  await pixelsOf(rendered),
+);
+```
+
+:::
+
 ## Everything else
 
 `header`, `navigation`, `zoom` and `summary` each turn off a part of the frame: the names above the panes, the buttons for stepping through the changes, the zoom controls, and the bar underneath with each picture's size and how much of it moved.

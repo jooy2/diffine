@@ -21,7 +21,7 @@ export 'package:diffine/src/components/text/text_diff.dart' show TextDiff;
 export 'package:diffine/src/diff.dart'
     show diffCharacters, diffSequence, diffText, diffWords, kDiffineDefaults;
 export 'package:diffine/src/image.dart'
-    show diffImage, kDiffPixelKinds, kDiffineImageDefaults, paintDiffImage;
+    show diffImage, imageSimilarity, kDiffPixelKinds, kDiffineImageDefaults, paintDiffImage;
 export 'package:diffine/src/internal/highlight/catalogue.dart'
     show kDiffineLanguages, diffineHighlighterFor;
 export 'package:diffine/src/internal/i18n.dart' show baseStringsFor;

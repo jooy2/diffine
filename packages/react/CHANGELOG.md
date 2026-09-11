@@ -48,6 +48,10 @@
 
   What the format does not carry, the reader does not invent. The lines between one hunk and the next are not in a patch, so the numbers jump there: a line's `index` is still its own number in the file it came from, and `result.before` holds the lines that arrived rather than the whole document. Both functions are also their own entry, `diffine-react/patch`, so nothing of the component reaches a bundle that only wanted them.
 
+- **`stats.distance` says how far apart two pictures are, not just how much of them moved.** The average distance between two pixels both pictures cover, on the scale `tolerance` is measured on. Every pixel is in it, including the ones the tolerance and the smoothing test let through, so a picture re-encoded badly and a picture with a panel painted over are no longer the same answer. It costs one addition on the pixels that were being measured anyway.
+
+- **`imageSimilarity` answers how alike two pictures are, in one number.** `diffImage` says where two pictures differ, which is the question a reader looking at them has; a build with a threshold in it, a report ranking a hundred screenshots and a badge on a page are all asking the shorter one. What comes back is a share from 0 to 1, the counts it came from, how large each picture was, and how far apart the pixels are on average — because a photograph saved again is unalike in most of its pixels and barely apart in any of them, and one number cannot say both. It is the whole comparison underneath, so every option means what it means there.
+
 ### Changed
 
 - **The search bar is fetched when a reader opens one.** It is not on the screen when a comparison is, and for most readers it never is, so it is no longer in what a page downloads to draw two documents. The button that opens it is, because that one is drawn from the start. What it costs is the render between the keystroke and the bar, which is a chunk already sitting beside the page.
@@ -59,6 +63,8 @@
 - **`npm run size` measures what each entry costs, and CI fails a change that outgrows it.** Tree shaking is a property of the build rather than of the source and it is lost quietly — one plain import where an `import()` used to be, and a page that colours nothing is carrying a syntax highlighter again. The check bundles each entry the way an application would, counts what a page fetches before it draws anything, and compares it against a budget. What is behind an `import()` is not in that number.
 
 ### Fixed
+
+- **The pixels neither picture reaches are no longer counted as pixels that agree.** Two pictures one of which is wider and the other taller — or two held apart by `align` — leave a corner of the frame neither of them covers, and `stats.unchanged` counted it as unchanged while `stats.ratio` divided by the whole frame. So a 4 × 2 picture against a 2 × 4 one read as two thirds the same when half of what the two of them cover is not. `stats.covered` is the new denominator, `unchanged` is now the pixels both cover and agree about, and the four counts add up to `covered`. Two pictures of the same size are unaffected.
 
 - **`ignoreAntialiasing` no longer swallows a change inside a texture.** It allowed a differing pixel through whenever the pixel lay between the pixels around it and the change was no larger than the range of brightness across them. Nearly every pixel of a photograph lies between its neighbours and the range across a texture is most of the scale, so the allowance was most of the scale too: a patch cloned over the rainy window of a photograph came back as four fifths of the pixels it actually covers, and a change inside fine detail could vanish entirely.
 

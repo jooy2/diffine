@@ -18,6 +18,7 @@ import type {
   DiffImageOptions,
   DiffImagePaint,
   DiffImageResult,
+  DiffImageSimilarity,
   DiffPixelKind,
   DiffPixels
 } from './types.js';
@@ -32,6 +33,7 @@ export type {
   DiffPixelColour,
   DiffImageRegion,
   DiffImageResult,
+  DiffImageSimilarity,
   DiffImageStats,
   DiffPixelKind,
   DiffPixels
@@ -115,6 +117,52 @@ function check(pixels: DiffPixels, side: 'before' | 'after'): void {
       `diffine: the ${side} picture is ${width} × ${height}, which is ${wanted} bytes, and ${data.length} arrived.`
     );
   }
+}
+
+/**
+ * How alike two pictures are, as one number and the counts behind it.
+ *
+ * {@link diffImage} answers "where did these two differ", which is the question
+ * a reader looking at them has. A build with a threshold in it, a report
+ * ranking a hundred screenshots and a badge on a page are all asking the
+ * shorter one instead, and this is the shorter one:
+ *
+ * ```ts
+ * const { similarity, changed } = imageSimilarity(before, after);
+ *
+ * if (similarity < 0.995) {
+ *   throw new Error(`${changed} pixels moved — ${(similarity * 100).toFixed(2)}% alike`);
+ * }
+ * ```
+ *
+ * It is the whole comparison underneath, so every option means what it means
+ * there: `tolerance` decides how much of a difference counts against the
+ * number, `align` lines two shots up before anything is counted, and a pixel
+ * only one of the two covers counts against it — two pictures of different
+ * sizes cannot be 1.
+ *
+ * A comparison already worked out has all of this on `result.stats` and needs
+ * no second pass: `1 - stats.ratio` is the same number.
+ */
+export function imageSimilarity(
+  before: DiffPixels,
+  after: DiffPixels,
+  options?: DiffImageOptions
+): DiffImageSimilarity {
+  const { stats } = diffImage(before, after, options);
+
+  return {
+    similarity: 1 - stats.ratio,
+    identical: stats.changed === 0 && stats.added === 0 && stats.removed === 0,
+    pixels: stats.covered,
+    matched: stats.unchanged,
+    changed: stats.changed,
+    added: stats.added,
+    removed: stats.removed,
+    distance: stats.distance,
+    before: { width: before.width, height: before.height },
+    after: { width: after.width, height: after.height }
+  };
 }
 
 /** What each kind of pixel is painted in, where nothing else was asked for. */

@@ -511,20 +511,88 @@ export interface DiffImageRegion extends DiffImageArea {
 
 /** How much of the frame ended up where. */
 export interface DiffImageStats {
-  /** How many pixels the frame holds, which is what the rest are counted out of. */
+  /** How many pixels the frame holds. */
   pixels: number;
   /**
-   * Pixels that came out the same — and, where an offset has left a corner of
-   * the frame that neither picture reaches, the pixels that are nothing at all.
+   * How many of those at least one of the two pictures reaches, which is what
+   * the rest are counted out of.
+   *
+   * The same as `pixels` for two pictures laid corner to corner with nothing
+   * between them. Two pictures one of which is wider and the other taller, or
+   * two held apart by an offset, leave a corner of the frame neither of them
+   * covers, and those pixels are nothing at all rather than pixels that agree.
    */
+  covered: number;
+  /** Pixels both pictures cover and agree about. */
   unchanged: number;
+  /** Pixels both cover and disagree about. */
   changed: number;
   /** Pixels only the second picture covers. */
   added: number;
   /** Pixels only the first one covers. */
   removed: number;
-  /** Everything that is not `unchanged`, as a share of the frame, from 0 to 1. */
+  /**
+   * Everything that is not `unchanged`, as a share of `covered`, from 0 to 1.
+   *
+   * The four counts add up to `covered`, so `1 - ratio` is how much of the two
+   * pictures came out the same. {@link DiffImageSimilarity} is that number with
+   * the rest of what goes with it.
+   */
   ratio: number;
+  /**
+   * How far apart two pixels are on average, over the pixels both pictures
+   * cover, from 0 to 1.
+   *
+   * The other half of the answer `ratio` gives. A picture saved again by a
+   * worse encoder and a picture with half of it painted over can differ in the
+   * same number of pixels, and they do not differ by the same amount — this is
+   * the amount, on the same scale `tolerance` is measured on. Everything is in
+   * it, including the pixels the tolerance and the smoothing test let through.
+   */
+  distance: number;
+}
+
+/**
+ * How alike two pictures are, as one number and the counts behind it.
+ *
+ * What {@link DiffImageResult} answers is "where did these two differ", and a
+ * build that keeps a threshold, a report that ranks a hundred screenshots and a
+ * badge on a page are all asking the shorter question instead. This is the
+ * shorter question: see `imageSimilarity`.
+ */
+export interface DiffImageSimilarity {
+  /**
+   * How alike the two are, from 0 for nothing in common to 1 for the same
+   * picture, as a share of the pixels at least one of them covers.
+   *
+   * Times a hundred is the percentage. A pixel only one picture covers counts
+   * against it, so two pictures of different sizes cannot reach 1.
+   */
+  similarity: number;
+  /** Whether not one pixel of either came out different. */
+  identical: boolean;
+  /** How many pixels at least one of the two covers. */
+  pixels: number;
+  /** How many of those came out the same. */
+  matched: number;
+  /** How many both cover and disagree about. */
+  changed: number;
+  /** How many only the second covers. */
+  added: number;
+  /** How many only the first covers. */
+  removed: number;
+  /**
+   * How far apart two pixels are on average, over the pixels both cover, from 0
+   * to 1.
+   *
+   * `similarity` counts pixels and this measures them, which are two different
+   * questions about the same pair. A photograph saved again is unalike in most
+   * of its pixels and barely apart in any of them.
+   */
+  distance: number;
+  /** How large each picture was, because a share means less when the two differ. */
+  before: { width: number; height: number };
+  after: { width: number; height: number };
 }
 
 /** One colour as four bytes: red, green, blue and alpha, each from 0 to 255. */
