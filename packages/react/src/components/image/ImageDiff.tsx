@@ -22,6 +22,7 @@ import { imageStrings } from '../../internal/strings/image.js';
 import { useIsomorphicLayoutEffect } from '../../internal/layout.js';
 import { formatNumber } from '../../internal/measure.js';
 import type { Layer } from '../../internal/image/paint.js';
+import type { Sample } from '../../internal/image/loupe.js';
 import { imageContentOf, imageSourceOf } from '../../internal/image/source.js';
 import {
   useComparison,
@@ -164,6 +165,22 @@ export interface ImageDiffProps extends Omit<
   wheel?: DiffineImageWheel;
 
   /**
+   * Whether the pixels under the pointer are shown magnified, with the colour
+   * of the one in the middle written out.
+   *
+   * Two panes at four hundred per cent say two pixels are different and stop
+   * there, and what a reader asks next is what the two actually are. Both sides
+   * are shown whichever pane the pointer is over, because a split view has one
+   * picture a pane and the question is never about one of them.
+   *
+   * It follows a pointer and not a finger, so a reader on a touch screen never
+   * sees it.
+   *
+   * @default true
+   */
+  loupe?: boolean;
+
+  /**
    * How many pixels a picture is decoded at, at most.
    *
    * A photograph out of a modern camera is twenty-four million pixels, and two
@@ -260,6 +277,9 @@ const NO_LAYERS: readonly Layer[] = [];
 /** No boxes either, held rather than built so a pane is not painted again for one. */
 const NO_REGIONS: readonly DiffImageRegion[] = [];
 
+/** And nothing under the pointer, for a comparison with the loupe turned off. */
+const NO_SAMPLES: readonly Sample[] = [];
+
 /**
  * Two pictures, what changed between them, and every way of looking at that.
  *
@@ -302,6 +322,7 @@ export function ImageDiff({
   wipe: wipeProp,
   onWipeChange,
   wheel = 'zoom',
+  loupe = true,
   maxPixels = 4_000_000,
   marks = true,
   outlines = true,
@@ -535,6 +556,21 @@ export function ImageDiff({
     };
   }, [view, fade, wipe, beforePicture, afterPicture, frame]);
 
+  /**
+   * Both sides for the loupe, held so that a pane is not painted again for a
+   * new array of the same two pictures.
+   */
+  const samples = React.useMemo<readonly Sample[]>(() => {
+    if (!loupe) {
+      return NO_SAMPLES;
+    }
+
+    return [
+      beforePicture && { label: beforeSource.label, picture: beforePicture, area: frame.before },
+      afterPicture && { label: afterSource.label, picture: afterPicture, area: frame.after }
+    ].filter((sample) => sample !== null);
+  }, [loupe, beforePicture, afterPicture, frame, beforeSource.label, afterSource.label]);
+
   const blank = !beforePicture && !afterPicture;
   const loading = beforeLoaded.loading || afterLoaded.loading;
   const failed = beforeLoaded.failed || afterLoaded.failed || rejected !== null;
@@ -557,6 +593,7 @@ export function ImageDiff({
     chequer: palette?.chequer ?? 'transparent',
     editable: editing,
     wheel,
+    samples,
     strings
   };
 

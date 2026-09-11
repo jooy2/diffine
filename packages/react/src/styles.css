@@ -1626,6 +1626,111 @@ button.diffine-fold:focus-visible {
 }
 
 /*
+ * The pixels under the pointer, magnified.
+ *
+ * Pinned to a corner rather than following the pointer, and to whichever corner
+ * the pointer is furthest from — a square held under a pointer is a square over
+ * the thing it is magnifying. It takes no pointer events of its own, so moving
+ * onto it is impossible and the picture underneath goes on being dragged.
+ */
+.diffine-image-loupe {
+  position: absolute;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.375rem;
+  border: 1px solid var(--diffine-border);
+  border-radius: calc(var(--diffine-radius) - 0.125rem);
+  background: var(--diffine-surface);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.16);
+  pointer-events: none;
+
+  /* A pane narrower than the panel cuts it off rather than letting it hang over
+     the edge of the comparison. */
+  max-width: calc(100% - 1rem);
+  overflow: hidden;
+}
+
+.diffine-image-loupe[data-corner^='top'] {
+  top: 0.5rem;
+}
+
+.diffine-image-loupe[data-corner^='bottom'] {
+  bottom: 0.5rem;
+}
+
+.diffine-image-loupe[data-corner$='left'] {
+  left: 0.5rem;
+}
+
+.diffine-image-loupe[data-corner$='right'] {
+  right: 0.5rem;
+}
+
+.diffine-image-loupe-sides {
+  display: flex;
+  gap: 0.375rem;
+}
+
+.diffine-image-loupe-side {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 0;
+}
+
+.diffine-image-loupe-side figcaption {
+  display: flex;
+  flex-direction: column;
+  gap: 0.0625rem;
+  max-width: 6.75rem;
+  font-family: var(--diffine-font);
+  font-size: 0.6875rem;
+  line-height: 1.2;
+  color: var(--diffine-muted);
+}
+
+.diffine-image-loupe-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.diffine-image-loupe-colour {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--diffine-text);
+}
+
+/* The colour itself, over the chequer, so that a transparent pixel is a pixel
+   a reader can see is transparent rather than one the panel's own ground is
+   showing through. */
+.diffine-image-loupe-chip {
+  flex: none;
+  width: 0.625rem;
+  height: 0.625rem;
+  border: 1px solid var(--diffine-border);
+  border-radius: 2px;
+  background-color: var(--diffine-image-ground);
+}
+
+.diffine-image-loupe-canvas {
+  display: block;
+  border: 1px solid var(--diffine-border);
+  border-radius: 2px;
+  image-rendering: pixelated;
+}
+
+.diffine-image-loupe-at {
+  font-family: var(--diffine-font);
+  font-size: 0.6875rem;
+  line-height: 1.2;
+  color: var(--diffine-muted);
+}
+
+/*
  * The line one picture is wiped across the other at.
  *
  * A line the width of a hair with a grip in the middle of it, and a target

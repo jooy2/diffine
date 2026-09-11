@@ -870,6 +870,8 @@ export interface DiffineImageStrings extends DiffineCommonStrings {
   fade: string;
   /** The name of the handle that wipes one picture across the other. */
   wipe: string;
+  /** What goes before the coordinates under the magnified pixels. */
+  at: string;
 }
 
 /**

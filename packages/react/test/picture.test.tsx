@@ -65,6 +65,15 @@ describe('ImageDiff', () => {
     expect(markup).toContain('type="file"');
   });
 
+  it('has no loupe until a pointer is over a pane', () => {
+    // It follows a pointer, and a server has none. What is checked here is that
+    // the markup does not carry one anyway; what it draws is checked in a
+    // browser.
+    expect(render({ before: pixels(4, 4), after: pixels(4, 4) })).not.toContain(
+      'diffine-image-loupe'
+    );
+  });
+
   it('says there is nothing to compare before a picture has arrived', () => {
     // Nothing is decoded on a server, so this is also what the first paint of
     // every comparison looks like.

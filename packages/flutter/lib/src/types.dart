@@ -1367,6 +1367,7 @@ class DiffineStrings {
     required this.zoomLevel,
     required this.fade,
     required this.wipe,
+    required this.at,
   });
 
   /// The header over the left side, and its region's name.
@@ -1510,6 +1511,9 @@ class DiffineStrings {
   /// The name of the handle that wipes one picture across the other.
   final String wipe;
 
+  /// What goes before the coordinates under the magnified pixels.
+  final String at;
+
   /// The same words with whichever of them are given replaced.
   DiffineStrings copyWith({
     String? before,
@@ -1557,6 +1561,7 @@ class DiffineStrings {
     String? zoomLevel,
     String? fade,
     String? wipe,
+    String? at,
   }) {
     return DiffineStrings(
       before: before ?? this.before,
@@ -1604,6 +1609,7 @@ class DiffineStrings {
       zoomLevel: zoomLevel ?? this.zoomLevel,
       fade: fade ?? this.fade,
       wipe: wipe ?? this.wipe,
+      at: at ?? this.at,
     );
   }
 }

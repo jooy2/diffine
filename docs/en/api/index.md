@@ -338,10 +338,11 @@ What the picture comparison adds. <Fw react="`DiffineImageStrings`, which is wha
 | `zoomLevel`    | `{percent}%`                                         |
 | `fade`         | `Fade between the two`                               |
 | `wipe`         | `Drag to wipe between the two`                       |
+| `at`           | `At`                                                 |
 
 `added`, `removed`, `changed`, `summary`, `documentSize`, `changePosition`, `searchPosition`, `searchEmpty` and `imageSummary` are read by a screen reader rather than shown. `language` names the editor's menu of languages to one.
 
-The placeholders are filled in as follows. `searchIn` and `chooseIn` fill `{label}` with the name of the side the button belongs to, so two of the same button on one <Fw react="component" flutter="widget" /> are told apart. `summary` fills `{changes}`, `{inserted}` and `{deleted}` with the counts. `documentSize` fills `{label}` with the name of a side and `{characters}` and `{size}` with numbers already written in the reader's own language, and `imageSize` fills `{width}`, `{height}` and `{size}` the same way. `imageSummary` takes `{regions}` and `{percent}`, and `zoomLevel` takes `{percent}`. `placeholder` is what an empty field in the editor says.
+The placeholders are filled in as follows. `searchIn` and `chooseIn` fill `{label}` with the name of the side the button belongs to, so two of the same button on one <Fw react="component" flutter="widget" /> are told apart. `summary` fills `{changes}`, `{inserted}` and `{deleted}` with the counts. `documentSize` fills `{label}` with the name of a side and `{characters}` and `{size}` with numbers already written in the reader's own language, and `imageSize` fills `{width}`, `{height}` and `{size}` the same way. `imageSummary` takes `{regions}` and `{percent}`, and `zoomLevel` takes `{percent}`. `at` is what goes before the coordinates under the magnified pixels. `placeholder` is what an empty field in the editor says.
 
 ::: fw react
 
@@ -589,6 +590,7 @@ ImageDiff(mode: DiffineMode.editor, view: DiffineImageView.wipe, onChoose: pick)
 | `view` | `'split' \| 'overlay' \| 'wipe' \| 'mask'` | `'split'` | How the two are laid out. |
 | `unchanged` | `'keep' \| 'dim' \| 'hide'` | `'keep'` | What is done with the parts nothing happened to. |
 | `wheel` | `'zoom' \| 'pan'` | `'zoom'` | What the wheel does over a pane. |
+| `loupe` | `boolean` | `true` | Whether the pixels under the pointer are shown magnified. |
 | `fade` | `number` | `0.5` | How much of the second picture is let through. Overlay only. |
 | `onFadeChange` | `(fade: number) => void` | — | The overlay was faded. |
 | `wipe` | `number` | `0.5` | Where the line between the two is, from 0 to 1. Wipe only. |
@@ -614,6 +616,7 @@ ImageDiff(mode: DiffineMode.editor, view: DiffineImageView.wipe, onChoose: pick)
 | `view` | `DiffineImageView` | `DiffineImageView.split` | How the two are laid out. |
 | `unchanged` | `DiffineImageUnchanged` | `.keep` | What is done with the parts nothing happened to. |
 | `wheel` | `DiffineImageWheel` | `.zoom` | What the wheel does over a pane. |
+| `loupe` | `bool` | `true` | Whether the pixels under the pointer are shown magnified. |
 | `fade` | `double?` | `0.5` | How much of the second picture is let through. Overlay only. |
 | `onFadeChanged` | `ValueChanged<double>?` | — | The overlay was faded. |
 | `wipe` | `double?` | `0.5` | Where the line between the two is, from 0 to 1. Wipe only. |

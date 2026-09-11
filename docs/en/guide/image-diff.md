@@ -269,6 +269,14 @@ ImageDiff(
 
 Above its own size the picture is drawn crisp rather than smooth. At four hundred per cent the individual pixels are the thing being looked at, and interpolation blurs them.
 
+## The pixels themselves
+
+Two panes at four hundred per cent say two pixels are different and stop there, and what a reader asks next is what the two actually are — the same grey a shade darker, or a different colour altogether. `loupe` answers it. Move the pointer over either pane and the pixels around it are drawn magnified, both sides at once, with the colour of the one in the middle written out and the point of the frame it sits at.
+
+Both sides whichever pane the pointer is over, because a split view has one picture a pane and the question is never about one of them. It sits in whichever corner the pointer is furthest from, since a panel under the pointer is a panel over the thing it is magnifying, and it follows a pointer rather than a finger — a reader on a touch screen never sees it.
+
+It is on by default. <Fw react="`loupe={false}`" flutter="`loupe: false`" /> turns it off.
+
 `navigation` draws the buttons that step from one change to the next. Stepping to one moves the view onto it and pulls in far enough to see it, unless it is already a comfortable size, in which case the zoom you set is the zoom you keep.
 
 <Fw react="`viewport` and `defaultViewport` work the way everything else here does, taking `'fit'` or a `{ scale, x, y }`, with `onViewportChange` reporting where a reader went." flutter="`viewport` takes a `DiffineImageViewport`, or `null` for the whole frame in the pane, with `onViewportChanged` reporting where a reader went." /> The `x` and `y` are the point of the frame the middle of the pane is looking at, because a centre is what stays still when a picture is zoomed.

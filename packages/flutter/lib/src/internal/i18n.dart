@@ -60,6 +60,7 @@ const Map<DiffineLocale, DiffineStrings> _locales = <DiffineLocale, DiffineStrin
     zoomLevel: '{percent}%',
     fade: 'Fade between the two',
     wipe: 'Drag to wipe between the two',
+    at: 'At',
   ),
   DiffineLocale.ko: DiffineStrings(
     before: '이전',
@@ -107,6 +108,7 @@ const Map<DiffineLocale, DiffineStrings> _locales = <DiffineLocale, DiffineStrin
     zoomLevel: '{percent}%',
     fade: '두 이미지 겹쳐 보기',
     wipe: '끌어서 나눠 보기',
+    at: '좌표',
   ),
 };
 

@@ -37,6 +37,7 @@ import 'package:diffine/src/components/shared/diffine_nav.dart';
 import 'package:diffine/src/image.dart';
 import 'package:diffine/src/internal/i18n.dart';
 import 'package:diffine/src/internal/image/decode.dart';
+import 'package:diffine/src/internal/image/loupe.dart';
 import 'package:diffine/src/internal/image/paint.dart';
 import 'package:diffine/src/internal/image/viewport.dart';
 import 'package:diffine/src/internal/measure.dart';
@@ -63,6 +64,7 @@ class ImageDiff extends StatefulWidget {
     this.view = DiffineImageView.split,
     this.unchanged = DiffineImageUnchanged.keep,
     this.wheel = DiffineImageWheel.zoom,
+    this.loupe = true,
     this.fade,
     this.onFadeChanged,
     this.wipe,
@@ -146,6 +148,18 @@ class ImageDiff extends StatefulWidget {
   /// It is not part of [view] because it is a different question and holds
   /// across all four of those.
   final DiffineImageUnchanged unchanged;
+
+  /// Whether the pixels under the pointer are shown magnified, with the colour
+  /// of the one in the middle written out.
+  ///
+  /// Two panes at four hundred per cent say two pixels are different and stop
+  /// there, and what a reader asks next is what the two actually are. Both
+  /// sides are shown whichever pane the pointer is over, because a split view
+  /// has one picture a pane and the question is never about one of them.
+  ///
+  /// It follows a pointer and not a finger, so a reader on a touch screen never
+  /// sees it.
+  final bool loupe;
 
   /// What the wheel does over a pane.
   ///
@@ -568,6 +582,19 @@ class _ImageDiffState extends State<ImageDiff> {
     final Size frame = _frame;
     final DiffineImageViewport viewport = _look;
     final _Layers layers = _layers(frame);
+    /*
+     * Both sides for the loupe, whichever pane the pointer ends up over. The
+     * areas are the frame's, so the same point of the frame reads the same
+     * pixel of each picture however far apart the two were held.
+     */
+    final List<LoupeSample> samples = !widget.loupe
+        ? const <LoupeSample>[]
+        : <LoupeSample>[
+            if (_beforePicture != null)
+              LoupeSample(label: beforeLabel, picture: _beforePicture!, area: _areas.before),
+            if (_afterPicture != null)
+              LoupeSample(label: afterLabel, picture: _afterPicture!, area: _areas.after),
+          ];
     final bool blank = _beforePicture == null && _afterPicture == null;
     final bool tools =
         (widget.navigation && regions.isNotEmpty) || widget.zoom || (editing && !_split);
@@ -603,6 +630,7 @@ class _ImageDiffState extends State<ImageDiff> {
                       children: <Widget>[
                         Expanded(
                           child: _pane(
+                            samples: samples,
                             theme: theme,
                             strings: strings,
                             name: beforeLabel,
@@ -621,6 +649,7 @@ class _ImageDiffState extends State<ImageDiff> {
                         _Rule(colour: theme.border),
                         Expanded(
                           child: _pane(
+                            samples: samples,
                             theme: theme,
                             strings: strings,
                             name: afterLabel,
@@ -639,6 +668,7 @@ class _ImageDiffState extends State<ImageDiff> {
                       ],
                     )
                   : _pane(
+                      samples: samples,
                       theme: theme,
                       strings: strings,
                       name: bothLabel,
@@ -692,24 +722,38 @@ class _ImageDiffState extends State<ImageDiff> {
     );
   }
 
-  _Layers _layers(Size frame) {
+  /// Where each picture sits in the frame.
+  ///
+  /// The comparison answers this once it has run, offset and all. Until then —
+  /// and there is always an until then, because the pictures are drawn before
+  /// they are compared — both are laid corner to corner, which is where they
+  /// would be with no offset anyway.
+  ({DiffImageArea before, DiffImageArea after}) get _areas {
     final DiffImageResult? found = _comparison;
-    final DiffImageArea beforeArea =
-        found?.before ??
-        DiffImageArea(
-          x: 0,
-          y: 0,
-          width: _beforePicture?.width ?? 0,
-          height: _beforePicture?.height ?? 0,
-        );
-    final DiffImageArea afterArea =
-        found?.after ??
-        DiffImageArea(
-          x: 0,
-          y: 0,
-          width: _afterPicture?.width ?? 0,
-          height: _afterPicture?.height ?? 0,
-        );
+
+    return (
+      before:
+          found?.before ??
+          DiffImageArea(
+            x: 0,
+            y: 0,
+            width: _beforePicture?.width ?? 0,
+            height: _beforePicture?.height ?? 0,
+          ),
+      after:
+          found?.after ??
+          DiffImageArea(
+            x: 0,
+            y: 0,
+            width: _afterPicture?.width ?? 0,
+            height: _afterPicture?.height ?? 0,
+          ),
+    );
+  }
+
+  _Layers _layers(Size frame) {
+    final DiffImageArea beforeArea = _areas.before;
+    final DiffImageArea afterArea = _areas.after;
 
     final Picture? before = _beforePicture;
     final Picture? after = _afterPicture;
@@ -759,6 +803,7 @@ class _ImageDiffState extends State<ImageDiff> {
     required bool failed,
     required bool editing,
     required DiffineSide side,
+    required List<LoupeSample> samples,
     double? wipe,
   }) {
     return ImageDiffPane(
@@ -773,6 +818,7 @@ class _ImageDiffState extends State<ImageDiff> {
       unchanged: widget.unchanged,
       stencil: _stencil,
       wheel: widget.wheel,
+      samples: samples,
       regions: widget.outlines ? regions : const <DiffImageRegion>[],
       current: current,
       blank: blank,

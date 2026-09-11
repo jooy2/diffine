@@ -23,7 +23,8 @@ const IMAGE: Record<DiffineLocale, Omit<DiffineImageStrings, keyof typeof COMMON
     zoomFit: 'Fit to the pane',
     zoomLevel: '{percent}%',
     fade: 'Fade between the two',
-    wipe: 'Drag to wipe between the two'
+    wipe: 'Drag to wipe between the two',
+    at: 'At'
   },
   ko: {
     imageSize: '{label}: {width} × {height}, {size}',
@@ -37,7 +38,8 @@ const IMAGE: Record<DiffineLocale, Omit<DiffineImageStrings, keyof typeof COMMON
     zoomFit: '창에 맞추기',
     zoomLevel: '{percent}%',
     fade: '두 이미지 겹쳐 보기',
-    wipe: '끌어서 나눠 보기'
+    wipe: '끌어서 나눠 보기',
+    at: '좌표'
   }
 };
 
