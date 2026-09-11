@@ -759,16 +759,23 @@ class _ImageDiffState extends State<ImageDiff> {
     final String bothLabel = '$beforeLabel → $afterLabel';
     final bool editing = widget.mode == DiffineMode.editor;
 
-    if (_comparison != null && (_mask == null || _maskBrightness != theme.brightness)) {
+    final DiffImageResult? comparison = _comparison;
+    final DiffImagesResult? several = _several;
+    final bool compared = comparison != null || several != null;
+    // A pair is marked with one drawable and a list with one apiece, so what
+    // counts as drawn already is whichever of the two this comparison is.
+    final bool marked = _many ? _masks.isNotEmpty : _mask != null;
+
+    if (compared && (!marked || _maskBrightness != theme.brightness)) {
       unawaited(_buildMask(theme));
     }
 
-    if (_comparison != null && _stencil == null && widget.unchanged != DiffineImageUnchanged.keep) {
+    if (compared && _stencil == null && widget.unchanged != DiffineImageUnchanged.keep) {
       unawaited(_buildStencil());
     }
 
-    final DiffImageResult? comparison = _comparison;
-    final List<DiffImageRegion> regions = comparison?.regions ?? const <DiffImageRegion>[];
+    final List<DiffImageRegion> regions =
+        (several?.regions ?? comparison?.regions) ?? const <DiffImageRegion>[];
     final int current = _current(regions);
     final Size frame = _frame;
     final DiffineImageViewport viewport = _look;
@@ -927,7 +934,7 @@ class _ImageDiffState extends State<ImageDiff> {
                   changed: _ratio,
                   regions: regions.length,
                   complete: _whole,
-                  compared: _comparison != null || _several != null,
+                  compared: compared,
                 ),
             ],
           ),

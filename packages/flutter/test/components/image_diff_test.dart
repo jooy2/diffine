@@ -263,6 +263,37 @@ void main() {
     expect(reported!.stats.apart, <int>[0, 64, 0]);
   });
 
+  testWidgets('marks and boxes what a list changed, not a pair that is not there', (
+    WidgetTester tester,
+  ) async {
+    int? moved;
+
+    await pumpPictures(
+      tester,
+      host(
+        ImageDiff(
+          pictures: <DiffineImageContent>[white, red, white],
+          onSelectedChanged: (int selected, DiffImageRegion? region) => moved = selected,
+        ),
+      ),
+    );
+
+    // Both the marks and the changes used to be read off the comparison of two
+    // pictures, which a list does not have one of — so a list was drawn plain,
+    // with nothing tinted over it and nothing to step through.
+    final List<ImageDiffPane> panes = tester
+        .widgetList<ImageDiffPane>(find.byType(ImageDiffPane))
+        .toList();
+
+    expect(panes, hasLength(3));
+    expect(panes.every((ImageDiffPane pane) => pane.mask != null), isTrue);
+
+    await tester.tap(find.bySemanticsLabel('Next change'));
+    await tester.pump();
+
+    expect(moved, 0);
+  });
+
   testWidgets('lays a list of more than two out in panes whatever the view asks for', (
     WidgetTester tester,
   ) async {
