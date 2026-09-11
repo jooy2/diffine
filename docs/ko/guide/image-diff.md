@@ -197,6 +197,43 @@ ImageDiff(
 
 :::
 
+## 나머지 부분을 어떻게 할지
+
+`marks`와 `outlines`는 달라진 픽셀을 어떻게 할지 정하고, `unchanged`는 달라지지 않은 픽셀을 어떻게 할지 정합니다. 서로 다른 질문이라 네 가지 보기 모두에 함께 걸립니다.
+
+`keep`이 기본값이고 아무것도 하지 않습니다. 두 이미지를 그대로 그리고 그 위에 변경을 칠합니다.
+
+`dim`은 나머지를 흐리게 그리고 달라진 부분은 원래대로 그립니다. 눈이 가는 곳은 변경이 되고, 흐린 나머지는 그 변경이 이미지의 어디였는지를 말해 줍니다. 마스크만 보는 것으로는 알 수 없는 부분입니다.
+
+<Fw react="`marks={false}`" flutter="`marks: false`" />와 함께 씁니다. 달라진 부분을 이미 원래 모습으로 보여 주고 있으면, 같은 픽셀을 분홍으로 덮는 것은 답 위에 답을 겹치는 일입니다.
+
+<DiffinePictures sample="retouched" unchanged="dim" :marks="false" height="22rem" />
+
+`hide`는 달라진 부분만 평평한 바탕 위에 그립니다. 변경을 표시가 아니라 그림으로 읽는 보기입니다. 저 사각형 안에 왼쪽에는 무엇이 있었고 오른쪽에는 무엇이 있는지만 남습니다.
+
+<DiffinePictures sample="retouched" unchanged="hide" :marks="false" height="22rem" />
+
+::: fw react
+
+```tsx
+<ImageDiff before={saved} after={rendered} unchanged="dim" marks={false} />
+```
+
+:::
+
+::: fw flutter
+
+```dart
+ImageDiff(
+  before: DiffineEncodedImage(saved),
+  after: DiffineEncodedImage(rendered),
+  unchanged: DiffineImageUnchanged.dim,
+  marks: false,
+);
+```
+
+:::
+
 ## 움직이기
 
 두 창은 하나의 뷰포트를 함께 씁니다. 맞출 것이 애초에 없습니다. 끌든 굴리든 버튼을 누르든 두 장이 같이 움직입니다.

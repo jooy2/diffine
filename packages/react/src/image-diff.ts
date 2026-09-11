@@ -19,6 +19,7 @@ export type {
   DiffineImageInput,
   DiffineImageSource,
   DiffineImageStrings,
+  DiffineImageUnchanged,
   DiffineImageView,
   DiffineImageViewport,
   DiffineLocale,

@@ -7,6 +7,7 @@ import type {
   DiffImageResult,
   DiffineColorScheme,
   DiffineImageInput,
+  DiffineImageUnchanged,
   DiffineImageView,
   DiffineImageViewport,
   DiffineLocale,
@@ -21,7 +22,13 @@ import { useIsomorphicLayoutEffect } from '../../internal/layout.js';
 import { formatNumber } from '../../internal/measure.js';
 import type { Layer } from '../../internal/image/paint.js';
 import { imageContentOf, imageSourceOf } from '../../internal/image/source.js';
-import { useComparison, useMask, usePalette, usePicture } from '../../internal/image/useImages.js';
+import {
+  useComparison,
+  useMask,
+  usePalette,
+  usePicture,
+  useStencil
+} from '../../internal/image/useImages.js';
 import {
   fitViewport,
   viewportOn,
@@ -103,6 +110,23 @@ export interface ImageDiffProps extends Omit<
    * @default 'split'
    */
   view?: DiffineImageView;
+
+  /**
+   * What is done with the parts of the picture nothing happened to.
+   *
+   * `keep` draws both pictures as they are, with the changed pixels tinted over
+   * them. `dim` draws them faint and draws what changed as it is, so the change
+   * is what the eye lands on and the rest of the picture is still there to say
+   * where in it the change was. `hide` draws only what changed, on a plain
+   * ground — which is the view for reading a change as a picture rather than as
+   * a mark on one, and the one to pair with `marks={false}`.
+   *
+   * It is not part of `view` because it is a different question and holds
+   * across all four of those.
+   *
+   * @default 'keep'
+   */
+  unchanged?: DiffineImageUnchanged;
 
   /**
    * How much of the second picture is let through in the `overlay` view, from 0
@@ -257,6 +281,7 @@ export function ImageDiff({
   result,
   diff,
   view = 'split',
+  unchanged = 'keep',
   fade: fadeProp,
   onFadeChange,
   wipe: wipeProp,
@@ -316,6 +341,7 @@ export function ImageDiff({
 
   const palette = usePalette(root, colorScheme);
   const mask = useMask(comparison, palette);
+  const stencil = useStencil(comparison, unchanged !== 'keep');
 
   /*
    * The comparison, handed on once per comparison. The callback is kept in a
@@ -504,6 +530,8 @@ export function ImageDiff({
     onViewport: look,
     onBox,
     mask: marks ? mask : null,
+    unchanged,
+    stencil,
     regions,
     current,
     outline: palette?.outline ?? 'transparent',

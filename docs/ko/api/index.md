@@ -587,6 +587,7 @@ ImageDiff(mode: DiffineMode.editor, view: DiffineImageView.wipe, onChoose: pick)
 | prop | 타입 | 기본값 | 무엇을 정하는지 |
 | --- | --- | --- | --- |
 | `view` | `'split' \| 'overlay' \| 'wipe' \| 'mask'` | `'split'` | 두 장을 어떻게 놓을지. |
+| `unchanged` | `'keep' \| 'dim' \| 'hide'` | `'keep'` | 달라지지 않은 부분을 어떻게 할지. |
 | `fade` | `number` | `0.5` | 두 번째 이미지를 얼마나 비칠지. overlay 전용. |
 | `onFadeChange` | `(fade: number) => void` | — | 겹침 정도가 바뀌었을 때. |
 | `wipe` | `number` | `0.5` | 두 장을 가르는 선의 위치. 0에서 1. wipe 전용. |
@@ -610,6 +611,7 @@ ImageDiff(mode: DiffineMode.editor, view: DiffineImageView.wipe, onChoose: pick)
 | 인자 | 타입 | 기본값 | 무엇을 정하는지 |
 | --- | --- | --- | --- |
 | `view` | `DiffineImageView` | `DiffineImageView.split` | 두 장을 어떻게 놓을지. |
+| `unchanged` | `DiffineImageUnchanged` | `.keep` | 달라지지 않은 부분을 어떻게 할지. |
 | `fade` | `double?` | `0.5` | 두 번째 이미지를 얼마나 비칠지. overlay 전용. |
 | `onFadeChanged` | `ValueChanged<double>?` | — | 겹침 정도가 바뀌었을 때. |
 | `wipe` | `double?` | `0.5` | 두 장을 가르는 선의 위치. 0에서 1. wipe 전용. |

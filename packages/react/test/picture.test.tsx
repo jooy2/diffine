@@ -44,6 +44,16 @@ describe('ImageDiff', () => {
     expect(markup).toContain('Before → After');
   });
 
+  it('draws the panes whatever is being done with the unchanged parts', () => {
+    // What each of the three does is painted and is checked in a browser. What
+    // is checked here is that asking for one is not a canvas on a server.
+    for (const unchanged of ['keep', 'dim', 'hide'] as const) {
+      const markup = render({ before: pixels(4, 4), after: pixels(4, 4), unchanged });
+
+      expect(markup.split('diffine-image-pane')).toHaveLength(3);
+    }
+  });
+
   it('says there is nothing to compare before a picture has arrived', () => {
     // Nothing is decoded on a server, so this is also what the first paint of
     // every comparison looks like.

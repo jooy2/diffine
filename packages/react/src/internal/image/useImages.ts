@@ -16,7 +16,7 @@ import * as React from 'react';
 import type { DiffImageOptions, DiffImageResult, DiffineImageContent } from '../../types.js';
 import { diffImage } from '../../image.js';
 import { decodeImage, releasePicture, type Picture } from './decode.js';
-import { paintMask, type MaskColours } from './paint.js';
+import { paintMask, paintStencil, type MaskColours } from './paint.js';
 import { useIsomorphicLayoutEffect } from '../layout.js';
 
 /** A picture on its way in, or the reason it never arrived. */
@@ -255,4 +255,18 @@ export function useMask(
     () => (result && palette ? paintMask(result, palette) : null),
     [result, palette]
   );
+}
+
+/**
+ * The mask again as something to cut the pictures down to, for the two ways of
+ * reading a comparison that do that.
+ *
+ * Built only when one of them is asked for, because it is a picture the size of
+ * the frame and a comparison drawn the usual way has no use for it.
+ */
+export function useStencil(
+  result: DiffImageResult | null,
+  wanted: boolean
+): CanvasImageSource | null {
+  return React.useMemo(() => (result && wanted ? paintStencil(result) : null), [result, wanted]);
 }

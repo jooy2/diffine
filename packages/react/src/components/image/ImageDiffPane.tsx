@@ -16,7 +16,12 @@
  */
 
 import * as React from 'react';
-import type { DiffImageRegion, DiffineImageViewport, DiffineImageStrings } from '../../types.js';
+import type {
+  DiffImageRegion,
+  DiffineImageUnchanged,
+  DiffineImageViewport,
+  DiffineImageStrings
+} from '../../types.js';
 import { useIsomorphicLayoutEffect } from '../../internal/layout.js';
 import { paintPane, type Layer } from '../../internal/image/paint.js';
 import { fitScale, panBy, zoomAbout, ZOOM_STEP, type Box } from '../../internal/image/viewport.js';
@@ -36,6 +41,10 @@ export interface ImageDiffPaneProps {
   onBox: (box: Box) => void;
   layers: readonly Layer[];
   mask: CanvasImageSource | null;
+  /** What is done with the pixels nothing happened to. */
+  unchanged: DiffineImageUnchanged;
+  /** The mask as something to cut the pictures down to, for the modes that do. */
+  stencil: CanvasImageSource | null;
   regions: readonly DiffImageRegion[];
   current: number;
   /** What a box round a change is drawn in, and what the one being looked at is. */
@@ -70,6 +79,8 @@ export function ImageDiffPane({
   onBox,
   layers,
   mask,
+  unchanged,
+  stencil,
   regions,
   current,
   outline,
@@ -161,6 +172,8 @@ export function ImageDiffPane({
       viewport,
       layers,
       mask,
+      unchanged,
+      stencil,
       regions,
       current,
       outline,

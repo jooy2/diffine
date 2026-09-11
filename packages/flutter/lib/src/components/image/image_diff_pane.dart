@@ -42,6 +42,8 @@ class ImageDiffPane extends StatefulWidget {
     required this.strings,
     super.key,
     this.mask,
+    this.unchanged = DiffineImageUnchanged.keep,
+    this.stencil,
     this.editable = false,
     this.onChoose,
     this.wipe,
@@ -89,6 +91,12 @@ class ImageDiffPane extends StatefulWidget {
 
   /// The mask as a picture, or `null` where the marks are turned off.
   final ui.Image? mask;
+
+  /// What is done with the pixels nothing happened to.
+  final DiffineImageUnchanged unchanged;
+
+  /// The mask as something to cut the pictures down to, for the modes that do.
+  final ui.Image? stencil;
 
   /// Whether a picture can be put into it.
   final bool editable;
@@ -256,6 +264,8 @@ class _ImageDiffPaneState extends State<ImageDiffPane> {
                             current: widget.current,
                             theme: theme,
                             mask: widget.mask,
+                            unchanged: widget.unchanged,
+                            stencil: widget.stencil,
                           ),
                         ),
                       ),

@@ -587,6 +587,7 @@ ImageDiff(mode: DiffineMode.editor, view: DiffineImageView.wipe, onChoose: pick)
 | Prop | Type | Default | What it decides |
 | --- | --- | --- | --- |
 | `view` | `'split' \| 'overlay' \| 'wipe' \| 'mask'` | `'split'` | How the two are laid out. |
+| `unchanged` | `'keep' \| 'dim' \| 'hide'` | `'keep'` | What is done with the parts nothing happened to. |
 | `fade` | `number` | `0.5` | How much of the second picture is let through. Overlay only. |
 | `onFadeChange` | `(fade: number) => void` | — | The overlay was faded. |
 | `wipe` | `number` | `0.5` | Where the line between the two is, from 0 to 1. Wipe only. |
@@ -610,6 +611,7 @@ ImageDiff(mode: DiffineMode.editor, view: DiffineImageView.wipe, onChoose: pick)
 | Argument | Type | Default | What it decides |
 | --- | --- | --- | --- |
 | `view` | `DiffineImageView` | `DiffineImageView.split` | How the two are laid out. |
+| `unchanged` | `DiffineImageUnchanged` | `.keep` | What is done with the parts nothing happened to. |
 | `fade` | `double?` | `0.5` | How much of the second picture is let through. Overlay only. |
 | `onFadeChanged` | `ValueChanged<double>?` | — | The overlay was faded. |
 | `wipe` | `double?` | `0.5` | Where the line between the two is, from 0 to 1. Wipe only. |

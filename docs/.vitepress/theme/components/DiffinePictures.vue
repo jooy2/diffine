@@ -12,7 +12,7 @@ import { computed, onMounted, ref, watch } from 'vue';
 import { useData } from 'vitepress';
 import { createElement } from 'react';
 import { ImageDiff } from 'diffine-react/image-diff';
-import type { DiffineImageView } from 'diffine-react';
+import type { DiffineImageUnchanged, DiffineImageView } from 'diffine-react';
 import 'diffine-react/styles.css';
 import { useReactIsland } from '../island';
 import { pairOf, type PictureName, type PicturePair } from '../pictures';
@@ -21,6 +21,8 @@ const props = withDefaults(
   defineProps<{
     sample?: PictureName;
     view?: DiffineImageView;
+    /** What is done with the parts nothing happened to. */
+    unchanged?: DiffineImageUnchanged;
     /** How much of a difference counts, from 0 to 1. */
     tolerance?: number;
     /** Whether an offset between the two is looked for first. */
@@ -38,6 +40,7 @@ const props = withDefaults(
   {
     sample: 'retouched',
     view: 'split',
+    unchanged: 'keep',
     tolerance: 0.05,
     align: false,
     smoothing: true,
@@ -89,6 +92,7 @@ function draw() {
     before: loaded ? { content: loaded.before, label: loaded.beforeLabel } : undefined,
     after: loaded ? { content: loaded.after, label: loaded.afterLabel } : undefined,
     view: props.view,
+    unchanged: props.unchanged,
     diff: {
       tolerance: props.tolerance,
       align: chosen.value.align ? ('shift' as const) : ('none' as const),
@@ -104,7 +108,9 @@ function draw() {
   });
 }
 
-useReactIsland(host, draw, { watch: [pair, chosen, isDark, locale, () => props.view] });
+useReactIsland(host, draw, {
+  watch: [pair, chosen, isDark, locale, () => props.view, () => props.unchanged]
+});
 </script>
 
 <template>

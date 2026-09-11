@@ -61,6 +61,7 @@ class ImageDiff extends StatefulWidget {
     this.result,
     this.diff = kDiffineImageDefaults,
     this.view = DiffineImageView.split,
+    this.unchanged = DiffineImageUnchanged.keep,
     this.fade,
     this.onFadeChanged,
     this.wipe,
@@ -130,6 +131,20 @@ class ImageDiff extends StatefulWidget {
   /// How the two are laid out: side by side, one faded over the other, one
   /// wiped across the other, or neither of them and only what changed.
   final DiffineImageView view;
+
+  /// What is done with the parts of the picture nothing happened to.
+  ///
+  /// [DiffineImageUnchanged.keep] draws both pictures as they are, with the
+  /// changed pixels tinted over them. [DiffineImageUnchanged.dim] draws them
+  /// faint and draws what changed as it is, so the change is what the eye lands
+  /// on and the rest of the picture is still there to say where in it the
+  /// change was. [DiffineImageUnchanged.hide] draws only what changed, on a
+  /// plain ground — the view for reading a change as a picture rather than as a
+  /// mark on one, and the one to pair with `marks: false`.
+  ///
+  /// It is not part of [view] because it is a different question and holds
+  /// across all four of those.
+  final DiffineImageUnchanged unchanged;
 
   /// How much of the second picture is let through in
   /// [DiffineImageView.overlay], from 0 to 1.
@@ -236,6 +251,7 @@ class _ImageDiffState extends State<ImageDiff> {
   DiffImageResult? _comparison;
   ui.Image? _mask;
   Brightness? _maskBrightness;
+  ui.Image? _stencil;
 
   Size _box = Size.zero;
   DiffineImageViewport? _viewport;
@@ -266,6 +282,7 @@ class _ImageDiffState extends State<ImageDiff> {
     releasePicture(_beforePicture);
     releasePicture(_afterPicture);
     _mask?.dispose();
+    _stencil?.dispose();
     super.dispose();
   }
 
@@ -367,6 +384,8 @@ class _ImageDiffState extends State<ImageDiff> {
       _comparison = worked;
       _mask?.dispose();
       _mask = null;
+      _stencil?.dispose();
+      _stencil = null;
     });
 
     WidgetsBinding.instance.addPostFrameCallback((Duration _) {
@@ -395,6 +414,30 @@ class _ImageDiffState extends State<ImageDiff> {
       _mask?.dispose();
       _mask = painted;
       _maskBrightness = theme.brightness;
+    });
+  }
+
+  /// The stencil, built only when one of the two modes that cut a picture down
+  /// is asked for. It is a picture the size of the frame, and a comparison
+  /// drawn the usual way has no use for one.
+  Future<void> _buildStencil() async {
+    final DiffImageResult? found = _comparison;
+
+    if (found == null) {
+      return;
+    }
+
+    final ui.Image? painted = await paintStencil(found);
+
+    if (!mounted || painted == null) {
+      painted?.dispose();
+
+      return;
+    }
+
+    setState(() {
+      _stencil?.dispose();
+      _stencil = painted;
     });
   }
 
@@ -502,6 +545,10 @@ class _ImageDiffState extends State<ImageDiff> {
 
     if (_comparison != null && (_mask == null || _maskBrightness != theme.brightness)) {
       unawaited(_buildMask(theme));
+    }
+
+    if (_comparison != null && _stencil == null && widget.unchanged != DiffineImageUnchanged.keep) {
+      unawaited(_buildStencil());
     }
 
     final DiffImageResult? comparison = _comparison;
@@ -712,6 +759,8 @@ class _ImageDiffState extends State<ImageDiff> {
       onBox: _onBox,
       layers: layers,
       mask: widget.marks ? _mask : null,
+      unchanged: widget.unchanged,
+      stencil: _stencil,
       regions: widget.outlines ? regions : const <DiffImageRegion>[],
       current: current,
       blank: blank,

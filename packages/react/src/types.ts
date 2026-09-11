@@ -974,6 +974,24 @@ export type DiffineRender = (line: DiffLine, side: DiffineSide) => React.ReactNo
 export type DiffineImageView = 'split' | 'overlay' | 'wipe' | 'mask';
 
 /**
+ * What is done with the parts of a picture nothing happened to.
+ *
+ * - `keep` — nothing. Both pictures are drawn as they are, with the changed
+ *   pixels tinted over them.
+ * - `dim` — they are drawn faint and what changed is drawn as it is, so the
+ *   change is what the eye lands on and the rest of the picture is still there
+ *   to say where in it the change was.
+ * - `hide` — they are not drawn at all. What changed is drawn on a plain
+ *   ground, which is the view for reading a change as a picture rather than as
+ *   a mark on one.
+ *
+ * It is not `view`, because it is a different question and holds across all
+ * four of those: a wipe of two pictures whose unchanged half is dimmed is a
+ * sensible thing to ask for.
+ */
+export type DiffineImageUnchanged = 'keep' | 'dim' | 'hide';
+
+/**
  * A picture, as an application hands one over.
  *
  * A `Blob` is the usual answer, which is what a `<input type="file">` gives and

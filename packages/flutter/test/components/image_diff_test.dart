@@ -165,6 +165,31 @@ void main() {
     expect(find.text('saved → rendered'), findsOneWidget);
   });
 
+  testWidgets('draws the panes whatever is being done with the unchanged parts', (
+    WidgetTester tester,
+  ) async {
+    // What each of the three does is painted, and a painted answer is read with
+    // an eye rather than with a test. What is checked here is that asking for
+    // one draws a comparison and builds whatever it needs to.
+    for (final DiffineImageUnchanged unchanged in DiffineImageUnchanged.values) {
+      await pumpPictures(
+        tester,
+        host(
+          ImageDiff(
+            before: white,
+            after: red,
+            unchanged: unchanged,
+            beforeLabel: 'saved',
+            afterLabel: 'rendered',
+          ),
+        ),
+      );
+
+      expect(find.text('saved'), findsOneWidget, reason: unchanged.name);
+      expect(tester.takeException(), isNull, reason: unchanged.name);
+    }
+  });
+
   testWidgets('moves the line between the two pictures', (WidgetTester tester) async {
     double? wiped;
 

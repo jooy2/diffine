@@ -197,6 +197,43 @@ They carry their own transparency because all of them sit on top of the picture 
 
 :::
 
+## What happens to the rest of the picture
+
+`marks` and `outlines` say what is done with the pixels that changed. `unchanged` says what is done with the ones that did not, and the two are separate questions: it holds across all four views.
+
+`keep` is the default and does nothing. Both pictures are drawn as they are and the changes are tinted over them.
+
+`dim` draws them faint and draws what changed as it is. The change is what the eye lands on, and the rest of the picture is still there to say where in it the change was — which is what a mask on its own cannot say.
+
+<Fw react="`marks={false}`" flutter="`marks: false`" /> goes with it. Once what changed is being drawn as itself, tinting the same pixels pink is one answer over the top of another.
+
+<DiffinePictures sample="retouched" unchanged="dim" :marks="false" height="22rem" />
+
+`hide` draws only what changed, on a plain ground. It is the view for reading a change as a picture rather than as a mark on one: what is in that rectangle, on the left and on the right, with nothing else in the frame.
+
+<DiffinePictures sample="retouched" unchanged="hide" :marks="false" height="22rem" />
+
+::: fw react
+
+```tsx
+<ImageDiff before={saved} after={rendered} unchanged="dim" marks={false} />
+```
+
+:::
+
+::: fw flutter
+
+```dart
+ImageDiff(
+  before: DiffineEncodedImage(saved),
+  after: DiffineEncodedImage(rendered),
+  unchanged: DiffineImageUnchanged.dim,
+  marks: false,
+);
+```
+
+:::
+
 ## Moving around
 
 Both panes share one viewport, so there is nothing to keep in step: a drag, a wheel or a button moves the pair.

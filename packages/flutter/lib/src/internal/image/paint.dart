@@ -74,6 +74,43 @@ Future<ui.Image?> paintMask(DiffImageResult result, DiffineImageColours colours)
   return done.future;
 }
 
+/// The mask again, opaque wherever anything happened and see-through
+/// everywhere else.
+///
+/// What the tint above is for is saying which pixels changed. What this is for
+/// is cutting the pictures down to them: drawn into a layer with
+/// [BlendMode.dstIn], it leaves the parts of the picture that moved and takes
+/// away the parts that did not. That is the whole of [DiffineImageUnchanged] —
+/// the changed pixels of the picture itself, at full strength, over whatever
+/// the rest of the frame has been reduced to.
+///
+/// A picture of its own rather than the tint drawn twice, because the tint
+/// carries the palette's transparency in its pixels, and a stencil that is 55%
+/// opaque cuts out a picture that is 55% there.
+Future<ui.Image?> paintStencil(DiffImageResult result) {
+  final int width = result.width;
+  final int height = result.height;
+
+  if (width <= 0 || height <= 0) {
+    return Future<ui.Image?>.value();
+  }
+
+  final Uint8List painted = Uint8List(width * height * 4);
+  final Uint32List words = Uint32List.view(painted.buffer);
+
+  for (int pixel = 0; pixel < words.length; pixel += 1) {
+    if (result.mask[pixel] != 0) {
+      words[pixel] = 0xffffffff;
+    }
+  }
+
+  final Completer<ui.Image?> done = Completer<ui.Image?>();
+
+  ui.decodeImageFromPixels(painted, width, height, ui.PixelFormat.rgba8888, done.complete);
+
+  return done.future;
+}
+
 /// One picture drawn into a pane, and how much of the pane it is drawn in.
 class Layer {
   /// One layer.
@@ -121,7 +158,9 @@ class PaneOptions {
     required this.regions,
     required this.current,
     required this.theme,
+    this.unchanged = DiffineImageUnchanged.keep,
     this.mask,
+    this.stencil,
   });
 
   /// How large the frame is.
@@ -145,6 +184,12 @@ class PaneOptions {
   /// The mask as a picture, or `null` where the marks are turned off.
   final ui.Image? mask;
 
+  /// What is done with the pixels nothing happened to.
+  final DiffineImageUnchanged unchanged;
+
+  /// The mask as something to cut the pictures down to, for the modes that do.
+  final ui.Image? stencil;
+
   /// Whether the next frame would draw exactly what this one did.
   ///
   /// This is what `shouldRepaint` reads, and it is worth the lines. A pane is
@@ -159,7 +204,9 @@ class PaneOptions {
       other.viewport == viewport &&
       other.current == current &&
       other.theme == theme &&
+      other.unchanged == unchanged &&
       other.mask == mask &&
+      other.stencil == stencil &&
       _same(other.layers, layers) &&
       _same(other.regions, regions);
 
@@ -169,7 +216,9 @@ class PaneOptions {
     viewport,
     current,
     theme,
+    unchanged,
     mask,
+    stencil,
     Object.hashAll(layers),
     Object.hashAll(regions),
   );
@@ -196,6 +245,9 @@ bool _same<T>(List<T> one, List<T> other) {
 
 /// How large one square of the transparency chequer is, in pane pixels.
 const double _chequer = 8;
+
+/// How much of a picture is left where the rest of it is drawn faint.
+const double _faint = 0.2;
 
 /// Puts the frame's coordinates under the drawing commands that follow.
 void _look(Canvas canvas, DiffineImageViewport viewport, Size pane) {
@@ -233,21 +285,19 @@ void _paintChequer(Canvas canvas, Rect box, DiffineImageColours colours) {
 }
 
 /// One frame of the pane: the pictures, what changed, and where.
-void paintPane(Canvas canvas, Size pane, PaneOptions options) {
+/// The pictures, drawn through the viewport onto whatever canvas is asked for.
+///
+/// [faint] is how much of each one is let through, on top of whatever the layer
+/// itself asked for. It is what a picture whose unchanged half is being pushed
+/// back is drawn at, and 1 everywhere else.
+void _drawLayers(
+  Canvas canvas,
+  Size pane,
+  PaneOptions options,
+  FilterQuality quality,
+  double faint,
+) {
   final DiffineImageViewport viewport = options.viewport;
-  final Offset topLeft = paneAt(viewport, pane, 0, 0);
-  final Offset bottomRight = paneAt(viewport, pane, options.frame.width, options.frame.height);
-
-  canvas.clipRect(Offset.zero & pane);
-
-  if (bottomRight.dx > topLeft.dx && bottomRight.dy > topLeft.dy) {
-    _paintChequer(canvas, Rect.fromPoints(topLeft, bottomRight), options.theme.image);
-  }
-
-  // Crisp above its own size and smooth below it. A reader who has zoomed in to
-  // four hundred per cent is counting pixels, and interpolation is exactly what
-  // they zoomed in to see past.
-  final FilterQuality quality = viewport.scale < 1 ? FilterQuality.medium : FilterQuality.none;
 
   for (final Layer layer in options.layers) {
     final double? from = layer.from;
@@ -282,9 +332,46 @@ void paintPane(Canvas canvas, Size pane, PaneOptions options) {
       ),
       Paint()
         ..filterQuality = quality
-        ..color = Color.fromRGBO(0, 0, 0, layer.alpha),
+        ..color = Color.fromRGBO(0, 0, 0, layer.alpha * faint),
     );
     canvas.restore();
+  }
+}
+
+/// One frame of the pane: the pictures, what changed, and where.
+void paintPane(Canvas canvas, Size pane, PaneOptions options) {
+  final DiffineImageViewport viewport = options.viewport;
+  final Offset topLeft = paneAt(viewport, pane, 0, 0);
+  final Offset bottomRight = paneAt(viewport, pane, options.frame.width, options.frame.height);
+  final bool plain = options.unchanged != DiffineImageUnchanged.keep;
+
+  canvas.clipRect(Offset.zero & pane);
+
+  // The squares are the chequer's answer to "what is behind this picture", and
+  // they are the wrong answer once the picture has been pushed back on purpose.
+  // Then the ground is plain, and what it says is "this part did not change".
+  if (bottomRight.dx > topLeft.dx && bottomRight.dy > topLeft.dy) {
+    final Rect box = Rect.fromPoints(topLeft, bottomRight);
+
+    if (plain) {
+      canvas.drawRect(box, Paint()..color = options.theme.image.ground);
+    } else {
+      _paintChequer(canvas, box, options.theme.image);
+    }
+  }
+
+  // Crisp above its own size and smooth below it. A reader who has zoomed in to
+  // four hundred per cent is counting pixels, and interpolation is exactly what
+  // they zoomed in to see past.
+  final FilterQuality quality = viewport.scale < 1 ? FilterQuality.medium : FilterQuality.none;
+  final double faint = switch (options.unchanged) {
+    DiffineImageUnchanged.keep => 1,
+    DiffineImageUnchanged.dim => _faint,
+    DiffineImageUnchanged.hide => 0,
+  };
+
+  if (faint > 0) {
+    _drawLayers(canvas, pane, options, quality, faint);
   }
 
   final ui.Image? mask = options.mask;
@@ -298,6 +385,34 @@ void paintPane(Canvas canvas, Size pane, PaneOptions options) {
       Rect.fromLTWH(0, 0, options.frame.width, options.frame.height),
       Paint()..filterQuality = quality,
     );
+    canvas.restore();
+  }
+
+  final ui.Image? stencil = options.stencil;
+
+  /*
+   * The pixels that changed, at full strength, over whatever the rest of the
+   * frame was reduced to.
+   *
+   * Inside a layer of its own, because cutting a picture down to a shape means
+   * taking away everything the shape does not cover — and on the canvas itself
+   * that would take away the ground under it as well.
+   */
+  if (plain && stencil != null && options.layers.isNotEmpty) {
+    canvas.saveLayer(Offset.zero & pane, Paint());
+    _drawLayers(canvas, pane, options, quality, 1);
+
+    canvas.save();
+    _look(canvas, viewport, pane);
+    canvas.drawImageRect(
+      stencil,
+      Rect.fromLTWH(0, 0, stencil.width.toDouble(), stencil.height.toDouble()),
+      Rect.fromLTWH(0, 0, options.frame.width, options.frame.height),
+      Paint()
+        ..filterQuality = quality
+        ..blendMode = BlendMode.dstIn,
+    );
+    canvas.restore();
     canvas.restore();
   }
 
