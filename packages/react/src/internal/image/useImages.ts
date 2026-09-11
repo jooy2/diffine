@@ -172,6 +172,7 @@ const PROPERTIES = {
   removed: '--diffine-image-removed',
   outline: '--diffine-image-outline',
   marker: '--diffine-image-marker',
+  halo: '--diffine-image-halo',
   ground: '--diffine-image-ground',
   chequer: '--diffine-image-chequer'
 } as const;
@@ -180,6 +181,7 @@ const PROPERTIES = {
 export interface Palette extends MaskColours {
   outline: string;
   marker: string;
+  halo: string;
   ground: string;
   chequer: string;
 }

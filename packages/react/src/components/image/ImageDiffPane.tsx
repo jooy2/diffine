@@ -41,6 +41,8 @@ export interface ImageDiffPaneProps {
   /** What a box round a change is drawn in, and what the one being looked at is. */
   outline: string;
   marker: string;
+  /** What is drawn under both, so a box shows on any picture. */
+  halo: string;
   /** The two colours of the squares behind a picture that is see-through. */
   ground: string;
   chequer: string;
@@ -72,6 +74,7 @@ export function ImageDiffPane({
   current,
   outline,
   marker,
+  halo,
   ground,
   chequer,
   editable,
@@ -162,10 +165,24 @@ export function ImageDiffPane({
       current,
       outline,
       marker,
+      halo,
       ground,
       chequer
     });
-  }, [box, frame, viewport, layers, mask, regions, current, outline, marker, ground, chequer]);
+  }, [
+    box,
+    frame,
+    viewport,
+    layers,
+    mask,
+    regions,
+    current,
+    outline,
+    marker,
+    halo,
+    ground,
+    chequer
+  ]);
 
   /**
    * The wheel, which does one of three things.

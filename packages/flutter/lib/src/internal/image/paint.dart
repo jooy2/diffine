@@ -244,6 +244,13 @@ void paintPane(Canvas canvas, Size pane, PaneOptions options) {
   // The outlines are drawn in the pane's own pixels rather than the frame's, so
   // that a box round a change is a line one pixel wide however far in a reader
   // has gone — and not a line sixteen pixels wide with a picture behind it.
+  //
+  // Each one is drawn twice: a wider line in the colour that contrasts with the
+  // palette, and the line itself on top of it. A single line cannot be seen on
+  // every picture, because a picture is whatever colour it is — a dark box on
+  // the dark half of a photograph is a box nobody finds, and it was exactly
+  // where the changes tend to be. A pair always shows, whichever of the two the
+  // picture underneath happens to match.
   for (int index = 0; index < options.regions.length; index += 1) {
     final DiffImageRegion region = options.regions[index];
     final Offset start = paneAt(viewport, pane, region.x.toDouble(), region.y.toDouble());
@@ -259,14 +266,22 @@ void paintPane(Canvas canvas, Size pane, PaneOptions options) {
     }
 
     final bool chosen = index == options.current;
+    final Rect box = Rect.fromLTWH(
+      start.dx.roundToDouble() - 0.5,
+      start.dy.roundToDouble() - 0.5,
+      (end.dx - start.dx).roundToDouble().clamp(2, double.infinity) + 1,
+      (end.dy - start.dy).roundToDouble().clamp(2, double.infinity) + 1,
+    );
 
     canvas.drawRect(
-      Rect.fromLTWH(
-        start.dx.roundToDouble() - 0.5,
-        start.dy.roundToDouble() - 0.5,
-        (end.dx - start.dx).roundToDouble().clamp(2, double.infinity) + 1,
-        (end.dy - start.dy).roundToDouble().clamp(2, double.infinity) + 1,
-      ),
+      box,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = chosen ? 4 : 3
+        ..color = options.theme.image.halo,
+    );
+    canvas.drawRect(
+      box,
       Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = chosen ? 2 : 1

@@ -149,21 +149,24 @@ There is no URL on that list, and it is missing on purpose. A picture fetched by
 
 Pink is a pixel that changed. Green and red are the pixels only one of the two pictures covers, which is what a difference in size, or an offset, leaves behind. They are the same green and red a line that arrived or went away is drawn in.
 
+A box is drawn twice: a wider line in `halo` and the line itself over it. One line cannot be seen on every picture, because a picture is whatever colour it is, and a dark box on the dark half of a photograph is a box nobody finds — which is exactly where the changes tend to be. The box round the change a reader has stepped to is drawn in `marker` instead, and it is the blue one.
+
 ::: fw react
 
-None of it is a prop. The five colours are custom properties on the element:
+None of it is a prop. The colours are custom properties on the element:
 
 ```css
 .diffine-image {
   --diffine-image-changed: rgb(232 62 140 / 0.55);
   --diffine-image-added: rgb(26 127 75 / 0.5);
   --diffine-image-removed: rgb(194 51 63 / 0.5);
-  --diffine-image-outline: rgb(20 28 40 / 0.4);
+  --diffine-image-outline: rgb(20 28 40 / 0.85);
   --diffine-image-marker: rgb(14 127 252 / 0.95);
+  --diffine-image-halo: rgb(255 255 255 / 0.6);
 }
 ```
 
-They carry their own transparency because all five sit on top of the picture they are describing. A canvas cannot be styled, so these are read off the element and painted into the pixels. It is the one place in Diffine where a custom property is looked up rather than simply used, and it is why a mask is repainted when the palette under it changes.
+They carry their own transparency because all of them sit on top of the picture they are describing. A canvas cannot be styled, so these are read off the element and painted into the pixels. It is the one place in Diffine where a custom property is looked up rather than simply used, and it is why a mask is repainted when the palette under it changes.
 
 :::
 
@@ -180,8 +183,9 @@ ImageDiff(
       changed: Color(0x8ce83e8c),
       added: Color(0x801a7f4b),
       removed: Color(0x80c2333f),
-      outline: Color(0x66141c28),
+      outline: Color(0xd9141c28),
       marker: Color(0xf20e7ffc),
+      halo: Color(0x99ffffff),
       ground: Color(0xffeaeef4),
       chequer: Color(0xffdbe1ea),
     ),

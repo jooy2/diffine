@@ -1208,15 +1208,16 @@ Declared on `.diffine`, and overridden the same way.
 | `--diffine-blank`          | `#f0f3f7`   | `#151b23`   |
 | `--diffine-selection`      | `#0e7ffc33` | `#4c9dff40` |
 
-The five a picture comparison paints with, and the two behind it:
+What a picture comparison paints with, and the two behind it:
 
 | Property                  | Light                    | Dark                      |
 | ------------------------- | ------------------------ | ------------------------- |
 | `--diffine-image-changed` | `rgb(232 62 140 / 0.55)` | `rgb(255 92 168 / 0.55)`  |
 | `--diffine-image-added`   | `rgb(26 127 75 / 0.5)`   | `rgb(63 190 122 / 0.5)`   |
 | `--diffine-image-removed` | `rgb(194 51 63 / 0.5)`   | `rgb(255 106 116 / 0.5)`  |
-| `--diffine-image-outline` | `rgb(20 28 40 / 0.4)`    | `rgb(228 233 240 / 0.35)` |
+| `--diffine-image-outline` | `rgb(20 28 40 / 0.85)`   | `rgb(228 233 240 / 0.85)` |
 | `--diffine-image-marker`  | `rgb(14 127 252 / 0.95)` | `rgb(76 157 255 / 0.95)`  |
+| `--diffine-image-halo`    | `rgb(255 255 255 / 0.6)` | `rgb(6 10 16 / 0.6)`      |
 | `--diffine-image-ground`  | `#eaeef4`                | `#151b23`                 |
 | `--diffine-image-chequer` | `#dbe1ea`                | `#1e2530`                 |
 
@@ -1279,15 +1280,16 @@ Passing a theme settles `colorScheme` as well: a theme is a decision about which
 
 The `Line` pair tints a whole row; the `Piece` pair picks out what moved inside it, and only ever sits on top of the paler one. The `Text` pair is the same two colours dark enough to be read as text, for the counts in the bar under the panes, which have nothing behind them but the gutter. `search` and `searchCurrent` are what a search marks: the first every match, the second the one a reader has been taken to. They are a third colour rather than the accent, because a match can land on a row that is already tinted green or red and it has to be legible on all three grounds. `selection` is the editor's alone, and has to stay see-through: the words under a selection are painted behind the field.
 
-`code` is a `DiffineCodeColours` with the eight a highlighter draws with — `keyword`, `string`, `comment`, `number`, `title`, `type`, `variable` and `meta` — and `image` is a `DiffineImageColours` with the five a picture comparison paints with and the two behind them:
+`code` is a `DiffineCodeColours` with the eight a highlighter draws with — `keyword`, `string`, `comment`, `number`, `title`, `type`, `variable` and `meta` — and `image` is a `DiffineImageColours` with what a picture comparison paints with and the two behind them:
 
 | `theme.image` | Light            | Dark             |
 | ------------- | ---------------- | ---------------- |
 | `changed`     | `#e83e8c` at 55% | `#ff5ca8` at 55% |
 | `added`       | `#1a7f4b` at 50% | `#3fbe7a` at 50% |
 | `removed`     | `#c2333f` at 50% | `#ff6a74` at 50% |
-| `outline`     | `#141c28` at 40% | `#e4e9f0` at 35% |
+| `outline`     | `#141c28` at 85% | `#e4e9f0` at 85% |
 | `marker`      | `#0e7ffc` at 95% | `#4c9dff` at 95% |
+| `halo`        | `#ffffff` at 60% | `#060a10` at 60% |
 | `ground`      | `#eaeef4`        | `#151b23`        |
 | `chequer`     | `#dbe1ea`        | `#1e2530`        |
 

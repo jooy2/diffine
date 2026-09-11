@@ -152,6 +152,8 @@ export interface PaintOptions {
   /** What a region is outlined in, and what the one being looked at is outlined in. */
   outline: string;
   marker: string;
+  /** What is drawn under both of those, so that a line shows on any picture. */
+  halo: string;
   /** The two colours the transparency chequer is made of. */
   ground: string;
   chequer: string;
@@ -177,6 +179,7 @@ export function paintPane({
   current,
   outline,
   marker,
+  halo,
   ground,
   chequer
 }: PaintOptions): void {
@@ -247,10 +250,20 @@ export function paintPane({
     return;
   }
 
-  // The outlines are drawn in the pane's own pixels rather than the frame's, so
-  // that a box round a change is a line one pixel wide however far in a reader
-  // has gone — and not a line sixteen pixels wide with a picture behind it.
+  /*
+   * The outlines, in the pane's own pixels rather than the frame's, so that a
+   * box round a change is a line one pixel wide however far in a reader has
+   * gone — and not a line sixteen pixels wide with a picture behind it.
+   *
+   * Each one is drawn twice: a wider line in the colour that contrasts with the
+   * palette, and the line itself on top of it. A single line cannot be seen on
+   * every picture, because a picture is whatever colour it is — a dark box on
+   * the dark half of a photograph is a box nobody finds, and it was exactly
+   * where the changes tend to be. A pair always shows, whichever of the two the
+   * picture underneath happens to match.
+   */
   context.save();
+  context.lineJoin = 'miter';
 
   for (const [index, region] of regions.entries()) {
     const topLeft = paneAt(viewport, pane, region.x, region.y);
@@ -266,15 +279,18 @@ export function paintPane({
     }
 
     const chosen = index === current;
+    const left = Math.round(topLeft.x) - 0.5;
+    const top = Math.round(topLeft.y) - 0.5;
+    const width = Math.max(Math.round(bottomRight.x - topLeft.x) + 1, 2);
+    const height = Math.max(Math.round(bottomRight.y - topLeft.y) + 1, 2);
+
+    context.lineWidth = chosen ? 4 : 3;
+    context.strokeStyle = halo;
+    context.strokeRect(left, top, width, height);
 
     context.lineWidth = chosen ? 2 : 1;
     context.strokeStyle = chosen ? marker : outline;
-    context.strokeRect(
-      Math.round(topLeft.x) - 0.5,
-      Math.round(topLeft.y) - 0.5,
-      Math.max(Math.round(bottomRight.x - topLeft.x) + 1, 2),
-      Math.max(Math.round(bottomRight.y - topLeft.y) + 1, 2)
-    );
+    context.strokeRect(left, top, width, height);
   }
 
   context.restore();

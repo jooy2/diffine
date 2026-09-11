@@ -149,21 +149,24 @@ setState(() => before = DiffineEncodedImage(bytes.buffer.asUint8List()));
 
 분홍은 바뀐 픽셀입니다. 초록과 빨강은 두 이미지 중 한쪽만 덮는 픽셀, 곧 크기가 다르거나 위치가 어긋나서 남은 자리입니다. 줄이 새로 생기거나 사라졌을 때 쓰는 초록과 빨강이 그대로 옵니다.
 
+상자는 두 번 그립니다. `halo` 색으로 굵게 한 번, 그 위에 선을 한 번. 선 하나로는 모든 이미지에서 보이지 않습니다. 이미지는 어떤 색이든 될 수 있고, 사진의 어두운 쪽에 놓인 어두운 상자는 아무도 찾지 못하는데 변경은 대개 바로 거기에 있습니다. 지금 짚고 있는 변경은 `marker` 색으로 그리며, 파란 쪽이 그것입니다.
+
 ::: fw react
 
-이 가운데 prop은 하나도 없습니다. 다섯 색 모두 엘리먼트의 커스텀 속성입니다.
+이 가운데 prop은 하나도 없습니다. 색은 모두 엘리먼트의 커스텀 속성입니다.
 
 ```css
 .diffine-image {
   --diffine-image-changed: rgb(232 62 140 / 0.55);
   --diffine-image-added: rgb(26 127 75 / 0.5);
   --diffine-image-removed: rgb(194 51 63 / 0.5);
-  --diffine-image-outline: rgb(20 28 40 / 0.4);
+  --diffine-image-outline: rgb(20 28 40 / 0.85);
   --diffine-image-marker: rgb(14 127 252 / 0.95);
+  --diffine-image-halo: rgb(255 255 255 / 0.6);
 }
 ```
 
-다섯 색 모두 투명도를 품고 있습니다. 설명하려는 이미지 위에 얹히기 때문입니다. 캔버스에는 스타일을 입힐 수 없어서 이 값들은 엘리먼트에서 읽어 픽셀에 직접 칠합니다. Diffine에서 커스텀 속성을 읽어 가는 곳은 여기뿐이고, 팔레트가 바뀌면 표시를 다시 칠하는 이유도 이것입니다.
+색은 모두 투명도를 품고 있습니다. 설명하려는 이미지 위에 얹히기 때문입니다. 캔버스에는 스타일을 입힐 수 없어서 이 값들은 엘리먼트에서 읽어 픽셀에 직접 칠합니다. Diffine에서 커스텀 속성을 읽어 가는 곳은 여기뿐이고, 팔레트가 바뀌면 표시를 다시 칠하는 이유도 이것입니다.
 
 :::
 
@@ -180,8 +183,9 @@ ImageDiff(
       changed: Color(0x8ce83e8c),
       added: Color(0x801a7f4b),
       removed: Color(0x80c2333f),
-      outline: Color(0x66141c28),
+      outline: Color(0xd9141c28),
       marker: Color(0xf20e7ffc),
+      halo: Color(0x99ffffff),
       ground: Color(0xffeaeef4),
       chequer: Color(0xffdbe1ea),
     ),

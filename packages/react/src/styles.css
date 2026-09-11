@@ -72,8 +72,13 @@
   --diffine-image-changed: rgb(232 62 140 / 0.55);
   --diffine-image-added: rgb(26 127 75 / 0.5);
   --diffine-image-removed: rgb(194 51 63 / 0.5);
-  --diffine-image-outline: rgb(20 28 40 / 0.4);
+  --diffine-image-outline: rgb(20 28 40 / 0.85);
   --diffine-image-marker: rgb(14 127 252 / 0.95);
+
+  /* Drawn under both of those, wider, so that a box round a change shows on a
+     photograph of any colour. A single line cannot: a dark box on the dark half
+     of a picture is a box nobody finds, and that is where the changes are. */
+  --diffine-image-halo: rgb(255 255 255 / 0.6);
 
   /* Behind the pictures: the ground a pane that is larger than what is in it
      shows, and the squares that say where a picture is see-through. */
@@ -174,8 +179,9 @@
     --diffine-image-changed: rgb(255 92 168 / 0.55);
     --diffine-image-added: rgb(63 190 122 / 0.5);
     --diffine-image-removed: rgb(255 106 116 / 0.5);
-    --diffine-image-outline: rgb(228 233 240 / 0.35);
+    --diffine-image-outline: rgb(228 233 240 / 0.85);
     --diffine-image-marker: rgb(76 157 255 / 0.95);
+    --diffine-image-halo: rgb(6 10 16 / 0.6);
     --diffine-image-ground: #151b23;
     --diffine-image-chequer: #1e2530;
   }
@@ -210,8 +216,9 @@
   --diffine-image-changed: rgb(255 92 168 / 0.55);
   --diffine-image-added: rgb(63 190 122 / 0.5);
   --diffine-image-removed: rgb(255 106 116 / 0.5);
-  --diffine-image-outline: rgb(228 233 240 / 0.35);
+  --diffine-image-outline: rgb(228 233 240 / 0.85);
   --diffine-image-marker: rgb(76 157 255 / 0.95);
+  --diffine-image-halo: rgb(6 10 16 / 0.6);
   --diffine-image-ground: #151b23;
   --diffine-image-chequer: #1e2530;
 }

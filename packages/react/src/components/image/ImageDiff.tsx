@@ -498,6 +498,7 @@ export function ImageDiff({
     current,
     outline: palette?.outline ?? 'transparent',
     marker: palette?.marker ?? 'transparent',
+    halo: palette?.halo ?? 'transparent',
     ground: palette?.ground ?? 'transparent',
     chequer: palette?.chequer ?? 'transparent',
     editable: editing,

@@ -601,7 +601,7 @@ ImageDiff(mode: DiffineMode.editor, view: DiffineImageView.wipe, onChoose: pick)
 | `locale` | `'en' \| 'ko'` | `'en'` | 컴포넌트가 쓰는 말의 언어. |
 | `strings` | `Partial<DiffineImageStrings>` | — | 로케일 대신 쓸 낱말. |
 
-`split`은 창을 둘 그리고 나머지 셋은 하나를 그리며, 그 위에 두 이름을 함께 씁니다. 표시하는 색은 prop이 아니라 [커스텀 속성](#색) 다섯 개입니다. 캔버스에는 스타일을 입힐 수 없어서 값을 읽어 직접 칠하기 때문입니다.
+`split`은 창을 둘 그리고 나머지 셋은 하나를 그리며, 그 위에 두 이름을 함께 씁니다. 표시하는 색은 prop이 아니라 [커스텀 속성](#색)입니다. 캔버스에는 스타일을 입힐 수 없어서 값을 읽어 직접 칠하기 때문입니다.
 
 :::
 
@@ -1208,15 +1208,16 @@ class DiffImagePaint {
 | `--diffine-blank`          | `#f0f3f7`   | `#151b23`   |
 | `--diffine-selection`      | `#0e7ffc33` | `#4c9dff40` |
 
-이미지 비교가 칠하는 다섯 색과, 그 뒤에 깔리는 두 색입니다.
+이미지 비교가 칠하는 색과, 그 뒤에 깔리는 두 색입니다.
 
 | 속성                      | 밝은 테마                | 어두운 테마               |
 | ------------------------- | ------------------------ | ------------------------- |
 | `--diffine-image-changed` | `rgb(232 62 140 / 0.55)` | `rgb(255 92 168 / 0.55)`  |
 | `--diffine-image-added`   | `rgb(26 127 75 / 0.5)`   | `rgb(63 190 122 / 0.5)`   |
 | `--diffine-image-removed` | `rgb(194 51 63 / 0.5)`   | `rgb(255 106 116 / 0.5)`  |
-| `--diffine-image-outline` | `rgb(20 28 40 / 0.4)`    | `rgb(228 233 240 / 0.35)` |
+| `--diffine-image-outline` | `rgb(20 28 40 / 0.85)`   | `rgb(228 233 240 / 0.85)` |
 | `--diffine-image-marker`  | `rgb(14 127 252 / 0.95)` | `rgb(76 157 255 / 0.95)`  |
+| `--diffine-image-halo`    | `rgb(255 255 255 / 0.6)` | `rgb(6 10 16 / 0.6)`      |
 | `--diffine-image-ground`  | `#eaeef4`                | `#151b23`                 |
 | `--diffine-image-chequer` | `#dbe1ea`                | `#1e2530`                 |
 
@@ -1279,7 +1280,7 @@ TextDiff(
 
 `Line` 쪽이 줄 전체에 옅게 깔리는 색이고, `Piece` 쪽이 그 위에서 바뀐 부분을 짚는 색입니다. `Text` 쪽은 같은 두 색을 글자로 읽을 만큼 진하게 만든 것으로, 뒤에 깔린 것이 여백뿐인 아래쪽 상태 표시줄의 집계에 씁니다. `search`와 `searchCurrent`는 찾기가 짚는 색입니다. 앞은 찾은 자리 전부, 뒤는 지금 보고 있는 자리입니다. 강조색 대신 세 번째 색을 쓰는 이유는, 찾은 자리가 이미 초록이나 빨강으로 물든 줄에 놓일 수 있고 그 세 바탕 모두에서 읽혀야 하기 때문입니다. `selection`은 에디터만 쓰고, 반투명해야 합니다. 선택 영역 아래의 글자는 입력란 뒤에 그려지기 때문입니다.
 
-`code`는 강조기가 쓰는 여덟 색을 담은 `DiffineCodeColours`입니다. `keyword`, `string`, `comment`, `number`, `title`, `type`, `variable`, `meta`입니다. `image`는 이미지 비교가 칠하는 다섯 색과 그 뒤에 깔리는 두 색을 담은 `DiffineImageColours`입니다.
+`code`는 강조기가 쓰는 여덟 색을 담은 `DiffineCodeColours`입니다. `keyword`, `string`, `comment`, `number`, `title`, `type`, `variable`, `meta`입니다. `image`는 이미지 비교가 칠하는 색과 그 뒤에 깔리는 두 색을 담은 `DiffineImageColours`입니다.
 
 | `theme.image` | 밝은 테마     | 어두운 테마   |
 | ------------- | ------------- | ------------- |

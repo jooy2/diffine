@@ -89,13 +89,14 @@ class DiffineCodeColours {
 /// to compare.
 @immutable
 class DiffineImageColours {
-  /// All seven.
+  /// All eight.
   const DiffineImageColours({
     required this.changed,
     required this.added,
     required this.removed,
     required this.outline,
     required this.marker,
+    required this.halo,
     required this.ground,
     required this.chequer,
   });
@@ -114,6 +115,13 @@ class DiffineImageColours {
 
   /// The box round the change a reader has stepped to.
   final Color marker;
+
+  /// What is drawn under both boxes, wider, so that one shows on a picture of
+  /// any colour.
+  ///
+  /// A single line cannot: a dark box on the dark half of a photograph is a box
+  /// nobody finds, and that is where the changes are.
+  final Color halo;
 
   /// The ground a pane larger than what is in it shows.
   final Color ground;
@@ -289,8 +297,9 @@ class DiffineTheme {
       changed: Color(0x8ce83e8c),
       added: Color(0x801a7f4b),
       removed: Color(0x80c2333f),
-      outline: Color(0x66141c28),
+      outline: Color(0xd9141c28),
       marker: Color(0xf20e7ffc),
+      halo: Color(0x99ffffff),
       ground: Color(0xffeaeef4),
       chequer: Color(0xffdbe1ea),
     ),
@@ -330,8 +339,9 @@ class DiffineTheme {
       changed: Color(0x8cff5ca8),
       added: Color(0x803fbe7a),
       removed: Color(0x80ff6a74),
-      outline: Color(0x59e4e9f0),
+      outline: Color(0xd9e4e9f0),
       marker: Color(0xf24c9dff),
+      halo: Color(0x99060a10),
       ground: Color(0xff151b23),
       chequer: Color(0xff1e2530),
     ),
