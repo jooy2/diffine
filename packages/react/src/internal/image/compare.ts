@@ -96,29 +96,127 @@ function indexIn(image: DiffPixels, x: number, y: number): number {
   return (row * image.width + column) * 4;
 }
 
-/**
- * How much of a blend one pixel is, and how strong the step it sits on.
- *
- * Zero when it is not a blend at all. A pixel that is brighter than everything
- * around it, or darker than everything around it, is a colour of its own; a
- * pixel that lies between its neighbours is what a renderer writes when a line
- * falls between two of them. What comes back for the second kind is the range
- * of brightness across the neighbourhood, which is the largest change the edge
- * running through it could account for.
- */
-function blendAt(image: DiffPixels, x: number, y: number): number {
-  const centre = brightnessAt(image.data, indexIn(image, x, y));
+/** How many of the eight pixels around one have to be exactly its colour. */
+const ALIKE = 2;
 
-  let low = 255;
-  let high = 0;
+/**
+ * Whether one pixel sits inside something level: two of the pixels around it
+ * are exactly the colour it is.
+ *
+ * Exactly rather than nearly, because "nearly" is what a texture is made of.
+ * Two pixels of a photograph beside each other are almost always close and
+ * almost never equal, and two pixels of a page a renderer filled are equal to
+ * the byte.
+ */
+function levelAt(words: Uint32Array, width: number, height: number, x: number, y: number): boolean {
+  const colour = words[y * width + x];
+
+  let same = 0;
 
   for (let dy = -1; dy <= 1; dy += 1) {
+    const row = y + dy;
+
+    if (row < 0 || row >= height) {
+      continue;
+    }
+
+    const at = row * width;
+
+    for (let dx = -1; dx <= 1; dx += 1) {
+      const column = x + dx;
+
+      if ((dx === 0 && dy === 0) || column < 0 || column >= width) {
+        continue;
+      }
+
+      if (words[at + column] === colour) {
+        same += 1;
+
+        if (same === ALIKE) {
+          return true;
+        }
+      }
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Whether there is anything level in reach of one pixel: any of the nine pixels
+ * about it sits inside something level.
+ *
+ * Any of the nine rather than the pixel itself, because the pixel itself never
+ * is — it is the blend, and a blend is by definition unlike everything around
+ * it. What is being asked is whether there is a flat area nearby for an edge to
+ * be the edge of. Small text is the case that decides the reach: a letter at
+ * sixteen pixels is thin enough that the darkest pixel beside a blend is often
+ * another blend, and the page it is printed on is one pixel further out.
+ */
+function levelAround(
+  words: Uint32Array,
+  width: number,
+  height: number,
+  x: number,
+  y: number
+): boolean {
+  for (let dy = -1; dy <= 1; dy += 1) {
+    const row = y + dy;
+
+    if (row < 0 || row >= height) {
+      continue;
+    }
+
+    for (let dx = -1; dx <= 1; dx += 1) {
+      const column = x + dx;
+
+      if (column < 0 || column >= width) {
+        continue;
+      }
+
+      if (levelAt(words, width, height, column, row)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+/**
+ * How strong the edge one pixel is sitting on is, and zero when it is not
+ * sitting on one.
+ *
+ * Two things have to hold. The pixel has to lie between its neighbours rather
+ * than be the brightest or the darkest thing among them, which is what a colour
+ * of its own looks like. And there has to be something level in reach of it, so
+ * that the step it lies across is the edge of something rather than two pixels
+ * that happen to be unalike.
+ *
+ * The second test is the one that matters on a photograph. Nearly every pixel
+ * of a textured picture lies between the pixels around it and the range across
+ * a texture is most of the scale, so without it the allowance below is wide
+ * enough to swallow a change that really happened — a patch cloned over a rainy
+ * window came back as a fifth of the pixels it covers. What comes back is the
+ * range of brightness across the neighbourhood, which is the largest change the
+ * edge running through it could account for.
+ */
+function blendAt(image: DiffPixels, words: Uint32Array, x: number, y: number): number {
+  const centre = brightnessAt(image.data, indexIn(image, x, y));
+
+  let low = 256;
+  let high = -1;
+
+  for (let dy = -1; dy <= 1; dy += 1) {
+    const row = y + dy < 0 ? 0 : y + dy >= image.height ? image.height - 1 : y + dy;
+
     for (let dx = -1; dx <= 1; dx += 1) {
       if (dx === 0 && dy === 0) {
         continue;
       }
 
-      const beside = brightnessAt(image.data, indexIn(image, x + dx, y + dy));
+      const column = x + dx < 0 ? 0 : x + dx >= image.width ? image.width - 1 : x + dx;
+      const beside = brightnessAt(image.data, (row * image.width + column) * 4);
 
       if (beside < low) {
         low = beside;
@@ -130,7 +228,11 @@ function blendAt(image: DiffPixels, x: number, y: number): number {
     }
   }
 
-  return centre > low && centre < high ? (high - low) / 255 : 0;
+  if (centre <= low || centre >= high) {
+    return 0;
+  }
+
+  return levelAround(words, image.width, image.height, x, y) ? (high - low) / 255 : 0;
 }
 
 /**
@@ -142,21 +244,21 @@ function blendAt(image: DiffPixels, x: number, y: number): number {
  * every letter and every curve, in a way that has nothing to do with the page
  * having changed.
  *
- * What tells that apart from a real change is what the pixel is. Two things
- * have to hold. It has to be a blend in at least one of the two pictures —
- * lying between its neighbours rather than being the brightest or the darkest
- * thing among them, which is what a colour of its own looks like. And the
- * change has to be no larger than the step it is sitting on, so that moving the
- * edge under it accounts for what happened. A pixel that went from white to
- * black in the middle of a white field passes neither, and a photograph's own
- * gradients pass the first and fail the second.
+ * What tells that apart from a real change is what the pixel is. It has to be
+ * sitting on an edge in at least one of the two pictures — see {@link blendAt}
+ * — and the change has to be no larger than the step that edge is, so that
+ * moving the line under it accounts for what happened. A pixel that went from
+ * white to black in the middle of a white field is on no edge at all, and a
+ * pixel of a texture is on a step that belongs to no edge either.
  */
 function smoothingTest(
   before: DiffPixels,
-  after: DiffPixels
+  beforeWords: Uint32Array,
+  after: DiffPixels,
+  afterWords: Uint32Array
 ): (bx: number, by: number, ax: number, ay: number, distance: number) => boolean {
   return (bx, by, ax, ay, distance) => {
-    const step = Math.max(blendAt(before, bx, by), blendAt(after, ax, ay));
+    const step = Math.max(blendAt(before, beforeWords, bx, by), blendAt(after, afterWords, ax, ay));
 
     return step > 0 && distance <= step;
   };
@@ -175,7 +277,7 @@ export function comparePixels(
 
   const beforeWords = wordsOf(before.data);
   const afterWords = wordsOf(after.data);
-  const isSmoothing = smoothingTest(before, after);
+  const isSmoothing = smoothingTest(before, beforeWords, after, afterWords);
 
   let changed = 0;
   let added = 0;

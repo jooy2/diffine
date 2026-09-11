@@ -60,6 +60,10 @@
 
 ### Fixed
 
+- **`ignoreAntialiasing` no longer swallows a change inside a texture.** It allowed a differing pixel through whenever the pixel lay between the pixels around it and the change was no larger than the range of brightness across them. Nearly every pixel of a photograph lies between its neighbours and the range across a texture is most of the scale, so the allowance was most of the scale too: a patch cloned over the rainy window of a photograph came back as four fifths of the pixels it actually covers, and a change inside fine detail could vanish entirely.
+
+  A pixel now has to have something level within a pixel of it — two pixels of exactly one colour side by side — before the blend it sits in is treated as the edge of anything. A page of text drawn twice is still quiet, because a page is level; a hedge, a knitted blanket and a rainy window are not level anywhere, so nothing in them is dropped. On the photograph the guide compares, 98% of the cloned patch is now reported where 87% was, and a page of text nudged by a third of a pixel still reports 3% of the pixels that differ.
+
 - **`diffImage` says so when a buffer is shorter than the size it was given.** It read the buffer at `(y * width + x) * 4` and never asked whether the buffer reached that far, and a typed array hands back `undefined` past its end rather than throwing — so two reads off the end compared equal and a picture one row short came back as two pictures that agree about the row that is missing. Both sides are now measured once before anything reads them, and a buffer that is too small is a `RangeError` naming the side, the size and the two byte counts. A buffer with room to spare is still fine.
 
 ## v0.1.0 (2026-09-06)

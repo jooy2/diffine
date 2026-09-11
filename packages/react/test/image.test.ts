@@ -141,11 +141,33 @@ describe('diffImage', () => {
   });
 
   it('ignores an edge that was drawn smooth a second way', () => {
-    const before = picture('.5#5.', '.5#5.', '.5#5.');
-    const after = picture('.8#3.', '.8#3.', '.8#3.');
+    // A black bar on a white page, with the column the edge falls in drawn as
+    // a blend of the two — and drawn again with the blend weighted otherwise.
+    const before = picture('..5###..', '..5###..', '..5###..', '..5###..', '..5###..');
+    const after = picture('..8###..', '..8###..', '..8###..', '..8###..', '..8###..');
 
     expect(diffImage(before, after).stats.changed).toBe(0);
-    expect(diffImage(before, after, { ignoreAntialiasing: false }).stats.changed).toBe(6);
+    expect(diffImage(before, after, { ignoreAntialiasing: false }).stats.changed).toBe(5);
+  });
+
+  it('ignores a hairline drawn smooth a second way', () => {
+    // One pixel wide, so the line itself is not level. The page either side of
+    // it is, which is what says there is an edge here at all.
+    const before = picture('..5#5..', '..5#5..', '..5#5..', '..5#5..', '..5#5..');
+    const after = picture('..8#3..', '..8#3..', '..8#3..', '..8#3..', '..8#3..');
+
+    expect(diffImage(before, after).stats.changed).toBe(0);
+  });
+
+  it('keeps a change inside a texture, where no edge runs', () => {
+    // Every pixel of this lies between the pixels around it and nothing in it
+    // is level, so there is no edge for a change to hide under. The pixel in
+    // the middle moved two shades, which the range across the texture would
+    // otherwise be wide enough to account for.
+    const before = picture('04836', '71592', '28364', '59107', '13649');
+    const after = picture('04836', '71592', '28764', '59107', '13649');
+
+    expect(diffImage(before, after).stats.changed).toBe(1);
   });
 
   it('keeps a pixel that took a colour of its own', () => {

@@ -159,14 +159,61 @@ void main() {
     });
 
     test('ignores an edge that was drawn smooth a second way', () {
-      final DiffPixels before = picture(<String>['.5#5.', '.5#5.', '.5#5.']);
-      final DiffPixels after = picture(<String>['.8#3.', '.8#3.', '.8#3.']);
+      // A black bar on a white screen, with the column the edge falls in drawn
+      // as a blend of the two — and drawn again with the blend weighted
+      // otherwise.
+      final DiffPixels before = picture(<String>[
+        '..5###..',
+        '..5###..',
+        '..5###..',
+        '..5###..',
+        '..5###..',
+      ]);
+      final DiffPixels after = picture(<String>[
+        '..8###..',
+        '..8###..',
+        '..8###..',
+        '..8###..',
+        '..8###..',
+      ]);
 
       expect(diffImage(before, after).stats.changed, 0);
       expect(
         diffImage(before, after, const DiffImageOptions(ignoreAntialiasing: false)).stats.changed,
-        6,
+        5,
       );
+    });
+
+    test('ignores a hairline drawn smooth a second way', () {
+      // One pixel wide, so the line itself is not level. The screen either side
+      // of it is, which is what says there is an edge here at all.
+      final DiffPixels before = picture(<String>[
+        '..5#5..',
+        '..5#5..',
+        '..5#5..',
+        '..5#5..',
+        '..5#5..',
+      ]);
+      final DiffPixels after = picture(<String>[
+        '..8#3..',
+        '..8#3..',
+        '..8#3..',
+        '..8#3..',
+        '..8#3..',
+      ]);
+
+      expect(diffImage(before, after).stats.changed, 0);
+    });
+
+    test('keeps a change inside a texture, where no edge runs', () {
+      // Every pixel of this lies between the pixels around it and nothing in it
+      // is level, so there is no edge for a change to hide under. The pixel in
+      // the middle moved two shades, which the range across the texture would
+      // otherwise be wide enough to account for.
+      final DiffPixels before = picture(<String>['04836', '71592', '28364', '59107', '13649']);
+      final DiffPixels after = picture(<String>['04836', '71592', '28764', '59107', '13649']);
+
+      expect(diffImage(before, after).stats.changed, 1);
     });
 
     test('keeps a pixel that took a colour of its own', () {

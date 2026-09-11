@@ -619,13 +619,20 @@ class DiffImageOptions {
   /// either side of where the line really falls, and the part each one gets is
   /// decided by the renderer — so the same screen drawn on two devices differs
   /// along every letter and every curve while showing the same thing. On, a
-  /// differing pixel is dropped when it is a blend of what surrounds it rather
-  /// than a colour of its own, and the change is no larger than the step in
-  /// brightness it is sitting on.
+  /// differing pixel is dropped when three things hold: it is a blend of what
+  /// surrounds it rather than a colour of its own, there is a level area within
+  /// a pixel of it for that blend to be the edge of, and the change is no
+  /// larger than the step in brightness it is sitting on.
   ///
-  /// It is not free: the pixels that differ are each read again with their
-  /// eight neighbours. It costs nothing on two pictures that are alike and a
-  /// good deal on two that are not.
+  /// The middle test is what keeps a photograph honest. Nearly every pixel of a
+  /// texture lies between the pixels around it, and the range across a texture
+  /// is most of the scale, so without something level nearby to say there is an
+  /// edge here, the allowance is wide enough to drop a change that really
+  /// happened.
+  ///
+  /// It is not free: the pixels that differ are each read again with the pixels
+  /// around them. It costs nothing on two pictures that are alike and a good
+  /// deal on two that are not.
   final bool ignoreAntialiasing;
 
   /// Whether an offset between the two pictures is looked for first.

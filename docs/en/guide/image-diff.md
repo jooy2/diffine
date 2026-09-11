@@ -238,9 +238,13 @@ At the default of `0.05` the same pair comes back quiet, with a few dozen small 
 
 Whether a pixel that only differs because an edge was drawn smooth is left out. On by default.
 
-Text and diagonals are drawn by putting part of a colour into the pixels either side of where the line really falls, and how much each one gets is the renderer's own arithmetic. So the same page drawn by two browsers differs along every letter while showing the same thing. A pixel is called smoothing when it is a blend of what surrounds it rather than a colour of its own, and the change is no larger than the step in brightness it is sitting on. A pixel that went from white to black in the middle of a white field passes neither test.
+Text and diagonals are drawn by putting part of a colour into the pixels either side of where the line really falls, and how much each one gets is the renderer's own arithmetic. So the same page drawn by two browsers differs along every letter while showing the same thing.
 
-It is not free: every pixel that differs is read again with its eight neighbours.
+A pixel is called smoothing when three things hold. It is a blend of what surrounds it rather than a colour of its own. There is a level area within a pixel of it — somewhere with two pixels of exactly one colour side by side — so that the blend is the edge of something. And the change is no larger than the step in brightness it is sitting on. A pixel that went from white to black in the middle of a white field passes none of the three.
+
+The middle test is what keeps a photograph honest. Nearly every pixel of a rainy window or a knitted blanket lies between the pixels around it, and the range across a texture is most of the scale — so without something level nearby to say an edge runs here, the allowance is wide enough to drop a change that really happened. A patch cloned over the window of the photograph at the top of this page used to come back as four fifths of the pixels it covers.
+
+It is not free: every pixel that differs is read again with the pixels around it.
 
 ### align
 
