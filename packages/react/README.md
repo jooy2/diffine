@@ -236,7 +236,17 @@ Each side takes a `Blob`, an `ImageBitmap`, or a buffer of pixels shaped like `I
 />
 ```
 
-`view` is `split`, `overlay`, `wipe` or `mask`; `mode="editor"` lets a reader drop a picture on either pane. `tolerance` decides how much of a difference counts, `ignoreAntialiasing` drops the pixels a renderer's own smoothing left behind, and `align` finds the offset between two shots that are not lined up. The whole of it is on the [image diff page](https://diffine.cdget.com/guide/image-diff).
+`view` is `split`, `overlay`, `wipe` or `mask`; `mode="editor"` lets a reader drop a picture on either pane. `unchanged` is what happens to the parts nothing happened to — `dim` pushes them back and `hide` drops them, so what changed is read as a picture rather than as a mark on one. `tolerance` decides how much of a difference counts, `ignoreAntialiasing` drops the pixels a renderer's own smoothing left behind, and `align` finds the offset between two shots that are not lined up.
+
+The wheel zooms about the pointer, and the pixels under it are drawn magnified with their colours written out, both sides at once — `wheel` and `loupe` turn each of those into the other answer. The whole of it is on the [image diff page](https://diffine.cdget.com/guide/image-diff).
+
+`imageSimilarity` is the shorter question, for a build with a threshold in it rather than a reader with two pictures in front of them:
+
+```ts
+import { imageSimilarity } from 'diffine-react/image';
+
+const { similarity, changed } = imageSimilarity(before, after);
+```
 
 ## The comparison on its own
 
@@ -302,10 +312,10 @@ Every entry is its own bundle, and importing one costs what that one is. The roo
 | --- | --- | --- |
 | `diffine-react` | The whole comparison: text, pictures, patches, types. | 2.6 kB |
 | `diffine-react/diff` | The text comparison on its own. | 2.9 kB |
-| `diffine-react/image` | The picture comparison on its own. | 2.6 kB |
+| `diffine-react/image` | The picture comparison on its own. | 3.2 kB |
 | `diffine-react/patch` | Reading and writing a unified diff. | 3.3 kB |
 | `diffine-react/text-diff` | `TextDiff`, and the list its menu of languages is made from. | 17.6 kB |
-| `diffine-react/image-diff` | `ImageDiff`. | 10.5 kB |
+| `diffine-react/image-diff` | `ImageDiff`. | 12.5 kB |
 | `diffine-react/types` | The types on their own. | 0 kB |
 | `diffine-react/styles.css` | The stylesheet, for both components. | 4.3 kB |
 
