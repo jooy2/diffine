@@ -9,7 +9,15 @@ order: 3
 
 <DiffinePictures sample="retouched" height="24rem" />
 
-The two pictures above are the same photograph, one of them with a patch of itself cloned over the window.
+The two pictures above are the same photograph, and the second has a patch of itself cloned over the window — the kind of edit a comparison is usually reached for, where the question is which part of the picture somebody worked on.
+
+What is drawn over them is three things, and they are the same three on every demo on this page:
+
+- **Pink** is a pixel both pictures cover and disagree about. That is the square in the window.
+- **A box** is drawn round each run of those, so a change three pixels wide is still somewhere to look when the whole picture is in the pane. It is drawn as a pale line under a dark one, so that it shows whatever colour the photograph under it happens to be. The **blue** box is the change the buttons in the bar have stepped to.
+- **Green and red** are the pixels only one of the two pictures covers, which is what a difference in size or an offset leaves behind. There are none here, because the two are the same size.
+
+The bar underneath counts it up: one changed area, and what share of the picture it is.
 
 ::: fw react
 
