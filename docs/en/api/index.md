@@ -11,14 +11,18 @@ order: 1
 
 ::: fw react
 
-| Import                     | What it holds                                                    |
-| -------------------------- | ---------------------------------------------------------------- |
-| `diffine-react`            | Everything: the component, the engine and the types.             |
-| `diffine-react/diff`       | The text comparison, with no component reaching the bundle.      |
-| `diffine-react/image`      | The picture comparison, on its own.                              |
-| `diffine-react/patch`      | Reading and writing a unified diff.                              |
-| `diffine-react/types`      | The types on their own, for an application naming one in a prop. |
-| `diffine-react/styles.css` | The stylesheet.                                                  |
+| Import | What it holds | Before it draws |
+| --- | --- | --- |
+| `diffine-react` | The whole comparison: text, pictures, patches and the types. | 2.6 kB |
+| `diffine-react/diff` | The text comparison, on its own. | 2.9 kB |
+| `diffine-react/image` | The picture comparison, on its own. | 2.6 kB |
+| `diffine-react/patch` | Reading and writing a unified diff. | 3.3 kB |
+| `diffine-react/text-diff` | `TextDiff`, and `DIFFINE_LANGUAGES`. | 17.6 kB |
+| `diffine-react/image-diff` | `ImageDiff`. | 10.5 kB |
+| `diffine-react/types` | The types on their own, for an application naming one in a prop. | 0 kB |
+| `diffine-react/styles.css` | The stylesheet, for both components. | 4.3 kB |
+
+Nothing reaches a bundle that did not ask for it. The root is functions and types, so a page that counts the changes without drawing them carries no React and no stylesheet; each view is its own import, so a page with one of them carries one of them. The sizes are gzipped with React left out, and they are what a page fetches before it draws — a grammar is not among them, because `TextDiff` asks for one only when it is given a `language`.
 
 :::
 
@@ -155,12 +159,12 @@ A document nobody can type into is read from the widget on every build. An edita
 | `language` | `string` | `'plain'` | What the documents are written in, so they are coloured as it. |
 | `defaultLanguage` | `string` | `'plain'` | Which one to start on, when the component is to keep it. |
 | `onLanguageChange` | `(language: string) => void` | — | A language was chosen from the menu. Editor only. |
-| `languageLabel` | `boolean` | `true` | Whether that language is drawn at the right end of the bar. |
+| `languageLabel` | `boolean` | `false` | Whether that language is drawn at the right end of the bar. |
 | `tabSize` | `number` | `4` | How wide a tab is drawn, in characters. |
 | `colorScheme` | `'system' \| 'light' \| 'dark'` | `'system'` | Which palette to draw in. |
 | `font` | `DiffineFont` | — | The typeface the documents are drawn in. |
 | `locale` | `'en' \| 'ko'` | `'en'` | The language of the component's own words. |
-| `strings` | `Partial<DiffineStrings>` | — | Words to use instead of the locale's. |
+| `strings` | `Partial<DiffineTextStrings>` | — | Words to use instead of the locale's. |
 | `highlight` | `DiffineHighlight` | — | An application's own highlighter, in place of `language`. |
 | `renderGutter` | `DiffineRender` | — | Something of the application's own, in the gutter beside each line. |
 | `renderWidget` | `DiffineRender` | — | Something of the application's own, under each line. |
@@ -275,13 +279,23 @@ A pane whose search is open still draws only the lines a reader can see, so a ma
 
 ### `DiffineStrings`
 
+The words both views put on the screen. <Fw react="`DiffineCommonStrings`, which the two tables under it extend." flutter="Flutter keeps one table, and this is the part of it both widgets read." />
+
+| Key              | English default                |
+| ---------------- | ------------------------------ |
+| `before`         | `Before`                       |
+| `after`          | `After`                        |
+| `empty`          | `Nothing to compare yet.`      |
+| `identical`      | `The two are the same.`        |
+| `previousChange` | `Previous change`              |
+| `nextChange`     | `Next change`                  |
+| `changePosition` | `Change {position} of {total}` |
+
+What the document comparison adds. <Fw react="`DiffineTextStrings`, which is what `TextDiff` takes." flutter="Read by `TextDiff`." />
+
 | Key              | English default                                                      |
 | ---------------- | -------------------------------------------------------------------- |
-| `before`         | `Before`                                                             |
-| `after`          | `After`                                                              |
-| `empty`          | `Nothing to compare yet.`                                            |
 | `placeholder`    | `Type or paste a document here.`                                     |
-| `identical`      | `The two are the same.`                                              |
 | `added`          | `Added`                                                              |
 | `removed`        | `Removed`                                                            |
 | `changed`        | `Changed`                                                            |
@@ -291,11 +305,9 @@ A pane whose search is open still draws only the lines a reader can see, so a ma
 | `format`         | `{before} → {after}`                                                 |
 | `mixedEndings`   | `mixed`                                                              |
 | `noFinalNewline` | `no final newline`                                                   |
+| `language`       | `Syntax highlighting`                                                |
 | `summary`        | `{changes} changes, {inserted} lines added, {deleted} lines removed` |
 | `documentSize`   | `{label}: {characters} characters, {size}`                           |
-| `previousChange` | `Previous change`                                                    |
-| `nextChange`     | `Next change`                                                        |
-| `changePosition` | `Change {position} of {total}`                                       |
 | `search`         | `Find`                                                               |
 | `searchIn`       | `Find in {label}`                                                    |
 | `searchPrevious` | `Previous match`                                                     |
@@ -310,11 +322,10 @@ A pane whose search is open still draws only the lines a reader can see, so a ma
 | `replaceWith`    | `Replace with`                                                       |
 | `replaceAll`     | `Replace all`                                                        |
 
-The last thirteen belong to `ImageDiff`. Everything above them is shared, and the two <Fw react="components" flutter="widgets" /> read one set of strings.
+What the picture comparison adds. <Fw react="`DiffineImageStrings`, which is what `ImageDiff` takes. `DiffineStrings` is the two together, for an application that keeps one table for both." flutter="Read by `ImageDiff`." />
 
 | Key            | English default                                      |
 | -------------- | ---------------------------------------------------- |
-| `language`     | `Syntax highlighting`                                |
 | `imageSize`    | `{label}: {width} × {height}, {size}`                |
 | `imageSummary` | `{regions} changed areas, {percent}% of the picture` |
 | `choose`       | `Choose an image`                                    |
@@ -334,7 +345,7 @@ The placeholders are filled in as follows. `searchIn` and `chooseIn` fill `{labe
 
 ::: fw react
 
-`strings` is a `Partial<DiffineStrings>`, so an application changing one word passes one word.
+`strings` is a partial table, so an application changing one word passes one word — `Partial<DiffineTextStrings>` on `TextDiff` and `Partial<DiffineImageStrings>` on `ImageDiff`.
 
 :::
 
@@ -404,7 +415,7 @@ interface DiffineLanguageOption {
 const DIFFINE_LANGUAGES: readonly DiffineLanguageOption[];
 ```
 
-Every language `language` accepts, `plain` first and then thirty-four highlight.js identifiers in alphabetical order. `id` is what `language` takes and `name` is what the bar writes beside the panes — English in every locale, because `TypeScript` is `TypeScript` in all of them.
+Every language `language` accepts, `plain` first and then thirty-four highlight.js identifiers in alphabetical order. `id` is what `language` takes and `name` is what the bar writes beside the panes — English in every locale, because `TypeScript` is `TypeScript` in all of them. It is names and nothing else: the grammars sit behind an `import()` apiece, so a menu built from this list costs a list.
 
 The editor's own menu is built from this list, and an application building a menu somewhere else should build it from the same one rather than from a copy that goes stale.
 
@@ -588,7 +599,7 @@ ImageDiff(mode: DiffineMode.editor, view: DiffineImageView.wipe, onChoose: pick)
 | `summary` | `boolean` | `true` | Whether the bar under the panes is drawn. |
 | `colorScheme` | `'system' \| 'light' \| 'dark'` | `'system'` | Which palette to draw in. |
 | `locale` | `'en' \| 'ko'` | `'en'` | The language of the component's own words. |
-| `strings` | `Partial<DiffineStrings>` | — | Words to use instead of the locale's. |
+| `strings` | `Partial<DiffineImageStrings>` | — | Words to use instead of the locale's. |
 
 `split` draws two panes; the other three draw one, with both names over it. What the marks are drawn in is five [custom properties](#colours) rather than props, because a canvas is painted rather than styled.
 

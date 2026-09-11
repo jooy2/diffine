@@ -30,7 +30,7 @@ The previews on this page are the React package's, because they are drawn beside
 ::: fw react
 
 ```tsx
-import { ImageDiff } from 'diffine-react';
+import { ImageDiff } from 'diffine-react/image-diff';
 import 'diffine-react/styles.css';
 
 <ImageDiff before={saved} after={rendered} />;

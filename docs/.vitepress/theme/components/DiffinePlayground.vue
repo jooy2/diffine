@@ -28,7 +28,8 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue';
 import { useData } from 'vitepress';
 import { createElement } from 'react';
-import { ImageDiff, TextDiff } from 'diffine-react';
+import { ImageDiff } from 'diffine-react/image-diff';
+import { TextDiff } from 'diffine-react/text-diff';
 import type { DiffInlineMode, DiffineImageView } from 'diffine-react';
 import 'diffine-react/styles.css';
 import { useFlutterFrame } from '../flutter';
@@ -325,7 +326,9 @@ function draw() {
       },
       // The menu is the editor's, and what it lands on is the page's — so the
       // viewer opens on the language the editor was left on rather than back
-      // at `Plain`.
+      // at `Plain`. Asked for rather than assumed: the component leaves the
+      // menu out unless a page says it wants one.
+      languageLabel: true,
       language: language.value,
       onLanguageChange: (chosen: string) => {
         language.value = chosen;
@@ -339,6 +342,7 @@ function draw() {
     after,
     view: options.value.unified ? 'unified' : 'split',
     alignLines: options.value.align,
+    languageLabel: true,
     language: language.value
   });
 }

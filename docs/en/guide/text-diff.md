@@ -30,7 +30,7 @@ The preview below is the real Flutter build, framed. It is the widget itself, co
 ::: fw react
 
 ```tsx
-import { TextDiff } from 'diffine-react';
+import { TextDiff } from 'diffine-react/text-diff';
 import 'diffine-react/styles.css';
 
 <TextDiff before={saved} after={draft} />;
@@ -728,7 +728,7 @@ TextDiff(before: saved, after: draft, language: 'dart');
 
 :::
 
-It takes a highlight.js identifier, or `plain` for a document that is not code. <Fw react="`DIFFINE_LANGUAGES`" flutter="`kDiffineLanguages`" code /> is the whole list with the name to write beside each one, and the bar above the panes writes that name at its right end. `languageLabel` turns it off.
+It takes a highlight.js identifier, or `plain` for a document that is not code. <Fw react="`DIFFINE_LANGUAGES`" flutter="`kDiffineLanguages`" code /> is the whole list with the name to write beside each one, and the bar above the panes writes that name at its right end. <Fw react="`languageLabel` is what draws it, and it is off unless a page asks for it — the name and the menu are fetched when it is turned on rather than imported, so a page that leaves it off carries neither." flutter="`languageLabel` turns it off." />
 
 In `editor` mode the same corner is a menu that opens the list. That is the one place the two modes draw a different control, and for the reason the modes exist: a viewer is given its documents by the application, which knows what they are, and an editor is given a document somebody pasted.
 

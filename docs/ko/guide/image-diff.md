@@ -30,7 +30,7 @@ order: 3
 ::: fw react
 
 ```tsx
-import { ImageDiff } from 'diffine-react';
+import { ImageDiff } from 'diffine-react/image-diff';
 import 'diffine-react/styles.css';
 
 <ImageDiff before={saved} after={rendered} />;

@@ -25,10 +25,10 @@ Guides and the full API, in English and Korean. This README is the map; each pac
 
 ## Packages
 
-| Package                                | Registry                                                             | Requires                               | Quick start                          |
-| -------------------------------------- | -------------------------------------------------------------------- | -------------------------------------- | ------------------------------------ |
-| [`packages/react`](packages/react)     | [npm: `diffine-react`](https://www.npmjs.com/package/diffine-react)  | React 18 or 19, Node.js 20.19 or later | [README](packages/react/README.md)   |
-| [`packages/flutter`](packages/flutter) | [pub.dev: `diffine`](https://pub.dev/packages/diffine)               | Flutter 3.32 or later                  | [README](packages/flutter/README.md) |
+| Package                                | Registry                                                            | Requires                               | Quick start                          |
+| -------------------------------------- | ------------------------------------------------------------------- | -------------------------------------- | ------------------------------------ |
+| [`packages/react`](packages/react)     | [npm: `diffine-react`](https://www.npmjs.com/package/diffine-react) | React 18 or 19, Node.js 20.19 or later | [README](packages/react/README.md)   |
+| [`packages/flutter`](packages/flutter) | [pub.dev: `diffine`](https://pub.dev/packages/diffine)              | Flutter 3.32 or later                  | [README](packages/flutter/README.md) |
 
 Each package **versions independently and keeps its own changelog** beside its own manifest, at [`packages/react/CHANGELOG.md`](packages/react/CHANGELOG.md) and [`packages/flutter/CHANGELOG.md`](packages/flutter/CHANGELOG.md), so a release on one side is not a release on the other.
 
@@ -41,7 +41,8 @@ npm install diffine-react
 `react` and `react-dom` are peer dependencies: React 18 or 19.
 
 ```tsx
-import { ImageDiff, TextDiff } from "diffine-react";
+import { TextDiff } from "diffine-react/text-diff";
+import { ImageDiff } from "diffine-react/image-diff";
 import "diffine-react/styles.css";
 
 <TextDiff before={before} after={after} />;
@@ -71,15 +72,15 @@ There is no install at the repository root and no root manifest of any kind. Eac
 
 ## Documentation
 
-| Page                                                                   | What you will find                                       |
-| ---------------------------------------------------------------------- | -------------------------------------------------------- |
-| [**Getting started**](https://diffine.cdget.com/guide/getting-started) | Install and setup, end to end.                           |
+| Page                                                                   | What you will find                                                                       |
+| ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| [**Getting started**](https://diffine.cdget.com/guide/getting-started) | Install and setup, end to end.                                                           |
 | [**Text diff**](https://diffine.cdget.com/guide/text-diff)             | Every part of the view, the editing mode, and the settings that turn each one on or off. |
-| [**Image diff**](https://diffine.cdget.com/guide/image-diff)           | Comparing two pictures, and every way of reading that.   |
-| [**Playground**](https://diffine.cdget.com/guide/playground)           | Every mode, on documents and pictures you can change.    |
-| [**Diff engine**](https://diffine.cdget.com/guide/diff)                | What the comparison returns, and how to read it.         |
-| [**API**](https://diffine.cdget.com/api/)                              | Every export, function and option.                       |
-| [**Changelog**](https://diffine.cdget.com/changelog)                   | What changed in each release.                            |
+| [**Image diff**](https://diffine.cdget.com/guide/image-diff)           | Comparing two pictures, and every way of reading that.                                   |
+| [**Playground**](https://diffine.cdget.com/guide/playground)           | Every mode, on documents and pictures you can change.                                    |
+| [**Diff engine**](https://diffine.cdget.com/guide/diff)                | What the comparison returns, and how to read it.                                         |
+| [**API**](https://diffine.cdget.com/api/)                              | Every export, function and option.                                                       |
+| [**Changelog**](https://diffine.cdget.com/changelog)                   | What changed in each release.                                                            |
 
 The site is also served in Korean at [diffine.cdget.com/ko/](https://diffine.cdget.com/ko/).
 

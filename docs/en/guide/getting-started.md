@@ -58,7 +58,7 @@ The one dependency is [`characters`](https://pub.dev/packages/characters), the D
 Two props and a stylesheet:
 
 ```tsx
-import { TextDiff } from 'diffine-react';
+import { TextDiff } from 'diffine-react/text-diff';
 import 'diffine-react/styles.css';
 
 export function Review({ saved, draft }: { saved: string; draft: string }) {

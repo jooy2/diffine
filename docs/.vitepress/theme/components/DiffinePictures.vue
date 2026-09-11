@@ -11,7 +11,7 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import { useData } from 'vitepress';
 import { createElement } from 'react';
-import { ImageDiff } from 'diffine-react';
+import { ImageDiff } from 'diffine-react/image-diff';
 import type { DiffineImageView } from 'diffine-react';
 import 'diffine-react/styles.css';
 import { useReactIsland } from '../island';

@@ -19,7 +19,7 @@ npm install diffine-react
 ## Reading a comparison
 
 ```tsx
-import { TextDiff } from 'diffine-react';
+import { TextDiff } from 'diffine-react/text-diff';
 import 'diffine-react/styles.css';
 
 export function Review({ saved, draft }: { saved: string; draft: string }) {
@@ -178,7 +178,7 @@ Every colour and measurement is a custom property on the `.diffine` element, so 
 `mode="editor"` is the same comparison with the two panes made editable, worked out again as somebody types into either side.
 
 ```tsx
-import { TextDiff } from 'diffine-react';
+import { TextDiff } from 'diffine-react/text-diff';
 import 'diffine-react/styles.css';
 
 export function Compose({ saved }: { saved: string }) {
@@ -219,7 +219,7 @@ Every other prop means the same thing in both modes, except `view`, `alignLines`
 `ImageDiff` compares two pictures pixel by pixel and draws what it found: the pixels that changed tinted over both sides, a box round each run of them, and one zoom and one position shared by both panes.
 
 ```tsx
-import { ImageDiff } from 'diffine-react';
+import { ImageDiff } from 'diffine-react/image-diff';
 import 'diffine-react/styles.css';
 
 <ImageDiff before={saved} after={rendered} />;
@@ -296,14 +296,20 @@ The lines between one hunk and the next are not in a patch, so the numbers jump 
 
 ## Entry points
 
-| Import                     | What it is                                            |
-| -------------------------- | ----------------------------------------------------- |
-| `diffine-react`            | Everything: the components, the engine and the types. |
-| `diffine-react/diff`       | The text comparison, with no component in the bundle. |
-| `diffine-react/image`      | The picture comparison, on its own.                   |
-| `diffine-react/patch`      | Reading and writing a unified diff.                   |
-| `diffine-react/types`      | The types on their own.                               |
-| `diffine-react/styles.css` | The stylesheet, for both components.                  |
+Every entry is its own bundle, and importing one costs what that one is. The root is the comparison and nothing else — no React, no stylesheet, no menu of languages — so a page that only counts the changes carries a couple of kilobytes.
+
+| Import | What it is | Before it draws |
+| --- | --- | --- |
+| `diffine-react` | The whole comparison: text, pictures, patches, types. | 2.6 kB |
+| `diffine-react/diff` | The text comparison on its own. | 2.9 kB |
+| `diffine-react/image` | The picture comparison on its own. | 2.6 kB |
+| `diffine-react/patch` | Reading and writing a unified diff. | 3.3 kB |
+| `diffine-react/text-diff` | `TextDiff`, and the list its menu of languages is made from. | 17.6 kB |
+| `diffine-react/image-diff` | `ImageDiff`. | 10.5 kB |
+| `diffine-react/types` | The types on their own. | 0 kB |
+| `diffine-react/styles.css` | The stylesheet, for both components. | 4.3 kB |
+
+The sizes are gzipped, with React left out because it is the page's already, and they are what a page fetches before it draws anything. A grammar is not among them: `TextDiff` colours a document with a file it asks for when it is given a `language`, and a viewer that is given none never asks. `npm run size` is what measures this, and CI fails a change that outgrows a budget.
 
 ## License
 

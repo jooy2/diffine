@@ -58,7 +58,7 @@ flutter pub add diffine
 prop 두 개와 스타일시트 한 줄이면 됩니다.
 
 ```tsx
-import { TextDiff } from 'diffine-react';
+import { TextDiff } from 'diffine-react/text-diff';
 import 'diffine-react/styles.css';
 
 export function Review({ saved, draft }: { saved: string; draft: string }) {

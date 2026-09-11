@@ -491,6 +491,14 @@ const vitePressConfig: UserConfig = {
           find: /^diffine-react\/styles\.css$/,
           replacement: resolve(reactPackageDir, 'src/styles.css')
         },
+        // One entry apiece, because the package is published that way: the root
+        // is the comparison and each view is its own import. A single alias
+        // over the bare name would send `diffine-react/text-diff` to a path
+        // under `index.ts` that is not there.
+        ...['diff', 'image', 'patch', 'text-diff', 'image-diff', 'types'].map((entry) => ({
+          find: new RegExp(`^diffine-react/${entry}$`),
+          replacement: resolve(reactPackageDir, `src/${entry}.ts`)
+        })),
         { find: /^diffine-react$/, replacement: resolve(reactPackageDir, 'src/index.ts') }
       ],
       /*

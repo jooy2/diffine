@@ -11,14 +11,18 @@ order: 1
 
 ::: fw react
 
-| import                     | 무엇이 들어 있는지                                        |
-| -------------------------- | --------------------------------------------------------- |
-| `diffine-react`            | 전부. 컴포넌트와 엔진과 타입.                             |
-| `diffine-react/diff`       | 텍스트 비교 엔진만. 컴포넌트는 번들에 들어가지 않습니다.  |
-| `diffine-react/image`      | 이미지 비교 엔진만.                                       |
-| `diffine-react/patch`      | 유니파이드 패치 읽기와 쓰기.                              |
-| `diffine-react/types`      | 타입만. prop에 타입 이름을 쓰려는 애플리케이션을 위한 것. |
-| `diffine-react/styles.css` | 스타일시트.                                               |
+| import | 무엇이 들어 있는지 | 그리기 전까지 |
+| --- | --- | --- |
+| `diffine-react` | 비교 전부. 텍스트와 이미지와 패치, 그리고 타입. | 2.6 kB |
+| `diffine-react/diff` | 텍스트 비교 엔진만. | 2.9 kB |
+| `diffine-react/image` | 이미지 비교 엔진만. | 2.6 kB |
+| `diffine-react/patch` | 유니파이드 패치 읽기와 쓰기. | 3.3 kB |
+| `diffine-react/text-diff` | `TextDiff`와 `DIFFINE_LANGUAGES`. | 17.6 kB |
+| `diffine-react/image-diff` | `ImageDiff`. | 10.5 kB |
+| `diffine-react/types` | 타입만. prop에 타입 이름을 쓰려는 애플리케이션을 위한 것. | 0 kB |
+| `diffine-react/styles.css` | 스타일시트. 두 컴포넌트가 함께 씁니다. | 4.3 kB |
+
+요청하지 않은 것은 번들에 들어가지 않습니다. 루트는 함수와 타입뿐이라 변경 개수만 세는 페이지는 React도 스타일시트도 받지 않고, 뷰는 각자 진입점이라 하나만 쓰는 페이지는 하나만 받습니다. 크기는 gzip 기준이고 React는 뺐으며, 페이지가 무언가를 그리기 전에 내려받는 양입니다. 문법 파일은 여기에 없습니다. `TextDiff`는 `language`를 받았을 때만 문법을 요청합니다.
 
 :::
 
@@ -155,12 +159,12 @@ TextDiff(mode: DiffineMode.editor, defaultBefore: saved, defaultAfter: draft);
 | `language` | `string` | `'plain'` | 문서가 어떤 언어인지. 그 언어로 색을 입힙니다. |
 | `defaultLanguage` | `string` | `'plain'` | 컴포넌트가 직접 관리할 때의 처음 언어. |
 | `onLanguageChange` | `(language: string) => void` | — | 메뉴에서 언어를 골랐을 때. 에디터 전용. |
-| `languageLabel` | `boolean` | `true` | 그 언어를 위쪽 줄 오른쪽 끝에 그릴지. |
+| `languageLabel` | `boolean` | `false` | 그 언어를 위쪽 줄 오른쪽 끝에 그릴지. |
 | `tabSize` | `number` | `4` | 탭을 몇 칸으로 그릴지. |
 | `colorScheme` | `'system' \| 'light' \| 'dark'` | `'system'` | 어떤 팔레트로 그릴지. |
 | `font` | `DiffineFont` | — | 문서를 그리는 글꼴. |
 | `locale` | `'en' \| 'ko'` | `'en'` | 컴포넌트 자신이 쓰는 말의 언어. |
-| `strings` | `Partial<DiffineStrings>` | — | 로케일 대신 쓸 단어. |
+| `strings` | `Partial<DiffineTextStrings>` | — | 로케일 대신 쓸 단어. |
 | `highlight` | `DiffineHighlight` | — | `language` 대신 쓸, 애플리케이션 자신의 강조기. |
 | `renderGutter` | `DiffineRender` | — | 줄 옆 여백에 넣을, 애플리케이션 자신의 내용. |
 | `renderWidget` | `DiffineRender` | — | 줄 아래에 넣을, 애플리케이션 자신의 내용. |
@@ -275,13 +279,23 @@ TextDiff(mode: DiffineMode.editor, defaultBefore: saved, defaultAfter: draft);
 
 ### `DiffineStrings`
 
+두 화면이 함께 쓰는 낱말입니다. <Fw react="React에서는 `DiffineCommonStrings`이고, 아래 두 묶음이 이것을 확장합니다." flutter="Flutter는 낱말 묶음이 하나이고, 두 위젯이 함께 읽는 부분이 이것입니다." />
+
+| 키               | 한국어 기본값                      |
+| ---------------- | ---------------------------------- |
+| `before`         | `이전`                             |
+| `after`          | `이후`                             |
+| `empty`          | `아직 비교할 내용이 없습니다.`     |
+| `identical`      | `두 문서가 같습니다.`              |
+| `previousChange` | `이전 변경`                        |
+| `nextChange`     | `다음 변경`                        |
+| `changePosition` | `변경 {total}건 중 {position}번째` |
+
+문서 비교가 더하는 낱말입니다. <Fw react="`DiffineTextStrings`이 `TextDiff`가 받는 타입입니다." flutter="`TextDiff`가 읽습니다." />
+
 | 키               | 한국어 기본값                                           |
 | ---------------- | ------------------------------------------------------- |
-| `before`         | `이전`                                                  |
-| `after`          | `이후`                                                  |
-| `empty`          | `아직 비교할 내용이 없습니다.`                          |
 | `placeholder`    | `여기에 문서를 입력하거나 붙여 넣으세요.`               |
-| `identical`      | `두 문서가 같습니다.`                                   |
 | `added`          | `추가됨`                                                |
 | `removed`        | `삭제됨`                                                |
 | `changed`        | `변경됨`                                                |
@@ -291,11 +305,9 @@ TextDiff(mode: DiffineMode.editor, defaultBefore: saved, defaultAfter: draft);
 | `format`         | `{before} → {after}`                                    |
 | `mixedEndings`   | `혼용`                                                  |
 | `noFinalNewline` | `끝 개행 없음`                                          |
+| `language`       | `구문 강조`                                             |
 | `summary`        | `변경 {changes}건, {inserted}줄 추가, {deleted}줄 삭제` |
 | `documentSize`   | `{label}: {characters}자, {size}`                       |
-| `previousChange` | `이전 변경`                                             |
-| `nextChange`     | `다음 변경`                                             |
-| `changePosition` | `변경 {total}건 중 {position}번째`                      |
 | `search`         | `찾기`                                                  |
 | `searchIn`       | `{label}에서 찾기`                                      |
 | `searchPrevious` | `이전 결과`                                             |
@@ -310,11 +322,10 @@ TextDiff(mode: DiffineMode.editor, defaultBefore: saved, defaultAfter: draft);
 | `replaceWith`    | `바꿀 내용`                                             |
 | `replaceAll`     | `모두 바꾸기`                                           |
 
-아래 열세 개는 `ImageDiff`의 것입니다. 그 위는 모두 공용이고, 두 <Fw react="컴포넌트가" flutter="위젯이" /> 같은 낱말 묶음을 씁니다.
+이미지 비교가 더하는 낱말입니다. <Fw react="`DiffineImageStrings`이 `ImageDiff`가 받는 타입입니다. 두 묶음을 한 곳에 두고 싶다면 둘을 합친 `DiffineStrings`을 쓰세요." flutter="`ImageDiff`가 읽습니다." />
 
 | 키             | 한국어 기본값                         |
 | -------------- | ------------------------------------- |
-| `language`     | `구문 강조`                           |
 | `imageSize`    | `{label}: {width} × {height}, {size}` |
 | `imageSummary` | `변경 {regions}곳, 전체의 {percent}%` |
 | `choose`       | `이미지 고르기`                       |
@@ -334,7 +345,7 @@ TextDiff(mode: DiffineMode.editor, defaultBefore: saved, defaultAfter: draft);
 
 ::: fw react
 
-`strings`는 `Partial<DiffineStrings>`입니다. 한 낱말만 바꾸려면 한 낱말만 넘기면 됩니다.
+`strings`는 일부만 담는 타입입니다. 한 낱말만 바꾸려면 한 낱말만 넘기면 됩니다. `TextDiff`는 `Partial<DiffineTextStrings>`을, `ImageDiff`는 `Partial<DiffineImageStrings>`을 받습니다.
 
 :::
 
@@ -404,7 +415,7 @@ interface DiffineLanguageOption {
 const DIFFINE_LANGUAGES: readonly DiffineLanguageOption[];
 ```
 
-`language`에 넣을 수 있는 언어 전부입니다. `plain`이 맨 앞이고 그 뒤로 highlight.js 식별자 서른네 개가 알파벳순으로 옵니다. `id`가 `language`에 넣는 값이고, `name`이 창 위에 쓰이는 이름입니다. 로케일과 상관없이 영어로 씁니다. `TypeScript`는 어느 언어에서나 `TypeScript`이기 때문입니다.
+`language`에 넣을 수 있는 언어 전부입니다. `plain`이 맨 앞이고 그 뒤로 highlight.js 식별자 서른네 개가 알파벳순으로 옵니다. `id`가 `language`에 넣는 값이고, `name`이 창 위에 쓰이는 이름입니다. 로케일과 상관없이 영어로 씁니다. `TypeScript`는 어느 언어에서나 `TypeScript`이기 때문입니다. 이름만 들어 있습니다. 문법은 각각 `import()` 뒤에 있어서, 이 목록으로 메뉴를 만들어도 목록 크기만 듭니다.
 
 에디터의 메뉴가 이 목록으로 만들어집니다. 다른 곳에 메뉴를 따로 만든다면 목록을 복사해 두지 말고 이 값에서 만드세요. 언어가 늘어나도 따라옵니다.
 
@@ -588,7 +599,7 @@ ImageDiff(mode: DiffineMode.editor, view: DiffineImageView.wipe, onChoose: pick)
 | `summary` | `boolean` | `true` | 창 아래 막대를 그릴지. |
 | `colorScheme` | `'system' \| 'light' \| 'dark'` | `'system'` | 어느 팔레트로 그릴지. |
 | `locale` | `'en' \| 'ko'` | `'en'` | 컴포넌트가 쓰는 말의 언어. |
-| `strings` | `Partial<DiffineStrings>` | — | 로케일 대신 쓸 낱말. |
+| `strings` | `Partial<DiffineImageStrings>` | — | 로케일 대신 쓸 낱말. |
 
 `split`은 창을 둘 그리고 나머지 셋은 하나를 그리며, 그 위에 두 이름을 함께 씁니다. 표시하는 색은 prop이 아니라 [커스텀 속성](#색) 다섯 개입니다. 캔버스에는 스타일을 입힐 수 없어서 값을 읽어 직접 칠하기 때문입니다.
 

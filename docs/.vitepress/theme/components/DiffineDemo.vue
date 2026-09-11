@@ -20,7 +20,7 @@ import { computed, ref } from 'vue';
 import { useData } from 'vitepress';
 import { useFlutterFrame } from '../flutter';
 import { createElement } from 'react';
-import { TextDiff } from 'diffine-react';
+import { TextDiff } from 'diffine-react/text-diff';
 import type {
   DiffInlineMode,
   DiffWhitespace,

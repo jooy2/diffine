@@ -30,7 +30,7 @@ order: 2
 ::: fw react
 
 ```tsx
-import { TextDiff } from 'diffine-react';
+import { TextDiff } from 'diffine-react/text-diff';
 import 'diffine-react/styles.css';
 
 <TextDiff before={saved} after={draft} />;
@@ -725,7 +725,7 @@ TextDiff(before: saved, after: draft, language: 'dart');
 
 :::
 
-highlight.js 식별자를 넣거나, 코드가 아닌 문서라면 `plain`을 넣습니다. <Fw react="`DIFFINE_LANGUAGES`" flutter="`kDiffineLanguages`" code />가 언어 전부와 그 옆에 쓸 이름을 담은 목록이고, 창 위쪽 줄의 오른쪽 끝에 그 이름이 나옵니다. `languageLabel`로 끌 수 있습니다.
+highlight.js 식별자를 넣거나, 코드가 아닌 문서라면 `plain`을 넣습니다. <Fw react="`DIFFINE_LANGUAGES`" flutter="`kDiffineLanguages`" code />가 언어 전부와 그 옆에 쓸 이름을 담은 목록이고, 창 위쪽 줄의 오른쪽 끝에 그 이름이 나옵니다. <Fw react="이것을 그리는 값이 `languageLabel`이고, 요청하지 않으면 꺼져 있습니다. 이름과 메뉴는 import가 아니라 켤 때 내려받으므로, 끄고 쓰는 페이지는 둘 다 받지 않습니다." flutter="`languageLabel`로 끌 수 있습니다." />
 
 에디터에서는 같은 자리가 목록을 여는 메뉴가 됩니다. 두 모드가 서로 다른 컨트롤을 그리는 유일한 지점입니다. 뷰어는 애플리케이션에서 문서를 받으니 그게 무엇인지 알고 있지만, 에디터가 받는 것은 누군가 붙여 넣은 문서이기 때문입니다.
 
