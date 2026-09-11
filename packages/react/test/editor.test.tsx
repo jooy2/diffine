@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { TextDiff } from 'diffine-react/text-diff';
 import type { TextDiffProps } from 'diffine-react/text-diff';
+import { DiffineLanguagePicker } from '../src/components/shared/DiffineLanguage.js';
+import { textStrings } from '../src/internal/strings/text.js';
 
 /**
  * The editing mode as markup, with no layout under it.
@@ -16,6 +18,9 @@ import type { TextDiffProps } from 'diffine-react/text-diff';
  */
 const render = (props: TextDiffProps) =>
   renderToStaticMarkup(<TextDiff mode="editor" {...props} />);
+
+/** The English words, for the parts drawn on their own rather than through `TextDiff`. */
+const STRINGS = textStrings('en', undefined);
 
 /** Every line of one side, in order, as `kind` and the words in it. */
 function linesOf(markup: string, side: string): string[] {
@@ -188,11 +193,9 @@ describe('TextDiff, editing', () => {
   });
 
   it('names the language it was given, on a control that opens a menu', () => {
-    const picker = render({
-      defaultBefore: BEFORE,
-      defaultAfter: AFTER,
-      defaultLanguage: 'python'
-    });
+    const picker = renderToStaticMarkup(
+      <DiffineLanguagePicker language="python" onLanguageChange={() => {}} strings={STRINGS} />
+    );
 
     expect(picker).toContain('role="combobox"');
     expect(picker).toContain('aria-expanded="false"');
@@ -204,7 +207,15 @@ describe('TextDiff, editing', () => {
     expect(picker).not.toContain('role="listbox"');
     expect(picker).not.toContain('role="option"');
 
-    expect(render({ defaultBefore: BEFORE, defaultAfter: AFTER })).toContain('>Plain</span>');
+    expect(
+      renderToStaticMarkup(
+        <DiffineLanguagePicker language="plain" onLanguageChange={() => {}} strings={STRINGS} />
+      )
+    ).toContain('>Plain</span>');
+
+    // The menu is fetched when `languageLabel` asks for it, so a server sends
+    // the bar without it either way.
+    expect(render({ defaultBefore: BEFORE, defaultAfter: AFTER })).not.toContain('diffine-syntax');
     expect(
       render({ defaultBefore: BEFORE, defaultAfter: AFTER, languageLabel: false })
     ).not.toContain('diffine-syntax');

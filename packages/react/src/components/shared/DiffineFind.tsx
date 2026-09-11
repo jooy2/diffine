@@ -4,7 +4,7 @@ import * as React from 'react';
 import type { DiffineTextStrings } from '../../types.js';
 import { fill } from '../../internal/strings/common.js';
 import type { DocumentSearch } from '../../internal/search.js';
-import { Chevron, Cross, Magnifier } from './DiffineIcons.js';
+import { Chevron, Cross } from './DiffineIcons.js';
 
 /**
  * Looking for a run of text in one pane, and reading what turned up.
@@ -19,34 +19,12 @@ import { Chevron, Cross, Magnifier } from './DiffineIcons.js';
  * The bar sits under the pane it belongs to, on the same grid the header and
  * the bar of counts are on, so the half of the component it is under is the
  * half it searches.
+ *
+ * Nothing here is imported: `TextDiff` fetches this module the first time a
+ * reader opens a search, so a page whose readers never look for anything never
+ * downloads it. The button that opens one is in `DiffineFindToggle.tsx`, which
+ * is drawn from the start and therefore imported from the start.
  */
-
-export interface DiffineFindToggleProps {
-  search: DocumentSearch;
-  /** What the pane being searched is called, so two buttons are told apart. */
-  label: string;
-  strings: DiffineTextStrings;
-}
-
-/** The button in the bar above the panes that opens one pane's search. */
-export function DiffineFindToggle({
-  search,
-  label,
-  strings
-}: DiffineFindToggleProps): React.JSX.Element {
-  return (
-    <button
-      type="button"
-      className="diffine-icon-button"
-      aria-expanded={search.open}
-      aria-label={fill(strings.searchIn, { label })}
-      title={strings.search}
-      onClick={() => (search.open ? search.hide() : search.show())}
-    >
-      <Magnifier />
-    </button>
-  );
-}
 
 export interface DiffineFindProps {
   search: DocumentSearch;

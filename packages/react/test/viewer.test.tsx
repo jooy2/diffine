@@ -3,6 +3,8 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { diffText } from 'diffine-react';
 import { TextDiff } from 'diffine-react/text-diff';
 import type { TextDiffProps } from 'diffine-react/text-diff';
+import { DiffineLanguageName } from '../src/components/shared/DiffineLanguage.js';
+import { textStrings } from '../src/internal/strings/text.js';
 
 /**
  * The reading mode as markup, with no layout under it.
@@ -15,6 +17,9 @@ import type { TextDiffProps } from 'diffine-react/text-diff';
  * belong in a browser rather than in a convincing imitation of one.
  */
 const render = (props: TextDiffProps) => renderToStaticMarkup(<TextDiff {...props} />);
+
+/** The English words, for the parts drawn on their own rather than through `TextDiff`. */
+const STRINGS = textStrings('en', undefined);
 
 /** Every line of one side, in order, as `kind` and the words in it. */
 function linesOf(markup: string, side: string): string[] {
@@ -185,13 +190,21 @@ describe('TextDiff, reading', () => {
   });
 
   it('names what the documents are being coloured as, and calls nothing Plain', () => {
-    expect(render({ before: BEFORE, after: AFTER })).toContain('>Plain</span>');
-    expect(render({ before: BEFORE, after: AFTER, language: 'typescript' })).toContain(
-      '>TypeScript</span>'
-    );
+    const name = (language: string | undefined) =>
+      renderToStaticMarkup(<DiffineLanguageName language={language} strings={STRINGS} />);
+
+    expect(name(undefined)).toContain('>Plain</span>');
+    expect(name('typescript')).toContain('>TypeScript</span>');
     // An identifier nobody knows is written as it was given rather than dropped.
-    expect(render({ before: BEFORE, after: AFTER, language: 'brainfuck' })).toContain(
-      '>brainfuck</span>'
+    expect(name('brainfuck')).toContain('>brainfuck</span>');
+  });
+
+  it('draws nothing of the language unless `languageLabel` asks for it', () => {
+    // It is fetched rather than imported, so what a server sends carries none of
+    // it whichever way the prop is set — and off is what it is set to.
+    expect(render({ before: BEFORE, after: AFTER })).not.toContain('diffine-syntax');
+    expect(render({ before: BEFORE, after: AFTER, languageLabel: true })).not.toContain(
+      'diffine-syntax'
     );
     expect(render({ before: BEFORE, after: AFTER, languageLabel: false })).not.toContain(
       'diffine-syntax'

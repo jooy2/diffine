@@ -40,14 +40,26 @@ import {
   type SearchMatch
 } from '../../internal/search.js';
 import { contentOf, sourceOf } from '../../internal/source.js';
+import { useLazyPart } from '../../internal/lazy.js';
 import { useVirtualRows } from '../../internal/virtual.js';
-import { DiffineFind, DiffineFindToggle } from '../shared/DiffineFind.js';
-import { DiffineLanguageName, DiffineLanguagePicker } from '../shared/DiffineLanguage.js';
+import { DiffineFindToggle } from '../shared/DiffineFindToggle.js';
 import { DiffineLinks } from '../shared/DiffineLinks.js';
 import { DiffineNav } from '../shared/DiffineNav.js';
 import { DiffineSummary } from '../shared/DiffineSummary.js';
 import { TextDiffField } from './TextDiffField.js';
 import { TextDiffPane } from './TextDiffPane.js';
+
+/**
+ * The two parts of the view that are fetched rather than imported.
+ *
+ * Neither is on the screen when a comparison opens: the search bar waits for a
+ * reader to ask for it, and the menu of languages is drawn only where
+ * `languageLabel` was turned on. Both are constants here rather than arrow
+ * functions at the call site, because {@link useLazyPart} keeps what it fetched
+ * under the loader it was given.
+ */
+const FIND = () => import('../shared/DiffineFind.js');
+const LANGUAGE = () => import('../shared/DiffineLanguage.js');
 
 export interface TextDiffProps extends Omit<
   React.ComponentPropsWithoutRef<'div'>,
@@ -435,7 +447,12 @@ export interface TextDiffProps extends Omit<
    * was chosen from in `editor` mode, where a document somebody pasted is a
    * document nobody knew the language of.
    *
-   * @default true
+   * Off unless it is asked for, because most comparisons are of something whose
+   * language the page already knows and a reader has no reason to change. Both
+   * the name and the menu are fetched when it is turned on rather than imported,
+   * so a page that leaves it off carries neither.
+   *
+   * @default false
    */
   languageLabel?: boolean;
 
@@ -446,7 +463,8 @@ export interface TextDiffProps extends Omit<
    *
    * This replaces `language` rather than adding to it, and it leaves the menu
    * showing a language nothing is being coloured as — so a component that
-   * passes it usually turns `languageLabel` off as well.
+   * passes it usually turns `languageLabel` off as well. Nothing of highlight.js
+   * is fetched while it is given, `language` or no `language`.
    */
   highlight?: DiffineHighlight;
 
@@ -561,7 +579,7 @@ export function TextDiff({
   language: languageProp,
   defaultLanguage = 'plain',
   onLanguageChange,
-  languageLabel = true,
+  languageLabel = false,
   highlight,
   renderGutter,
   renderWidget,
@@ -1027,10 +1045,16 @@ export function TextDiff({
     found.show(key === 'h' && editable);
   }
 
-  const syntax = useSyntaxHighlight(language, comparison.before, comparison.after);
   // The application's own highlighter replaces the language rather than joining
   // it. A line has one set of runs, and two of them cutting it at once is not a
-  // question with an answer.
+  // question with an answer — so where one is given, no grammar is fetched for a
+  // `language` whose colours would be thrown away. The language is still what
+  // the bar writes and what the menu starts on.
+  const syntax = useSyntaxHighlight(
+    highlight ? undefined : language,
+    comparison.before,
+    comparison.after
+  );
   const colour = highlight ?? syntax;
 
   /*
@@ -1054,6 +1078,8 @@ export function TextDiff({
         )
   ).length;
   const tools = (navigation && !empty) || languageLabel || searchable;
+  const find = useLazyPart(FIND, firstSearch.open || secondSearch.open);
+  const menu = useLazyPart(LANGUAGE, languageLabel);
   const bar = header || tools;
   const bothLabel = `${beforeSource.label} → ${afterSource.label}`;
   const firstLabel = split ? beforeSource.label : bothLabel;
@@ -1119,9 +1145,9 @@ export function TextDiff({
                     strings={strings}
                   />
                 ) : null}
-                {languageLabel ? (
+                {menu ? (
                   editing ? (
-                    <DiffineLanguagePicker
+                    <menu.DiffineLanguagePicker
                       language={language}
                       onLanguageChange={(chosen) => {
                         setLanguage(chosen);
@@ -1130,7 +1156,7 @@ export function TextDiff({
                       strings={strings}
                     />
                   ) : (
-                    <DiffineLanguageName language={language} strings={strings} />
+                    <menu.DiffineLanguageName language={language} strings={strings} />
                   )
                 ) : null}
               </div>
@@ -1261,11 +1287,11 @@ export function TextDiff({
         </div>
       )}
 
-      {firstSearch.open || secondSearch.open ? (
+      {find && (firstSearch.open || secondSearch.open) ? (
         <div className="diffine-find-bar">
           <div className="diffine-find-cell" data-side="before">
             {firstSearch.open ? (
-              <DiffineFind
+              <find.DiffineFind
                 search={firstSearch}
                 label={firstLabel}
                 replaceable={editing && !beforeReadOnly}
@@ -1280,7 +1306,7 @@ export function TextDiff({
           {split ? (
             <div className="diffine-find-cell" data-side="after">
               {secondSearch.open ? (
-                <DiffineFind
+                <find.DiffineFind
                   search={secondSearch}
                   label={afterSource.label}
                   replaceable={editing && !afterReadOnly}

@@ -12,6 +12,8 @@
 
 - **`DiffineStrings` is three types.** `DiffineCommonStrings` is what both views say, `DiffineTextStrings` and `DiffineImageStrings` each extend it with their own, and `DiffineStrings` is still the two together for an application keeping one table for both. `TextDiff` takes `Partial<DiffineTextStrings>` and `ImageDiff` takes `Partial<DiffineImageStrings>`, so a partial table written against the old name still fits; a variable annotated `DiffineStrings` still fits as well. What changed underneath is that the words are shipped the way they are used — a page with a picture comparison on it no longer carries the word for a regular expression.
 
+- **`languageLabel` is off unless a page asks for it.** It was on, which meant every comparison drew the name of a language at the right end of its bar and every editor drew a menu of thirty-four of them — on pages whose documents were not code, and on pages that already knew what their documents were. Pass `languageLabel` to get it back. Both the name and the menu are now fetched when it is turned on rather than imported, so a page that leaves it off carries neither.
+
 ### Added
 
 - **`virtualize` now cuts a wrapped document as well.** Where the rows are was arithmetic and could only be arithmetic, so `wrap` turned the whole thing off and a wrapped comparison of twenty thousand lines drew twenty thousand rows. Now the rows that have been drawn are measured and kept, the rest stand at the average of those, and the pane is scrolled by however much the row under its top edge moved when a measurement replaced a guess — so the words a reader is looking at stay where they were looking at them. Two panes held level share one table of heights, because two columns of different heights are two scrollbars that cannot both be right.
@@ -48,7 +50,11 @@
 
 ### Changed
 
+- **The search bar is fetched when a reader opens one.** It is not on the screen when a comparison is, and for most readers it never is, so it is no longer in what a page downloads to draw two documents. The button that opens it is, because that one is drawn from the start. What it costs is the render between the keystroke and the bar, which is a chunk already sitting beside the page.
+
 - **The syntax highlighter is fetched rather than imported.** highlight.js and the thirty-four grammars were already behind an `import()` apiece, but the module that reaches them was not, so every page with a viewer on it carried the machinery for colouring whether or not it coloured anything. It is now fetched the first time a viewer is given a `language`, which is also the first time any of it is any use. A viewer that is given none never asks, and a build that never mentions one never writes the chunk.
+
+- **A `highlight` of the application's own no longer fetches a grammar.** The prop replaces `language`'s colours rather than joining them, so a viewer given both was downloading a grammar whose runs it then threw away. `language` still names what the bar writes and what the menu starts on.
 
 ## v0.1.0 (2026-09-06)
 
