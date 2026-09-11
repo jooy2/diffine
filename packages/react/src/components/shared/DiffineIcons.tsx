@@ -82,6 +82,24 @@ export function Plus(): React.JSX.Element {
   );
 }
 
+/** The four ways something can be dragged, for the handle that moves a panel. */
+export function Move(): React.JSX.Element {
+  return (
+    <svg className="diffine-icon" {...LINES}>
+      <path d="M8 2.5v11M2.5 8h11M8 2.5 6 4.5M8 2.5l2 2M8 13.5l-2-2M8 13.5l2-2M2.5 8l2-2M2.5 8l2 2M13.5 8l-2-2M13.5 8l-2 2" />
+    </svg>
+  );
+}
+
+/** The corner a panel is pulled larger by. */
+export function Grip(): React.JSX.Element {
+  return (
+    <svg className="diffine-icon" {...LINES}>
+      <path d="M13 6 6 13M13 10.5l-2.5 2.5" />
+    </svg>
+  );
+}
+
 export function Frame(): React.JSX.Element {
   return (
     <svg className="diffine-icon" {...LINES}>

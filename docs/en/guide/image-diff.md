@@ -281,7 +281,9 @@ Above its own size the picture is drawn crisp rather than smooth. At four hundre
 
 Two panes at four hundred per cent say two pixels are different and stop there, and what a reader asks next is what the two actually are — the same grey a shade darker, or a different colour altogether. `loupe` answers it. Move the pointer over either pane and the pixels around it are drawn magnified, both sides at once, with the colour of the one in the middle written out and the point of the frame it sits at.
 
-Both sides whichever pane the pointer is over, because a split view has one picture a pane and the question is never about one of them. It sits in whichever corner the pointer is furthest from, since a panel under the pointer is a panel over the thing it is magnifying, and it follows a pointer rather than a finger — a reader on a touch screen never sees it.
+Both sides whichever pane the pointer is over, because a split view has one picture a pane and the question is never about one of them. It follows a pointer rather than a finger, so a reader on a touch screen never sees it.
+
+It stays where it is put. The panel starts against the edge away from the pane being read — and at the left where there is only one pane — because a panel that moved itself from corner to corner to stay out from under the pointer is the thing a reader ends up watching. Drag the handle in its bar to put it anywhere in the comparison, and pull the corner to show more pixels at once: the tiles stay the size they are and there are more of them, up to forty-one across.
 
 It is on by default. <Fw react="`loupe={false}`" flutter="`loupe: false`" /> turns it off.
 

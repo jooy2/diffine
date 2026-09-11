@@ -39,6 +39,12 @@ enum DiffineIcon {
   /// The whole thing at once.
   frame,
 
+  /// The four ways something can be dragged, for the handle that moves a panel.
+  move,
+
+  /// The corner a panel is pulled larger by.
+  grip,
+
   /// A document, for the size written under a pane.
   document,
 
@@ -128,6 +134,18 @@ const Map<DiffineIcon, List<List<Object>>> _paths = <DiffineIcon, List<List<Obje
   DiffineIcon.plus: <List<Object>>[
     <Object>['m', 8.0, 3.5, 'l', 8.0, 12.5],
     <Object>['m', 3.5, 8.0, 'l', 12.5, 8.0],
+  ],
+  DiffineIcon.move: <List<Object>>[
+    <Object>['m', 8.0, 2.5, 'l', 8.0, 13.5],
+    <Object>['m', 2.5, 8.0, 'l', 13.5, 8.0],
+    <Object>['m', 6.0, 4.5, 'l', 8.0, 2.5, 'l', 10.0, 4.5],
+    <Object>['m', 6.0, 11.5, 'l', 8.0, 13.5, 'l', 10.0, 11.5],
+    <Object>['m', 4.5, 6.0, 'l', 2.5, 8.0, 'l', 4.5, 10.0],
+    <Object>['m', 11.5, 6.0, 'l', 13.5, 8.0, 'l', 11.5, 10.0],
+  ],
+  DiffineIcon.grip: <List<Object>>[
+    <Object>['m', 13.0, 6.0, 'l', 6.0, 13.0],
+    <Object>['m', 13.0, 10.5, 'l', 10.5, 13.0],
   ],
   DiffineIcon.frame: <List<Object>>[
     <Object>['m', 3.0, 6.0, 'l', 3.0, 3.0, 'l', 6.0, 3.0],

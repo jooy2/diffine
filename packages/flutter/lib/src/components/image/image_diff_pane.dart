@@ -11,9 +11,7 @@ library;
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
-import 'package:diffine/src/components/image/image_diff_loupe.dart';
 import 'package:diffine/src/components/shared/diffine_controls.dart';
-import 'package:diffine/src/internal/image/loupe.dart';
 import 'package:diffine/src/internal/image/paint.dart';
 import 'package:diffine/src/internal/image/viewport.dart';
 import 'package:diffine/src/theme/tokens.dart';
@@ -47,7 +45,7 @@ class ImageDiffPane extends StatefulWidget {
     this.unchanged = DiffineImageUnchanged.keep,
     this.stencil,
     this.wheel = DiffineImageWheel.zoom,
-    this.samples = const <LoupeSample>[],
+    this.onLook,
     this.editable = false,
     this.onChoose,
     this.wipe,
@@ -106,13 +104,14 @@ class ImageDiffPane extends StatefulWidget {
   /// the screen to scroll once the whole frame is in view.
   final DiffineImageWheel wheel;
 
-  /// Both sides, for the square of magnified pixels under the pointer, or an
-  /// empty list where it is turned off.
+  /// Where a pointer is over this pane, in the frame's own coordinates, or
+  /// `null` where it has left.
   ///
-  /// Both rather than this pane's, because a split view has one picture a pane
-  /// and the question a reader has at that magnification is never about one of
-  /// them.
-  final List<LoupeSample> samples;
+  /// The loupe is drawn by the comparison rather than by a pane, because it
+  /// shows both pictures and sits over both panes. What a pane knows and the
+  /// comparison does not is where a pointer is inside it, so a pane reports
+  /// that and nothing else. `null` turns the reporting off.
+  final ValueChanged<Offset?>? onLook;
 
   /// Whether a picture can be put into it.
   final bool editable;
@@ -134,7 +133,6 @@ class ImageDiffPane extends StatefulWidget {
 class _ImageDiffPaneState extends State<ImageDiffPane> {
   final FocusNode _focus = FocusNode(debugLabel: 'diffine picture');
   Size _box = Size.zero;
-  Offset? _pointer;
 
   @override
   void dispose() {
@@ -207,17 +205,13 @@ class _ImageDiffPaneState extends State<ImageDiffPane> {
   /// left. A finger is not a pointer: it is where the picture is being dragged
   /// from, and a panel following it would be a panel under the hand.
   void _onHover(PointerEvent event) {
-    if (widget.samples.isEmpty || event.kind == PointerDeviceKind.touch) {
+    final ValueChanged<Offset?>? tell = widget.onLook;
+
+    if (tell == null || event.kind == PointerDeviceKind.touch || _box.isEmpty) {
       return;
     }
 
-    setState(() => _pointer = event.localPosition);
-  }
-
-  void _clearPointer() {
-    if (_pointer != null) {
-      setState(() => _pointer = null);
-    }
+    tell(frameAt(widget.viewport, _box, event.localPosition.dx, event.localPosition.dy));
   }
 
   KeyEventResult _onKey(FocusNode node, KeyEvent event) {
@@ -281,18 +275,8 @@ class _ImageDiffPaneState extends State<ImageDiffPane> {
 
             _measure(size);
 
-            final Offset? pointer = _pointer;
-            /*
-             * Where the loupe goes, which is whichever corner the pointer is
-             * furthest from. A square of magnified pixels pinned under the
-             * pointer would be a square over the thing it is magnifying.
-             */
-            final Offset? at = pointer == null || size.isEmpty
-                ? null
-                : frameAt(widget.viewport, size, pointer.dx, pointer.dy);
-
             return MouseRegion(
-              onExit: (PointerExitEvent _) => _clearPointer(),
+              onExit: (PointerExitEvent _) => widget.onLook?.call(null),
               child: Listener(
                 onPointerSignal: _onPointerSignal,
                 onPointerHover: _onHover,
@@ -331,19 +315,6 @@ class _ImageDiffPaneState extends State<ImageDiffPane> {
                           onWipe: widget.onWipe!,
                           label: widget.strings.wipe,
                           width: size.width,
-                        ),
-                      if (at != null && widget.samples.isNotEmpty && !widget.blank)
-                        Positioned(
-                          top: pointer!.dy < size.height / 2 ? null : 8,
-                          bottom: pointer.dy < size.height / 2 ? 8 : null,
-                          left: pointer.dx < size.width / 2 ? null : 8,
-                          right: pointer.dx < size.width / 2 ? 8 : null,
-                          child: ImageDiffLoupe(
-                            theme: theme,
-                            samples: widget.samples,
-                            at: at,
-                            strings: widget.strings,
-                          ),
                         ),
                       if (widget.blank) Positioned.fill(child: Center(child: _blank(theme))),
                     ],

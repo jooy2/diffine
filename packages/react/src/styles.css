@@ -1507,6 +1507,9 @@ button.diffine-fold:focus-visible {
 }
 
 .diffine-image .diffine-body {
+  /* What the magnified pixels are placed against, because they sit over both
+     panes rather than inside one of them. */
+  position: relative;
   background: var(--diffine-image-ground);
 }
 
@@ -1628,13 +1631,19 @@ button.diffine-fold:focus-visible {
 /*
  * The pixels under the pointer, magnified.
  *
- * Pinned to a corner rather than following the pointer, and to whichever corner
- * the pointer is furthest from — a square held under a pointer is a square over
- * the thing it is magnifying. It takes no pointer events of its own, so moving
- * onto it is impossible and the picture underneath goes on being dragged.
+ * It belongs to the comparison rather than to a pane, because it shows both
+ * pictures and sits over both of them — and because a panel that jumped from
+ * corner to corner to stay out from under the pointer is the thing a reader
+ * ends up watching. It starts against the edge away from the side being read
+ * and stays there until it is dragged somewhere else.
+ *
+ * It takes no pointer events except on the two controls, so the picture under
+ * it goes on being dragged and the pane under it goes on reporting where the
+ * pointer is.
  */
 .diffine-image-loupe {
   position: absolute;
+  top: 0.5rem;
   z-index: 2;
   display: flex;
   flex-direction: column;
@@ -1652,20 +1661,46 @@ button.diffine-fold:focus-visible {
   overflow: hidden;
 }
 
-.diffine-image-loupe[data-corner^='top'] {
-  top: 0.5rem;
-}
-
-.diffine-image-loupe[data-corner^='bottom'] {
-  bottom: 0.5rem;
-}
-
-.diffine-image-loupe[data-corner$='left'] {
+.diffine-image-loupe[data-start='left'] {
   left: 0.5rem;
 }
 
-.diffine-image-loupe[data-corner$='right'] {
+.diffine-image-loupe[data-start='right'] {
   right: 0.5rem;
+}
+
+.diffine-image-loupe-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.diffine-image-loupe-grab,
+.diffine-image-loupe-size {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--diffine-muted);
+  pointer-events: auto;
+  touch-action: none;
+}
+
+.diffine-image-loupe-grab {
+  cursor: move;
+}
+
+.diffine-image-loupe-grab:hover,
+.diffine-image-loupe-size:hover {
+  color: var(--diffine-text);
+}
+
+/* The corner, in the corner, over the panel's own padding. */
+.diffine-image-loupe-size {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  padding: 0.125rem;
+  cursor: nwse-resize;
 }
 
 .diffine-image-loupe-sides {
@@ -1684,7 +1719,6 @@ button.diffine-fold:focus-visible {
   display: flex;
   flex-direction: column;
   gap: 0.0625rem;
-  max-width: 6.75rem;
   font-family: var(--diffine-font);
   font-size: 0.6875rem;
   line-height: 1.2;

@@ -339,10 +339,12 @@ TextDiff(mode: DiffineMode.editor, defaultBefore: saved, defaultAfter: draft);
 | `fade`         | `두 이미지 겹쳐 보기`                 |
 | `wipe`         | `끌어서 나눠 보기`                    |
 | `at`           | `좌표`                                |
+| `loupeMove`    | `끌어서 확대 창 옮기기`               |
+| `loupeSize`    | `끌어서 더 넓은 범위 보기`            |
 
 `added`, `removed`, `changed`, `summary`, `documentSize`, `changePosition`, `searchPosition`, `searchEmpty`, `imageSummary`는 화면에 나오지 않고 스크린 리더가 읽습니다. `language`는 에디터의 언어 메뉴 이름으로 읽힙니다.
 
-자리 표시자는 이렇게 채워집니다. `searchIn`과 `chooseIn`의 `{label}` 자리에는 그 버튼이 맡은 쪽의 이름이 들어갑니다. 한 <Fw react="컴포넌트에" flutter="위젯에" /> 같은 버튼이 둘씩 놓이므로 이것으로 구분합니다. `summary`의 `{changes}`, `{inserted}`, `{deleted}` 자리에는 집계가 들어갑니다. `documentSize`의 `{label}` 자리에는 한쪽의 이름이, `{characters}`와 `{size}` 자리에는 읽는 사람의 언어로 이미 써 둔 수가 들어가고, `imageSize`의 `{width}`, `{height}`, `{size}`도 마찬가지입니다. `imageSummary`는 `{regions}`와 `{percent}`를, `zoomLevel`은 `{percent}`를 받습니다. `at`은 확대한 픽셀 아래 좌표 앞에 붙는 말입니다. `placeholder`는 에디터의 빈 입력란에 나오는 문구입니다.
+자리 표시자는 이렇게 채워집니다. `searchIn`과 `chooseIn`의 `{label}` 자리에는 그 버튼이 맡은 쪽의 이름이 들어갑니다. 한 <Fw react="컴포넌트에" flutter="위젯에" /> 같은 버튼이 둘씩 놓이므로 이것으로 구분합니다. `summary`의 `{changes}`, `{inserted}`, `{deleted}` 자리에는 집계가 들어갑니다. `documentSize`의 `{label}` 자리에는 한쪽의 이름이, `{characters}`와 `{size}` 자리에는 읽는 사람의 언어로 이미 써 둔 수가 들어가고, `imageSize`의 `{width}`, `{height}`, `{size}`도 마찬가지입니다. `imageSummary`는 `{regions}`와 `{percent}`를, `zoomLevel`은 `{percent}`를 받습니다. `at`은 확대한 픽셀 아래 좌표 앞에 붙는 말이고, `loupeMove`와 `loupeSize`는 그 패널을 옮기는 손잡이와 더 넓은 범위를 보는 모서리의 이름입니다. `placeholder`는 에디터의 빈 입력란에 나오는 문구입니다.
 
 ::: fw react
 

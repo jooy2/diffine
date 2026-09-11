@@ -22,7 +22,7 @@ import { imageStrings } from '../../internal/strings/image.js';
 import { useIsomorphicLayoutEffect } from '../../internal/layout.js';
 import { formatNumber } from '../../internal/measure.js';
 import type { Layer } from '../../internal/image/paint.js';
-import type { Sample } from '../../internal/image/loupe.js';
+import { SPAN, type Sample } from '../../internal/image/loupe.js';
 import { imageContentOf, imageSourceOf } from '../../internal/image/source.js';
 import {
   useComparison,
@@ -40,6 +40,7 @@ import {
 } from '../../internal/image/viewport.js';
 import { Frame, Minus, Plus } from '../shared/DiffineIcons.js';
 import { DiffineNav } from '../shared/DiffineNav.js';
+import { ImageDiffLoupe, type LoupePlace } from './ImageDiffLoupe.js';
 import { ImageDiffPane } from './ImageDiffPane.js';
 import { ImageDiffSummary } from './ImageDiffSummary.js';
 
@@ -571,6 +572,29 @@ export function ImageDiff({
     ].filter((sample) => sample !== null);
   }, [loupe, beforePicture, afterPicture, frame, beforeSource.label, afterSource.label]);
 
+  /**
+   * What the loupe is looking at, which side reported it, and where the panel
+   * has been put.
+   *
+   * The panel belongs to the comparison rather than to a pane because it shows
+   * both pictures and sits over both of them — and because a panel that jumped
+   * from pane to pane as the pointer crossed between them would be the thing a
+   * reader watched.
+   */
+  const [looking, setLooking] = React.useState<{
+    side: DiffineSide | 'both';
+    at: { x: number; y: number };
+  } | null>(null);
+  const [span, setSpan] = React.useState(SPAN);
+  const [place, setPlace] = React.useState<LoupePlace | null>(null);
+  /** Whether one of the panel's handles is being held, in which case it stays. */
+  const grabbed = React.useRef(false);
+
+  const watching = (side: DiffineSide | 'both') =>
+    loupe && samples.length > 0
+      ? (at: { x: number; y: number } | null) => setLooking(at ? { side, at } : null)
+      : null;
+
   const blank = !beforePicture && !afterPicture;
   const loading = beforeLoaded.loading || afterLoaded.loading;
   const failed = beforeLoaded.failed || afterLoaded.failed || rejected !== null;
@@ -593,7 +617,6 @@ export function ImageDiff({
     chequer: palette?.chequer ?? 'transparent',
     editable: editing,
     wheel,
-    samples,
     strings
   };
 
@@ -682,7 +705,14 @@ export function ImageDiff({
         </div>
       ) : null}
 
-      <div className="diffine-body">
+      <div
+        className="diffine-body"
+        onPointerLeave={() => {
+          if (!grabbed.current) {
+            setLooking(null);
+          }
+        }}
+      >
         {split ? (
           <>
             <ImageDiffPane
@@ -694,6 +724,7 @@ export function ImageDiff({
               loading={beforeLoaded.loading}
               failed={beforeLoaded.failed || rejected === 'before'}
               onFile={(file) => take('before', file)}
+              onLook={watching('before')}
               paneRef={firstPane}
             />
             <div className="diffine-image-gap" aria-hidden="true" />
@@ -706,6 +737,7 @@ export function ImageDiff({
               loading={afterLoaded.loading}
               failed={afterLoaded.failed || rejected === 'after'}
               onFile={(file) => take('after', file)}
+              onLook={watching('after')}
               paneRef={secondPane}
             />
           </>
@@ -728,9 +760,32 @@ export function ImageDiff({
                   }
                 : undefined
             }
+            onLook={watching('both')}
             paneRef={firstPane}
           />
         )}
+
+        {looking && samples.length > 0 && !blank ? (
+          <ImageDiffLoupe
+            samples={samples}
+            at={looking.at}
+            span={span}
+            onSpan={setSpan}
+            place={place}
+            onPlace={setPlace}
+            // Away from the side being read, so that the panel is never over
+            // the part of the picture the question is about. One pane has no
+            // other side, so it starts where a panel starts.
+            start={looking.side === 'before' ? 'right' : 'left'}
+            onGrabbed={(held) => {
+              grabbed.current = held;
+            }}
+            outline={palette?.outline ?? 'transparent'}
+            marker={palette?.marker ?? 'transparent'}
+            halo={palette?.halo ?? 'transparent'}
+            strings={strings}
+          />
+        ) : null}
       </div>
 
       {summary ? (

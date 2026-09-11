@@ -873,6 +873,10 @@ export interface DiffineImageStrings extends DiffineCommonStrings {
   wipe: string;
   /** What goes before the coordinates under the magnified pixels. */
   at: string;
+  /** The name of the handle that moves the magnified pixels somewhere else. */
+  loupeMove: string;
+  /** The name of the corner that shows more of them at once. */
+  loupeSize: string;
 }
 
 /**

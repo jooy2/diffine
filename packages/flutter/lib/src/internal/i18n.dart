@@ -61,6 +61,8 @@ const Map<DiffineLocale, DiffineStrings> _locales = <DiffineLocale, DiffineStrin
     fade: 'Fade between the two',
     wipe: 'Drag to wipe between the two',
     at: 'At',
+    loupeMove: 'Drag to move the magnified pixels',
+    loupeSize: 'Drag to show more pixels',
   ),
   DiffineLocale.ko: DiffineStrings(
     before: '이전',
@@ -109,6 +111,8 @@ const Map<DiffineLocale, DiffineStrings> _locales = <DiffineLocale, DiffineStrin
     fade: '두 이미지 겹쳐 보기',
     wipe: '끌어서 나눠 보기',
     at: '좌표',
+    loupeMove: '끌어서 확대 창 옮기기',
+    loupeSize: '끌어서 더 넓은 범위 보기',
   ),
 };
 

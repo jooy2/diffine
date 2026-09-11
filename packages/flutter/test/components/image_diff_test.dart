@@ -3,6 +3,8 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:diffine/diffine.dart';
+import 'package:diffine/src/components/image/image_diff_pane.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -188,6 +190,29 @@ void main() {
       expect(find.text('saved'), findsOneWidget, reason: unchanged.name);
       expect(tester.takeException(), isNull, reason: unchanged.name);
     }
+  });
+
+  testWidgets('shows the pixels under the pointer, from both sides at once', (
+    WidgetTester tester,
+  ) async {
+    await pumpPictures(
+      tester,
+      host(ImageDiff(before: white, after: red, beforeLabel: 'saved', afterLabel: 'rendered')),
+    );
+
+    expect(find.textContaining('At '), findsNothing);
+
+    final TestPointer mouse = TestPointer(1, PointerDeviceKind.mouse);
+    final Offset over = tester.getCenter(find.byType(ImageDiffPane).first);
+
+    await tester.sendEventToBinding(mouse.hover(over));
+    await tester.pumpAndSettle();
+
+    // Both sides, whichever pane the pointer is over, and the point of the
+    // frame it is on.
+    expect(find.textContaining('At '), findsOneWidget);
+    expect(find.text('saved'), findsWidgets);
+    expect(find.text('rendered'), findsWidgets);
   });
 
   testWidgets('moves the line between the two pictures', (WidgetTester tester) async {

@@ -1370,6 +1370,8 @@ class DiffineStrings {
     required this.fade,
     required this.wipe,
     required this.at,
+    required this.loupeMove,
+    required this.loupeSize,
   });
 
   /// The header over the left side, and its region's name.
@@ -1516,6 +1518,12 @@ class DiffineStrings {
   /// What goes before the coordinates under the magnified pixels.
   final String at;
 
+  /// The name of the handle that moves the magnified pixels somewhere else.
+  final String loupeMove;
+
+  /// The name of the corner that shows more of them at once.
+  final String loupeSize;
+
   /// The same words with whichever of them are given replaced.
   DiffineStrings copyWith({
     String? before,
@@ -1564,6 +1572,8 @@ class DiffineStrings {
     String? fade,
     String? wipe,
     String? at,
+    String? loupeMove,
+    String? loupeSize,
   }) {
     return DiffineStrings(
       before: before ?? this.before,
@@ -1612,6 +1622,8 @@ class DiffineStrings {
       fade: fade ?? this.fade,
       wipe: wipe ?? this.wipe,
       at: at ?? this.at,
+      loupeMove: loupeMove ?? this.loupeMove,
+      loupeSize: loupeSize ?? this.loupeSize,
     );
   }
 }

@@ -29,6 +29,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
+import 'package:diffine/src/components/image/image_diff_loupe.dart';
 import 'package:diffine/src/components/image/image_diff_pane.dart';
 import 'package:diffine/src/components/image/image_diff_summary.dart';
 import 'package:diffine/src/components/shared/diffine_controls.dart';
@@ -43,6 +44,7 @@ import 'package:diffine/src/internal/image/viewport.dart';
 import 'package:diffine/src/internal/measure.dart';
 import 'package:diffine/src/theme/tokens.dart';
 import 'package:diffine/src/types.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/widgets.dart';
 
 /// How tall the bar above the panes is.
@@ -277,6 +279,25 @@ class _ImageDiffState extends State<ImageDiff> {
   ui.Image? _mask;
   Brightness? _maskBrightness;
   ui.Image? _stencil;
+
+  /// What the loupe is looking at and which side reported it, or `null` where
+  /// no pointer is over the comparison.
+  ///
+  /// The panel belongs to the comparison rather than to a pane because it shows
+  /// both pictures and sits over both of them — and because a panel that jumped
+  /// from pane to pane as the pointer crossed between them would be the thing a
+  /// reader watched.
+  _Looking? _looking;
+
+  /// How many pixels across one of its squares shows.
+  int _span = kLoupeSpan;
+
+  /// Where a reader has put it, or `null` for wherever it starts.
+  Offset? _loupePlace;
+
+  /// Whether one of its handles is being held, in which case it stays put even
+  /// when the drag leaves the comparison.
+  bool _grabbed = false;
 
   Size _box = Size.zero;
   DiffineImageViewport? _viewport;
@@ -595,6 +616,7 @@ class _ImageDiffState extends State<ImageDiff> {
             if (_afterPicture != null)
               LoupeSample(label: afterLabel, picture: _afterPicture!, area: _areas.after),
           ];
+    final _Looking? looking = _looking;
     final bool blank = _beforePicture == null && _afterPicture == null;
     final bool tools =
         (widget.navigation && regions.isNotEmpty) || widget.zoom || (editing && !_split);
@@ -624,66 +646,86 @@ class _ImageDiffState extends State<ImageDiff> {
                 bothLabel: bothLabel,
               ),
             Expanded(
-              child: _split
-                  ? Row(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: <Widget>[
-                        Expanded(
-                          child: _pane(
-                            samples: samples,
-                            theme: theme,
-                            strings: strings,
-                            name: beforeLabel,
-                            frame: frame,
-                            viewport: viewport,
-                            layers: layers.before,
-                            regions: regions,
-                            current: current,
-                            blank: _beforePicture == null,
-                            loading: _beforeLoading,
-                            failed: _beforeFailed,
-                            editing: editing,
-                            side: DiffineSide.before,
-                          ),
-                        ),
-                        _Rule(colour: theme.border),
-                        Expanded(
-                          child: _pane(
-                            samples: samples,
-                            theme: theme,
-                            strings: strings,
-                            name: afterLabel,
-                            frame: frame,
-                            viewport: viewport,
-                            layers: layers.after,
-                            regions: regions,
-                            current: current,
-                            blank: _afterPicture == null,
-                            loading: _afterLoading,
-                            failed: _afterFailed,
-                            editing: editing,
-                            side: DiffineSide.after,
-                          ),
-                        ),
-                      ],
-                    )
-                  : _pane(
-                      samples: samples,
-                      theme: theme,
-                      strings: strings,
-                      name: bothLabel,
-                      frame: frame,
-                      viewport: viewport,
-                      layers: layers.both,
-                      regions: regions,
-                      current: current,
-                      blank: blank,
-                      loading: _beforeLoading || _afterLoading,
-                      failed: _beforeFailed || _afterFailed,
-                      editing: editing,
-                      side: _beforePicture == null ? DiffineSide.before : DiffineSide.after,
-                      wipe: widget.view == DiffineImageView.wipe ? _wipeValue : null,
+              child: MouseRegion(
+                onExit: (PointerExitEvent _) {
+                  if (!_grabbed) {
+                    setState(() => _looking = null);
+                  }
+                },
+                child: Stack(
+                  children: <Widget>[
+                    Positioned.fill(
+                      child: _split
+                          ? Row(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: <Widget>[
+                                Expanded(
+                                  child: _pane(
+                                    samples: samples,
+                                    theme: theme,
+                                    strings: strings,
+                                    name: beforeLabel,
+                                    frame: frame,
+                                    viewport: viewport,
+                                    layers: layers.before,
+                                    regions: regions,
+                                    current: current,
+                                    blank: _beforePicture == null,
+                                    loading: _beforeLoading,
+                                    failed: _beforeFailed,
+                                    editing: editing,
+                                    side: DiffineSide.before,
+                                  ),
+                                ),
+                                _Rule(colour: theme.border),
+                                Expanded(
+                                  child: _pane(
+                                    samples: samples,
+                                    theme: theme,
+                                    strings: strings,
+                                    name: afterLabel,
+                                    frame: frame,
+                                    viewport: viewport,
+                                    layers: layers.after,
+                                    regions: regions,
+                                    current: current,
+                                    blank: _afterPicture == null,
+                                    loading: _afterLoading,
+                                    failed: _afterFailed,
+                                    editing: editing,
+                                    side: DiffineSide.after,
+                                  ),
+                                ),
+                              ],
+                            )
+                          : _pane(
+                              samples: samples,
+                              theme: theme,
+                              strings: strings,
+                              name: bothLabel,
+                              frame: frame,
+                              viewport: viewport,
+                              layers: layers.both,
+                              regions: regions,
+                              current: current,
+                              blank: blank,
+                              loading: _beforeLoading || _afterLoading,
+                              failed: _beforeFailed || _afterFailed,
+                              editing: editing,
+                              side: _beforePicture == null ? DiffineSide.before : DiffineSide.after,
+                              wipe: widget.view == DiffineImageView.wipe ? _wipeValue : null,
+                            ),
                     ),
+                    if (looking != null && samples.isNotEmpty && !blank)
+                      _placedLoupe(
+                        theme: theme,
+                        strings: strings,
+                        samples: samples,
+                        looking: looking,
+                      ),
+                  ],
+                ),
+              ),
             ),
             if (widget.summary)
               ImageDiffSummary(
@@ -789,6 +831,39 @@ class _ImageDiffState extends State<ImageDiff> {
     );
   }
 
+  /// The loupe, against the edge away from the side being read until a reader
+  /// drags it somewhere of their own.
+  Widget _placedLoupe({
+    required DiffineTheme theme,
+    required DiffineStrings strings,
+    required List<LoupeSample> samples,
+    required _Looking looking,
+  }) {
+    final Offset? place = _loupePlace;
+    final bool left = looking.side != DiffineSide.before;
+
+    return Positioned(
+      left: place?.dx ?? (left ? 8 : null),
+      right: place == null && !left ? 8 : null,
+      top: place?.dy ?? 8,
+      child: ImageDiffLoupe(
+        theme: theme,
+        samples: samples,
+        at: looking.at,
+        span: _span,
+        onSpan: (int span) => setState(() => _span = span),
+        onMove: (Offset moved) => setState(() => _loupePlace = moved),
+        onGrabbed: (bool held) => _grabbed = held,
+        strings: strings,
+      ),
+    );
+  }
+
+  /// Where a pointer is over one of the panes, in the frame's own coordinates.
+  void _onLook(DiffineSide side, Offset? at) {
+    setState(() => _looking = at == null ? null : _Looking(side: side, at: at));
+  }
+
   Widget _pane({
     required DiffineTheme theme,
     required DiffineStrings strings,
@@ -818,7 +893,7 @@ class _ImageDiffState extends State<ImageDiff> {
       unchanged: widget.unchanged,
       stencil: _stencil,
       wheel: widget.wheel,
-      samples: samples,
+      onLook: samples.isEmpty ? null : (Offset? at) => _onLook(side, at),
       regions: widget.outlines ? regions : const <DiffImageRegion>[],
       current: current,
       blank: blank,
@@ -1102,4 +1177,15 @@ class _Fade extends StatelessWidget {
       ),
     );
   }
+}
+
+/// What the loupe is looking at, and which pane reported it.
+class _Looking {
+  const _Looking({required this.side, required this.at});
+
+  /// The pane the pointer is over, which is the side the panel keeps away from.
+  final DiffineSide side;
+
+  /// Where the pointer is, in the frame's own coordinates.
+  final Offset at;
 }

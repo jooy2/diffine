@@ -12,7 +12,13 @@
 import type { DiffImageArea, DiffPixelColour } from '../../types.js';
 import type { Picture } from './decode.js';
 
-/** How many pixels across the loupe shows. Odd, so that one of them is the middle. */
+/**
+ * How many pixels across the loupe shows to begin with.
+ *
+ * Odd, so that one of them is the middle, which is the one the pointer is on
+ * and the one whose colour is written out. A reader who wants more of the
+ * picture at once pulls the corner of the panel and gets more of them.
+ */
 export const SPAN = 9;
 
 /** One side under the pointer: what it is called, what to draw, and what it is. */

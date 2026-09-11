@@ -25,7 +25,6 @@ import type {
 } from '../../types.js';
 import { useIsomorphicLayoutEffect } from '../../internal/layout.js';
 import { paintPane, type Layer } from '../../internal/image/paint.js';
-import type { Sample } from '../../internal/image/loupe.js';
 import {
   fitScale,
   frameAt,
@@ -34,7 +33,6 @@ import {
   ZOOM_STEP,
   type Box
 } from '../../internal/image/viewport.js';
-import { ImageDiffLoupe } from './ImageDiffLoupe.js';
 
 /** How far an arrow key moves the picture, in the pane's own pixels. */
 const NUDGE = 48;
@@ -74,14 +72,15 @@ export interface ImageDiffPaneProps {
    */
   wheel: DiffineImageWheel;
   /**
-   * Both sides, for the square of magnified pixels under the pointer, or an
-   * empty list where it is turned off.
+   * Where a pointer is over this pane, in the frame's own coordinates, or
+   * `null` where it has left.
    *
-   * Both rather than this pane's, because a split view has one picture a pane
-   * and the question a reader has at that magnification is never about one of
-   * them.
+   * The loupe is drawn by the comparison rather than by a pane, because it
+   * shows both pictures and sits over both panes. What a pane knows and the
+   * comparison does not is where a pointer is inside it, so a pane reports that
+   * and nothing else. `null` turns the reporting off.
    */
-  samples: readonly Sample[];
+  onLook?: ((at: { x: number; y: number } | null) => void) | null;
   /** Whether there is anything to draw at all. */
   blank: boolean;
   /** Nothing to draw yet, and why. */
@@ -115,7 +114,7 @@ export function ImageDiffPane({
   editable,
   onFile,
   wheel,
-  samples,
+  onLook,
   blank,
   loading,
   failed,
@@ -128,8 +127,6 @@ export function ImageDiffPane({
   const dragging = React.useRef<{ x: number; y: number } | null>(null);
   const [box, setBox] = React.useState<Box>({ width: 0, height: 0 });
   const [over, setOver] = React.useState(false);
-  /** Where the pointer is in the pane, for the loupe, or `null` when it has left. */
-  const [pointer, setPointer] = React.useState<{ x: number; y: number } | null>(null);
 
   /*
    * What the listeners below read, kept in a ref rather than in their
@@ -304,10 +301,15 @@ export function ImageDiffPane({
   }
 
   function onPointerMove(event: React.PointerEvent<HTMLDivElement>): void {
-    if (samples.length > 0 && event.pointerType !== 'touch') {
+    /*
+     * Where the pointer is, for the loupe. A finger is not a pointer: it is
+     * where the picture is being dragged from, and a panel following it would
+     * be a panel under the hand.
+     */
+    if (onLook && event.pointerType !== 'touch' && box.width > 0) {
       const bounds = event.currentTarget.getBoundingClientRect();
 
-      setPointer({ x: event.clientX - bounds.left, y: event.clientY - bounds.top });
+      onLook(frameAt(viewport, box, event.clientX - bounds.left, event.clientY - bounds.top));
     }
 
     const from = dragging.current;
@@ -385,17 +387,6 @@ export function ImageDiffPane({
       }
     : {};
 
-  /*
-   * Where the loupe goes, which is whichever corner the pointer is furthest
-   * from. A square of magnified pixels pinned under the pointer would be a
-   * square over the thing it is magnifying.
-   */
-  const at = pointer && box.width > 0 ? frameAt(viewport, box, pointer.x, pointer.y) : null;
-  const corner =
-    pointer && box.width > 0 && box.height > 0
-      ? `${pointer.y < box.height / 2 ? 'bottom' : 'top'}-${pointer.x < box.width / 2 ? 'right' : 'left'}`
-      : 'bottom-right';
-
   return (
     <div
       ref={paneRef}
@@ -420,7 +411,6 @@ export function ImageDiffPane({
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
-      onPointerLeave={() => setPointer(null)}
       onKeyDown={onKeyDown}
       {...dropping}
     >
@@ -428,18 +418,6 @@ export function ImageDiffPane({
 
       {wipe !== undefined && onWipe ? (
         <WipeHandle wipe={wipe} onWipe={onWipe} label={strings.wipe} />
-      ) : null}
-
-      {at && samples.length > 0 && !blank ? (
-        <ImageDiffLoupe
-          samples={samples}
-          at={at}
-          corner={corner}
-          outline={outline}
-          marker={marker}
-          halo={halo}
-          strings={strings}
-        />
       ) : null}
 
       {blank ? (
