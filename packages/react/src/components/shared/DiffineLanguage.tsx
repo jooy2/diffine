@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import type { DiffineStrings } from '../../types.js';
+import type { DiffineTextStrings } from '../../types.js';
 import { DIFFINE_LANGUAGES, languageName } from '../../internal/highlight/catalogue.js';
 import { useIsomorphicLayoutEffect } from '../../internal/layout.js';
 
@@ -21,7 +21,7 @@ import { useIsomorphicLayoutEffect } from '../../internal/layout.js';
 
 export interface DiffineLanguageNameProps {
   language: string | undefined;
-  strings: DiffineStrings;
+  strings: DiffineTextStrings;
 }
 
 /** The name of the language, for a view an application already decided about. */
@@ -39,7 +39,7 @@ export function DiffineLanguageName({
 export interface DiffineLanguagePickerProps {
   language: string;
   onLanguageChange: (language: string) => void;
-  strings: DiffineStrings;
+  strings: DiffineTextStrings;
 }
 
 /** How far the menu is held off the control, and off the edge of the window. */

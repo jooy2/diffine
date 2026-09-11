@@ -12,10 +12,11 @@ import type {
   DiffineLocale,
   DiffineMode,
   DiffineSide,
-  DiffineStrings
+  DiffineImageStrings
 } from '../../types.js';
 import { useControlled } from '../../internal/controlled.js';
-import { fill, stringsFor } from '../../internal/i18n.js';
+import { fill } from '../../internal/strings/common.js';
+import { imageStrings } from '../../internal/strings/image.js';
 import { useIsomorphicLayoutEffect } from '../../internal/layout.js';
 import { formatNumber } from '../../internal/measure.js';
 import type { Layer } from '../../internal/image/paint.js';
@@ -211,7 +212,7 @@ export interface ImageDiffProps extends Omit<
   locale?: DiffineLocale;
 
   /** Words to use instead of the locale's, for any of them. */
-  strings?: Partial<DiffineStrings>;
+  strings?: Partial<DiffineImageStrings>;
 }
 
 /** Nothing to draw, so that a pane with no picture in it is still a pane. */
@@ -282,7 +283,7 @@ export function ImageDiff({
 }: ImageDiffProps): React.JSX.Element {
   const editing = mode === 'editor';
   const split = view === 'split';
-  const strings = React.useMemo(() => stringsFor(locale, overrides), [locale, overrides]);
+  const strings = React.useMemo(() => imageStrings(locale, overrides), [locale, overrides]);
 
   const beforeSource = imageSourceOf(before ?? defaultBefore, strings.before);
   const afterSource = imageSourceOf(after ?? defaultAfter, strings.after);
@@ -701,7 +702,7 @@ function Tools({
   onFade: (fade: number) => void;
   chooser: React.ReactNode;
   locale: DiffineLocale;
-  strings: DiffineStrings;
+  strings: DiffineImageStrings;
 }): React.JSX.Element {
   return (
     <div className="diffine-tools">
@@ -774,7 +775,7 @@ function Chooser({
 }: {
   label: string;
   onFile: (file: File) => void;
-  strings: DiffineStrings;
+  strings: DiffineImageStrings;
 }): React.JSX.Element {
   const said = fill(strings.chooseIn, { label });
 

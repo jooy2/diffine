@@ -16,7 +16,7 @@
  */
 
 import * as React from 'react';
-import type { DiffImageRegion, DiffineImageViewport, DiffineStrings } from '../../types.js';
+import type { DiffImageRegion, DiffineImageViewport, DiffineImageStrings } from '../../types.js';
 import { useIsomorphicLayoutEffect } from '../../internal/layout.js';
 import { paintPane, type Layer } from '../../internal/image/paint.js';
 import { fitScale, panBy, zoomAbout, ZOOM_STEP, type Box } from '../../internal/image/viewport.js';
@@ -55,7 +55,7 @@ export interface ImageDiffPaneProps {
   /** Where the line between the two pictures is, for the view that draws one. */
   wipe?: number;
   onWipe?: (wipe: number) => void;
-  strings: DiffineStrings;
+  strings: DiffineImageStrings;
   paneRef: React.RefObject<HTMLDivElement | null>;
 }
 

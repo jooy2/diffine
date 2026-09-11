@@ -1,8 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import type { DiffFormat, DiffineLocale, DiffineStrings } from '../../types.js';
-import { fill } from '../../internal/i18n.js';
+import type { DiffFormat, DiffineLocale, DiffineTextStrings } from '../../types.js';
+import { fill } from '../../internal/strings/common.js';
 import { formatBytes, formatCount, measureText } from '../../internal/measure.js';
 import { TallyIcon } from './DiffineIcons.js';
 
@@ -23,7 +23,7 @@ export interface DiffineSummaryProps {
   /** How each document is written, where the comparison could work it out. */
   format?: { before: DiffFormat; after: DiffFormat };
   locale: DiffineLocale;
-  strings: DiffineStrings;
+  strings: DiffineTextStrings;
 }
 
 /**
@@ -147,7 +147,7 @@ function differs(before: DiffFormat, after: DiffFormat): boolean {
 }
 
 /** One document's way of being written, in as few words as it takes. */
-function describe(format: DiffFormat, strings: DiffineStrings): string {
+function describe(format: DiffFormat, strings: DiffineTextStrings): string {
   const parts: string[] = [];
 
   if (format.ending !== 'none') {
@@ -178,7 +178,7 @@ function Metric({
   characters: number;
   bytes: number;
   locale: DiffineLocale;
-  strings: DiffineStrings;
+  strings: DiffineTextStrings;
 }): React.JSX.Element {
   const count = formatCount(characters, locale);
   const size = formatBytes(bytes, locale);

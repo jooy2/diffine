@@ -4,6 +4,10 @@
 
 ## vNext (2026--)
 
+### Breaking changes
+
+- **`DiffineStrings` is three types.** `DiffineCommonStrings` is what both views say, `DiffineTextStrings` and `DiffineImageStrings` each extend it with their own, and `DiffineStrings` is still the two together for an application keeping one table for both. `TextDiff` takes `Partial<DiffineTextStrings>` and `ImageDiff` takes `Partial<DiffineImageStrings>`, so a partial table written against the old name still fits; a variable annotated `DiffineStrings` still fits as well. What changed underneath is that the words are shipped the way they are used — a page with a picture comparison on it no longer carries the word for a regular expression.
+
 ### Added
 
 - **`virtualize` now cuts a wrapped document as well.** Where the rows are was arithmetic and could only be arithmetic, so `wrap` turned the whole thing off and a wrapped comparison of twenty thousand lines drew twenty thousand rows. Now the rows that have been drawn are measured and kept, the rest stand at the average of those, and the pane is scrolled by however much the row under its top edge moved when a measurement replaced a guess — so the words a reader is looking at stay where they were looking at them. Two panes held level share one table of heights, because two columns of different heights are two scrollbars that cannot both be right.

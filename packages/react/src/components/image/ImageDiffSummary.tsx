@@ -1,8 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import type { DiffImageResult, DiffineLocale, DiffineStrings } from '../../types.js';
-import { fill } from '../../internal/i18n.js';
+import type { DiffImageResult, DiffineLocale, DiffineImageStrings } from '../../types.js';
+import { fill } from '../../internal/strings/common.js';
 import { formatBytes, formatCount, formatNumber } from '../../internal/measure.js';
 import { TallyIcon } from '../shared/DiffineIcons.js';
 
@@ -21,7 +21,7 @@ export interface ImageDiffSummaryProps {
   /** Whether the panes are side by side, so the bar is halved as they are. */
   split: boolean;
   locale: DiffineLocale;
-  strings: DiffineStrings;
+  strings: DiffineImageStrings;
 }
 
 /**
@@ -124,7 +124,7 @@ function Metric({
 }: {
   picture: ImageMetrics | null;
   locale: DiffineLocale;
-  strings: DiffineStrings;
+  strings: DiffineImageStrings;
 }): React.JSX.Element | null {
   if (!picture) {
     return null;

@@ -1,8 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import type { DiffChange, DiffChangeKind, DiffineSide, DiffineStrings } from '../../types.js';
-import { fill } from '../../internal/i18n.js';
+import type { DiffChange, DiffChangeKind, DiffineSide, DiffineTextStrings } from '../../types.js';
+import { fill } from '../../internal/strings/common.js';
 import { readRows, useMeasure, type RowBox } from '../../internal/layout.js';
 import type { RowMetrics } from '../../internal/metrics.js';
 import type { PaneLayout } from '../../internal/rows.js';
@@ -127,7 +127,7 @@ export interface DiffineLinksProps {
   writable?: { before: boolean; after: boolean };
   /** What each side is called, for the name of the button that writes into it. */
   labels?: { before: string; after: string };
-  strings?: DiffineStrings;
+  strings?: DiffineTextStrings;
 }
 
 /**

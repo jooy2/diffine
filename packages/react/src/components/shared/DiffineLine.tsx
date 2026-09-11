@@ -7,7 +7,7 @@ import type {
   DiffineHighlight,
   DiffineRender,
   DiffineSide,
-  DiffineStrings
+  DiffineTextStrings
 } from '../../types.js';
 import type { LineRange } from '../../internal/pieces.js';
 import { splitLine } from '../../internal/pieces.js';
@@ -62,7 +62,11 @@ function marked(text: string, invisibles: boolean): React.ReactNode {
 }
 
 /** Which word a screen reader hears in front of the line. */
-function labelFor(strings: DiffineStrings, kind: DiffRowKind, side: DiffineSide): string | null {
+function labelFor(
+  strings: DiffineTextStrings,
+  kind: DiffRowKind,
+  side: DiffineSide
+): string | null {
   if (kind === 'replace') {
     return strings.changed;
   }
@@ -101,7 +105,7 @@ export interface DiffineLineProps {
   current: boolean;
   lineNumbers: boolean;
   markers: boolean;
-  strings: DiffineStrings;
+  strings: DiffineTextStrings;
   highlight?: DiffineHighlight;
   /** What a search found in this line, or nothing when it found nothing here. */
   matches?: readonly SearchMatch[];

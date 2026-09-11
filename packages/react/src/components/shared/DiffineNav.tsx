@@ -1,8 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import type { DiffineStrings } from '../../types.js';
-import { fill } from '../../internal/i18n.js';
+import type { DiffineCommonStrings } from '../../types.js';
+import { fill } from '../../internal/strings/common.js';
 import { Chevron } from './DiffineIcons.js';
 
 export interface DiffineNavProps {
@@ -11,7 +11,7 @@ export interface DiffineNavProps {
   current: number;
   /** Which way to move. Where that lands is the component's to work out. */
   onStep: (direction: 1 | -1) => void;
-  strings: DiffineStrings;
+  strings: DiffineCommonStrings;
 }
 
 /**

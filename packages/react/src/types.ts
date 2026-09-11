@@ -681,22 +681,37 @@ export interface DiffineSource {
 }
 
 /**
- * Every word the viewer puts on the screen.
+ * The words both viewers put on the screen.
  *
  * Some of these are read by a screen reader rather than shown, which is why
  * they are sentences rather than labels.
+ *
+ * They are split three ways because the words are shipped the way they are
+ * used: a page with a document comparison on it has no reason to carry the
+ * word for a zoom control, and a page with a picture comparison has no reason
+ * to carry the word for a regular expression.
  */
-export interface DiffineStrings {
+export interface DiffineCommonStrings {
   /** The header over the left side, and its region's name. */
   before: string;
   /** The header over the right side. */
   after: string;
   /** What is said when there is nothing on either side yet. */
   empty: string;
+  /** What is said when the two turned out to be the same. */
+  identical: string;
+  /** The name of the button that moves back a change. */
+  previousChange: string;
+  /** The name of the button that moves on a change. */
+  nextChange: string;
+  /** Which change is being looked at: `{position}` of `{total}`. */
+  changePosition: string;
+}
+
+/** The words the document comparison adds. */
+export interface DiffineTextStrings extends DiffineCommonStrings {
   /** What an empty field says before anybody has typed into it. */
   placeholder: string;
-  /** What is said when the two documents turned out to be the same. */
-  identical: string;
   /** What a screen reader hears in front of a line that is only in `after`. */
   added: string;
   /** What it hears in front of a line that is only in `before`. */
@@ -725,12 +740,6 @@ export interface DiffineStrings {
    * already written in the reader's own language.
    */
   documentSize: string;
-  /** The name of the button that moves back a change. */
-  previousChange: string;
-  /** The name of the button that moves on a change. */
-  nextChange: string;
-  /** Which change is being looked at: `{position}` of `{total}`. */
-  changePosition: string;
   /** The name of the button that opens the search bar, and of its field. */
   search: string;
   /** Which side is being searched, for the button above each pane: `{label}`. */
@@ -757,9 +766,10 @@ export interface DiffineStrings {
   replaceWith: string;
   /** The name of the button that writes over every match. */
   replaceAll: string;
+}
 
-  /* The words the picture comparison adds. Everything above it uses as well. */
-
+/** The words the picture comparison adds. */
+export interface DiffineImageStrings extends DiffineCommonStrings {
   /** How one picture is written under the pane it belongs to: `{label}`, `{width}`, `{height}` and `{size}`. */
   imageSize: string;
   /** How the counts are read out: `{regions}` areas over `{percent}` of the frame. */
@@ -785,6 +795,15 @@ export interface DiffineStrings {
   /** The name of the handle that wipes one picture across the other. */
   wipe: string;
 }
+
+/**
+ * Every word either viewer puts on the screen.
+ *
+ * The two halves together, for an application that keeps one table of words for
+ * both — a translation file, a theme, a set of overrides passed to whichever
+ * viewer a page happens to be drawing.
+ */
+export interface DiffineStrings extends DiffineTextStrings, DiffineImageStrings {}
 
 /**
  * A run of one line, as the application wants it coloured.

@@ -1,8 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import type { DiffineStrings } from '../../types.js';
-import { fill } from '../../internal/i18n.js';
+import type { DiffineTextStrings } from '../../types.js';
+import { fill } from '../../internal/strings/common.js';
 import type { DocumentSearch } from '../../internal/search.js';
 import { Chevron, Cross, Magnifier } from './DiffineIcons.js';
 
@@ -25,7 +25,7 @@ export interface DiffineFindToggleProps {
   search: DocumentSearch;
   /** What the pane being searched is called, so two buttons are told apart. */
   label: string;
-  strings: DiffineStrings;
+  strings: DiffineTextStrings;
 }
 
 /** The button in the bar above the panes that opens one pane's search. */
@@ -60,7 +60,7 @@ export interface DiffineFindProps {
   onReplaceAll?: () => void;
   /** Puts the focus back where a reader would want it, once the bar has closed. */
   onClose: () => void;
-  strings: DiffineStrings;
+  strings: DiffineTextStrings;
 }
 
 /** One pane's search bar: the query, what it found, and the way through it. */

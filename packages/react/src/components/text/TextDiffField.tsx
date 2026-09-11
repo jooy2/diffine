@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import type { DiffineHighlight, DiffineSide, DiffineStrings } from '../../types.js';
+import type { DiffineHighlight, DiffineSide, DiffineTextStrings } from '../../types.js';
 import { typeInto } from '../../internal/field.js';
 import { useIsomorphicLayoutEffect } from '../../internal/layout.js';
 import type { PaneLayout } from '../../internal/rows.js';
@@ -30,7 +30,7 @@ export interface TextDiffFieldProps {
   current: number;
   lineNumbers: boolean;
   markers: boolean;
-  strings: DiffineStrings;
+  strings: DiffineTextStrings;
   highlight?: DiffineHighlight;
   /** Whether the spaces and tabs inside each line are drawn. */
   invisibles?: boolean;

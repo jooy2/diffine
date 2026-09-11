@@ -15,7 +15,7 @@ import type {
   DiffineMode,
   DiffineRender,
   DiffineSide,
-  DiffineStrings,
+  DiffineTextStrings,
   DiffineView
 } from '../../types.js';
 import { diffText } from '../../diff.js';
@@ -25,7 +25,7 @@ import { typeOver } from '../../internal/field.js';
 import { foldPlan, type FoldRun } from '../../internal/fold.js';
 import { fontVariables } from '../../internal/font.js';
 import { useSyntaxHighlight } from '../../internal/highlight/useSyntax.js';
-import { stringsFor } from '../../internal/i18n.js';
+import { textStrings } from '../../internal/strings/text.js';
 import { useIsomorphicLayoutEffect, useRowAlignment } from '../../internal/layout.js';
 import { useChangeNavigation } from '../../internal/navigate.js';
 import type { PaneLayout } from '../../internal/rows.js';
@@ -400,7 +400,7 @@ export interface TextDiffProps extends Omit<
   locale?: DiffineLocale;
 
   /** Words to use instead of the locale's, for any of them. */
-  strings?: Partial<DiffineStrings>;
+  strings?: Partial<DiffineTextStrings>;
 
   /**
    * What the two documents are written in, so that they are coloured as it.
@@ -571,7 +571,7 @@ export function TextDiff({
   ...rest
 }: TextDiffProps): React.JSX.Element {
   const editing = mode === 'editor';
-  const strings = React.useMemo(() => stringsFor(locale, overrides), [locale, overrides]);
+  const strings = React.useMemo(() => textStrings(locale, overrides), [locale, overrides]);
   const beforeSource = sourceOf(before ?? defaultBefore, strings.before);
   const afterSource = sourceOf(after ?? defaultAfter, strings.after);
 

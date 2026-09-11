@@ -1,9 +1,9 @@
 'use client';
 
 import * as React from 'react';
-import type { DiffineSide, DiffineStrings } from '../../types.js';
+import type { DiffineSide, DiffineTextStrings } from '../../types.js';
 import type { FoldRun } from '../../internal/fold.js';
-import { fill } from '../../internal/i18n.js';
+import { fill } from '../../internal/strings/common.js';
 
 export interface DiffineFoldProps {
   /** Where this band sits in its pane's own list, which is what the rows are measured by. */
@@ -11,7 +11,7 @@ export interface DiffineFoldProps {
   /** Which pane it is in, so that it is picked out the way every other line is. */
   side: DiffineSide;
   fold: FoldRun;
-  strings: DiffineStrings;
+  strings: DiffineTextStrings;
   /** Opens the run. Left out for a run whose lines nobody has. */
   onExpand?: (fold: FoldRun) => void;
 }

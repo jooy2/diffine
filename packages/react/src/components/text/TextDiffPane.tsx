@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import type { DiffineHighlight, DiffineRender, DiffineStrings } from '../../types.js';
+import type { DiffineHighlight, DiffineRender, DiffineTextStrings } from '../../types.js';
 import { selectedText } from '../../internal/copy.js';
 import type { FoldRun } from '../../internal/fold.js';
 import type { RowMetrics } from '../../internal/metrics.js';
@@ -22,7 +22,7 @@ export interface TextDiffPaneProps {
   current: number;
   lineNumbers: boolean;
   markers: boolean;
-  strings: DiffineStrings;
+  strings: DiffineTextStrings;
   highlight?: DiffineHighlight;
   /** What a search found, keyed by the line it found it in. */
   matches?: ReadonlyMap<number, readonly SearchMatch[]>;
