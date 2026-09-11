@@ -51,6 +51,10 @@ const CHEQUER = 8;
 /** How much of a picture is left where the rest of it is drawn faint. */
 const FAINT = 0.2;
 
+/** The dashes a box round a change is drawn with, and no dashes at all. */
+const DASH = [4, 4];
+const EMPTY_DASH: number[] = [];
+
 /**
  * Somewhere the size of the pane to build one frame's composite on.
  *
@@ -390,12 +394,16 @@ export function paintPane({
    * box round a change is a line one pixel wide however far in a reader has
    * gone — and not a line sixteen pixels wide with a picture behind it.
    *
-   * Each one is drawn twice: a wider line in the colour that contrasts with the
-   * palette, and the line itself on top of it. A single line cannot be seen on
-   * every picture, because a picture is whatever colour it is — a dark box on
-   * the dark half of a photograph is a box nobody finds, and it was exactly
-   * where the changes tend to be. A pair always shows, whichever of the two the
-   * picture underneath happens to match.
+   * One pixel wide, and two colours. A box has to be seen on whatever the
+   * picture under it happens to be, and a picture is any colour it likes — a
+   * dark box on the dark half of a photograph is a box nobody finds, and that
+   * is where the changes are. So the line is drawn twice at the same width: the
+   * contrasting colour solid, and the outline dashed over it. Whichever of the
+   * two the picture matches, the other one is what shows, and what a reader
+   * sees is one thin marquee rather than a border with a border round it.
+   *
+   * The change a reader has stepped to is solid rather than dashed, which is
+   * what tells it from the rest without making it heavier.
    */
   context.save();
   context.lineJoin = 'miter';
@@ -419,14 +427,16 @@ export function paintPane({
     const width = Math.max(Math.round(bottomRight.x - topLeft.x) + 1, 2);
     const height = Math.max(Math.round(bottomRight.y - topLeft.y) + 1, 2);
 
-    context.lineWidth = chosen ? 4 : 3;
+    context.lineWidth = chosen ? 2 : 1;
+    context.setLineDash(EMPTY_DASH);
     context.strokeStyle = halo;
     context.strokeRect(left, top, width, height);
 
-    context.lineWidth = chosen ? 2 : 1;
+    context.setLineDash(chosen ? EMPTY_DASH : DASH);
     context.strokeStyle = chosen ? marker : outline;
     context.strokeRect(left, top, width, height);
   }
 
+  context.setLineDash(EMPTY_DASH);
   context.restore();
 }

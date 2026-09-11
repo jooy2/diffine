@@ -78,6 +78,8 @@
 
 ### Fixed
 
+- **A box round a change is one thin dashed marquee rather than a border with a border round it.** It was a wider line in a contrasting colour with the line itself on top, which is visible on any picture and reads as two borders. The two colours are now drawn at the same width, one solid and one dashed over it, so whichever of the two the photograph matches the other one shows through the gaps. The change a reader has stepped to is solid rather than dashed, which tells it from the rest without making it heavier.
+
 - **A box round a change can be seen on any picture.** The outline was one thin line at 40% of a dark navy, which is invisible over the dark half of a photograph — and the dark half is where the changes tend to be, because that is where a comparison is hardest to read without one. Each box is now drawn twice, a wider line in the new `--diffine-image-halo` and the line itself over it, so the pair shows whichever of the two colours the picture underneath happens to match. `--diffine-image-outline` went from 40% to 85% now that it has something behind it.
 
 - **The pixels neither picture reaches are no longer counted as pixels that agree.** Two pictures one of which is wider and the other taller — or two held apart by `align` — leave a corner of the frame neither of them covers, and `stats.unchanged` counted it as unchanged while `stats.ratio` divided by the whole frame. So a 4 × 2 picture against a 2 × 4 one read as two thirds the same when half of what the two of them cover is not. `stats.covered` is the new denominator, `unchanged` is now the pixels both cover and agree about, and the four counts add up to `covered`. Two pictures of the same size are unaffected.

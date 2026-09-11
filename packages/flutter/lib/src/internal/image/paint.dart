@@ -15,6 +15,7 @@
 library;
 
 import 'dart:async';
+import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
@@ -420,16 +421,22 @@ void paintPane(Canvas canvas, Size pane, PaneOptions options) {
     return;
   }
 
-  // The outlines are drawn in the pane's own pixels rather than the frame's, so
-  // that a box round a change is a line one pixel wide however far in a reader
-  // has gone — and not a line sixteen pixels wide with a picture behind it.
-  //
-  // Each one is drawn twice: a wider line in the colour that contrasts with the
-  // palette, and the line itself on top of it. A single line cannot be seen on
-  // every picture, because a picture is whatever colour it is — a dark box on
-  // the dark half of a photograph is a box nobody finds, and it was exactly
-  // where the changes tend to be. A pair always shows, whichever of the two the
-  // picture underneath happens to match.
+  /*
+   * The outlines, in the pane's own pixels rather than the frame's, so that a
+   * box round a change is a line one pixel wide however far in a reader has
+   * gone — and not a line sixteen pixels wide with a picture behind it.
+   *
+   * One pixel wide, and two colours. A box has to be seen on whatever the
+   * picture under it happens to be, and a picture is any colour it likes — a
+   * dark box on the dark half of a photograph is a box nobody finds, and that
+   * is where the changes are. So the line is drawn twice at the same width: the
+   * contrasting colour solid, and the outline dashed over it. Whichever of the
+   * two the picture matches, the other one is what shows, and what a reader
+   * sees is one thin marquee rather than a border with a border round it.
+   *
+   * The change a reader has stepped to is solid rather than dashed, which is
+   * what tells it from the rest without making it heavier.
+   */
   for (int index = 0; index < options.regions.length; index += 1) {
     final DiffImageRegion region = options.regions[index];
     final Offset start = paneAt(viewport, pane, region.x.toDouble(), region.y.toDouble());
@@ -451,20 +458,70 @@ void paintPane(Canvas canvas, Size pane, PaneOptions options) {
       (end.dx - start.dx).roundToDouble().clamp(2, double.infinity) + 1,
       (end.dy - start.dy).roundToDouble().clamp(2, double.infinity) + 1,
     );
+    final Paint under = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = chosen ? 2 : 1
+      ..color = options.theme.image.halo;
+    final Paint over = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = chosen ? 2 : 1
+      ..color = chosen ? options.theme.image.marker : options.theme.image.outline;
 
-    canvas.drawRect(
-      box,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = chosen ? 4 : 3
-        ..color = options.theme.image.halo,
-    );
-    canvas.drawRect(
-      box,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = chosen ? 2 : 1
-        ..color = chosen ? options.theme.image.marker : options.theme.image.outline,
-    );
+    canvas.drawRect(box, under);
+
+    if (chosen) {
+      canvas.drawRect(box, over);
+    } else {
+      _dashedRect(canvas, box, over);
+    }
+  }
+}
+
+/// How long a dash is, and the gap after it.
+const double _dash = 4;
+
+/// A rectangle stroked in dashes, which a canvas has no setting for.
+///
+/// The phase carries from one side to the next, so the four corners are not
+/// four places where the pattern starts again.
+void _dashedRect(Canvas canvas, Rect box, Paint paint) {
+  final List<Offset> corners = <Offset>[
+    box.topLeft,
+    box.topRight,
+    box.bottomRight,
+    box.bottomLeft,
+    box.topLeft,
+  ];
+
+  double carried = 0;
+  bool drawing = true;
+
+  for (int side = 0; side < 4; side += 1) {
+    final Offset from = corners[side];
+    final double length = (corners[side + 1] - from).distance;
+
+    if (length == 0) {
+      continue;
+    }
+
+    final Offset step = (corners[side + 1] - from) / length;
+
+    double at = 0;
+
+    while (at < length) {
+      final double run = math.min(_dash - carried, length - at);
+
+      if (drawing) {
+        canvas.drawLine(from + step * at, from + step * (at + run), paint);
+      }
+
+      at += run;
+      carried += run;
+
+      if (carried >= _dash) {
+        carried = 0;
+        drawing = !drawing;
+      }
+    }
   }
 }

@@ -14,7 +14,7 @@ The two pictures above are the same photograph, and the second has a patch of it
 What is drawn over them is three things, and they are the same three on every demo on this page:
 
 - **Pink** is a pixel both pictures cover and disagree about. That is the square in the window.
-- **A box** is drawn round each run of those, so a change three pixels wide is still somewhere to look when the whole picture is in the pane. It is drawn as a pale line under a dark one, so that it shows whatever colour the photograph under it happens to be. The **blue** box is the change the buttons in the bar have stepped to.
+- **A box** is drawn round each run of those, so a change three pixels wide is still somewhere to look when the whole picture is in the pane. It is a dashed line one pixel wide in two colours, so that whichever of the two the photograph under it matches, the other one shows. The **blue** box, solid rather than dashed, is the change the buttons in the bar have stepped to.
 - **Green and red** are the pixels only one of the two pictures covers, which is what a difference in size or an offset leaves behind. There are none here, because the two are the same size.
 
 The bar underneath counts it up: one changed area, and what share of the picture it is.
@@ -157,7 +157,7 @@ There is no URL on that list, and it is missing on purpose. A picture fetched by
 
 Pink is a pixel that changed. Green and red are the pixels only one of the two pictures covers, which is what a difference in size, or an offset, leaves behind. They are the same green and red a line that arrived or went away is drawn in.
 
-A box is drawn twice: a wider line in `halo` and the line itself over it. One line cannot be seen on every picture, because a picture is whatever colour it is, and a dark box on the dark half of a photograph is a box nobody finds — which is exactly where the changes tend to be. The box round the change a reader has stepped to is drawn in `marker` instead, and it is the blue one.
+A box is drawn twice at the same width: `halo` solid, and `outline` dashed over it. One colour cannot be seen on every picture, because a picture is whatever colour it is, and a dark box on the dark half of a photograph is a box nobody finds — which is exactly where the changes tend to be. Two make one thin marquee that always shows. The box round the change a reader has stepped to is `marker`, solid rather than dashed, which is what tells it from the rest without making it heavier.
 
 ::: fw react
 
