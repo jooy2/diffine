@@ -34,10 +34,23 @@ html[data-fw='flutter'] .diffine-fw[data-fw]:not([data-fw~='flutter']) {
 }
 
 /*
- * The first block in a fold has the margin the paragraph above it already
- * spent, so a `::: fw` wrapper must not add one of its own — it is a bracket
- * around content, not a section.
+ * A fold takes up exactly the room the block inside it would have.
+ *
+ * The margin moves from the first and last blocks onto the wrapper, rather than
+ * being dropped: a `<p>`, a table and an example all carry 16px of their own,
+ * and a wrapper that carried none sat against whatever was above it. Which is
+ * invisible under a heading that has a bottom margin of its own and very
+ * visible under `h1`, which has none — every page of the reference opens on a
+ * name with an example straight under it.
+ *
+ * Margins between siblings collapse, so this is the same 16px the paragraph
+ * above already spends rather than a second one after it. `div` and not the
+ * class alone, because `<Fw>` writes the same class on a `<span>`.
  */
+.vp-doc div.diffine-fw {
+  margin: 16px 0;
+}
+
 .vp-doc .diffine-fw > :first-child {
   margin-top: 0;
 }
