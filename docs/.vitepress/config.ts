@@ -16,7 +16,12 @@ import {
 import type { VitePressI18nOptions } from 'vitepress-i18n/types';
 import type { VitePressSidebarOptions } from 'vitepress-sidebar/types';
 import packageJson from '../../packages/react/package.json' with { type: 'json' };
-import { FRAMEWORK_HEAD_SCRIPT, FRAMEWORK_IDS, FRAMEWORKS } from './data/frameworks';
+import {
+  DEFAULT_FRAMEWORK,
+  FRAMEWORK_HEAD_SCRIPT,
+  FRAMEWORK_IDS,
+  FRAMEWORKS
+} from './data/frameworks';
 
 const vitePressDir = dirname(fileURLToPath(import.meta.url));
 /** `docs/`, which is where the locale folders live and what VitePress serves. */
@@ -191,6 +196,20 @@ function urlPathOf(filePath: string): string {
 const pageOf = (filePath: string) => filePath.split('/').slice(1).join('/');
 
 /**
+ * `<Fw react="…" flutter="…" />` as the words it puts on the page.
+ *
+ * A page has one description and the tag has two halves, so the default
+ * framework's is the one written — the half a reader who has chosen nothing is
+ * shown. Without this the tag reaches the `<meta>` with its quotes still on it,
+ * and the first of them ends the attribute in the middle of the sentence.
+ */
+function plainFw(tag: string): string {
+  const half = new RegExp(`\\b${DEFAULT_FRAMEWORK}="([^"]*)"`).exec(tag);
+
+  return half ? half[1].replaceAll('`', '') : '';
+}
+
+/**
  * The first block of a page that is prose rather than a title or an example.
  *
  * A single backtick is not a fence, so a paragraph opening on the name of a
@@ -203,7 +222,17 @@ function summaryOf(filePath: string): string | undefined {
     return undefined;
   }
 
-  const source = readFileSync(file, 'utf8').replace(/^---\r?\n[\s\S]*?\r?\n---/, '');
+  const source = readFileSync(file, 'utf8')
+    .replace(/^---\r?\n[\s\S]*?\r?\n---/, '')
+    /*
+     * An example is not prose, and the test below cannot tell that it is
+     * looking at one. Blocks are split on blank lines, so the middle of a long
+     * example arrives here as a block of its own — one that opens on an
+     * identifier rather than on a fence, and reads like a sentence to
+     * everything after this point. A page whose first words are code is half
+     * this reference.
+     */
+    .replace(/^```[\s\S]*?^```/gm, '');
 
   for (const block of source.split(/\n\s*\n/)) {
     const trimmed = block.trim();
@@ -213,6 +242,10 @@ function summaryOf(filePath: string): string | undefined {
     }
 
     const text = trimmed
+      .replace(/<Fw\b(?:[^>"]|"[^"]*")*\/?>/g, plainFw)
+      // Whatever else a sentence has a tag in the middle of is a component, and
+      // a component has no words of its own to lend a description.
+      .replace(/<[^>]*>/g, '')
       .replace(/\[([^\]]*)]\([^)]*\)/g, '$1')
       .replace(/[`*_]/g, '')
       .replace(/\s+/g, ' ')
