@@ -2,7 +2,7 @@ name: diffine
 description: >-
   Compare two versions and show what changed — a diff engine and a side-by-side
   viewer in one package, for text and for pictures, to read or to type into.
-version: 0.1.0
+version: 1.0.0
 repository: https://github.com/jooy2/diffine
 homepage: https://diffine.cdget.com
 issue_tracker: https://github.com/jooy2/diffine/issues

@@ -2,7 +2,9 @@
 
 > This package's history. Each language Diffine ships for keeps its own changelog beside its own manifest, because they version independently.
 
-## v0.1.0 (2026--)
+## vNext (2026--)
+
+## v1.0.0 (2026-09-12)
 
 The first release. Diffine for Flutter is the React package's engine and view, written again in Dart — the same comparison, the same rows, the same palette down to the colour values, and the same answers for the same arguments.
 
