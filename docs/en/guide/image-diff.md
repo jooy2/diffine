@@ -415,7 +415,7 @@ debugPrint('${result.regions.length} areas, ${(result.stats.ratio * 100).round()
 
 Both sides are <Fw react="`ImageData`, or anything shaped like it: `{ data, width, height }`" flutter="`DiffPixels`: `data`, `width` and `height`" />, four bytes a pixel, row by row from the top-left. What comes back is the frame the two were compared in, where each of them sits in it, a byte a pixel saying what happened to it, the changes as rectangles, and the counts. Opening a file is not part of it; decoding is a decoder's job.
 
-The whole of it is on the [API page](../api/#diffimage).
+The whole of it is on the [API page](../api/methods/diff-image).
 
 ## Comparing several at once
 
@@ -450,6 +450,8 @@ The shape is the mask. It is a bit a picture rather than a kind: bit `i` is set 
 `paintDiffImages` writes the mask out as a picture, of all of them at once or of one on its own — four files, one a picture, saying who is the odd one out where.
 
 A byte holds eight bits, so eight pictures is the most one comparison takes. <Fw react="`MOST_PICTURES`" flutter="`kMostPictures`" /> is that number, and the pair each of them makes with the baseline is still `diffImage`, which has no limit.
+
+The three of them are on the API pages for [`diffImages`](../api/methods/diff-images), [`imagesSimilarity`](../api/methods/images-similarity) and [`paintDiffImages`](../api/methods/paint-diff-images).
 
 ## How alike the two are
 

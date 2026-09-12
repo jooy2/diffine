@@ -136,8 +136,13 @@ const i18nOptions: VitePressI18nOptions = {
 };
 
 const commonSidebar: VitePressSidebarOptions = {
+  // Every group is open, and stays open: `tidy` below takes the key off
+  // afterwards so VitePress draws no caret to close one with.
   collapsed: false,
-  capitalizeFirst: true,
+  // Off, because half the reference is named after a function and a function
+  // here is `diffText`. Nothing needs it: every page carries its own `title`,
+  // and the two folder headings a folder cannot name are written in `WORDS`.
+  capitalizeFirst: false,
   useTitleFromFileHeading: true,
   useTitleFromFrontmatter: true,
   useFolderTitleFromIndexFile: true,

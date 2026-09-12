@@ -448,7 +448,7 @@ debugPrint('${result.regions.length}곳, ${(result.stats.ratio * 100).round()}%'
 
 양쪽 모두 <Fw react="`ImageData`이거나 같은 모양이면 됩니다. `{ data, width, height }`에" flutter="`DiffPixels`입니다. `data`, `width`, `height`에" /> 픽셀당 4바이트, 왼쪽 위부터 한 줄씩입니다. 돌아오는 것은 두 이미지를 비교한 프레임, 그 안에서 각자가 놓인 자리, 픽셀마다 한 바이트씩의 결과, 사각형으로 묶인 변경, 그리고 집계입니다. 파일을 여는 일은 여기 없습니다. 해석은 디코더의 몫입니다.
 
-전체는 [API 문서](../api/#diffimage)에 있습니다.
+전체는 [API 문서](../api/methods/diff-image)에 있습니다.
 
 ## 여러 장을 한 번에 비교하기
 
@@ -483,6 +483,8 @@ final DiffImagesSimilarity alike = imagesSimilarity(<DiffPixels>[saved, chrome, 
 `paintDiffImages`는 마스크를 이미지로 내보냅니다. 전부를 한 장에 그리거나, 하나씩 따로 그립니다. 네 장이면 네 파일이고, 각각이 어디서 유별난지를 그림으로 말합니다.
 
 바이트 하나는 비트 여덟 개이므로 한 번에 비교할 수 있는 것은 여덟 장까지입니다. <Fw react="`MOST_PICTURES`" flutter="`kMostPictures`" />가 그 수이고, 각 이미지가 기준과 이루는 쌍은 여전히 제한이 없는 `diffImage`입니다.
+
+셋의 전체는 [`diffImages`](../api/methods/diff-images), [`imagesSimilarity`](../api/methods/images-similarity), [`paintDiffImages`](../api/methods/paint-diff-images) 문서에 있습니다.
 
 ## 두 이미지가 얼마나 닮았는지
 

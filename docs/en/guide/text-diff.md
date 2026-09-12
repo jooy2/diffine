@@ -893,7 +893,7 @@ Every colour and measurement is a custom property on the `.diffine` element. An 
 }
 ```
 
-The full list is in the [API](../api/#custom-properties). One of them is the editor's alone: `--diffine-selection` has to be see-through, because the words under a selection are drawn by the lines behind the field, and an opaque highlight would be a rectangle where the selected text used to be.
+The full list is in the [API](../api/theme#custom-properties). One of them is the editor's alone: `--diffine-selection` has to be see-through, because the words under a selection are drawn by the lines behind the field, and an opaque highlight would be a rectangle where the selected text used to be.
 
 Anything the component is given beyond its own props goes straight to the element, so `id`, `className`, `style` and the `aria-*` attributes behave as they would on a `<div>`.
 
@@ -935,7 +935,7 @@ TextDiff(
 );
 ```
 
-The full list is in the [API](../api/#the-palette). Passing a theme settles `colorScheme` as well: a theme is a decision about which palette this is. One field is the editor's alone — `selection` has to be see-through, because the words under a selection are painted behind the field and an opaque highlight would be a rectangle where the selected text used to be.
+The full list is in the [API](../api/theme#the-palette). Passing a theme settles `colorScheme` as well: a theme is a decision about which palette this is. One field is the editor's alone — `selection` has to be see-through, because the words under a selection are painted behind the field and an opaque highlight would be a rectangle where the selected text used to be.
 
 `font` is the same idea for the typeface alone, for an application changing the type without touching a colour:
 
