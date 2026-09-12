@@ -814,7 +814,17 @@ A whole line rather than a fragment, because that is the only order that works. 
 
 `length` counts the same units <Fw react="`String.prototype.slice`" flutter="`String.substring`" code /> does, so the runs a tokeniser already returns can be used as they are. Runs are taken in order and a gap between two of them is drawn plain, so a highlighter that only marks keywords can return only keywords with plain runs between. Return `null` for a line you have nothing to say about.
 
-<Fw react="`style` is there beside `className` for a highlighter that hands back colours rather than classes." flutter="`kind` is there beside `style` for a highlighter that would rather name what a run is and let the theme colour it." />
+::: fw react
+
+`style` is there beside `className` for a highlighter that hands back colours rather than classes.
+
+:::
+
+::: fw flutter
+
+`kind` is there beside `style` for a highlighter that would rather name what a run is and let the theme colour it.
+
+:::
 
 The function is called for each line that is drawn, which is what is on the screen rather than what is in the document.
 
@@ -874,7 +884,17 @@ A widget is as tall as it is, so the line opposite is given the same height and 
 
 Both belong to <Fw react="`viewer` mode" flutter="`DiffineMode.viewer`" />. An editor lays a field over its lines and the two have to agree line for line, so a column of unknown width beside them, or a box of unknown height under one, would put the caret in the wrong place.
 
-<Fw react="Style them through `.diffine-slot` and `.diffine-widget`, which carry nothing but the space around what you returned." flutter="What comes back is drawn as it is, with nothing but the space around it added." />
+::: fw react
+
+Style them through `.diffine-slot` and `.diffine-widget`, which carry nothing but the space around what you returned.
+
+:::
+
+::: fw flutter
+
+What comes back is drawn as it is, with nothing but the space around it added.
+
+:::
 
 ## Styling
 

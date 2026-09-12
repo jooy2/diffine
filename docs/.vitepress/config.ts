@@ -486,6 +486,16 @@ const vitePressConfig: UserConfig = {
     // The heading ids the anchors are written against — see `slugOf`.
     anchor: { slugify: slugOf },
     headers: { slugify: slugOf },
+    /*
+     * `<Fw>` is a phrase, not a section.
+     *
+     * A tag VitePress has not heard of is taken for a component and a component
+     * is a block, so a paragraph that opened on one was written out without its
+     * `<p>` — the sentence loose in the document, with none of the margin or
+     * the line height a paragraph is given. Naming the tag here puts it back
+     * among the `<span>`s and the `<code>`s, which is what it renders as.
+     */
+    component: { inlineTags: ['Fw'] },
     config(md: MarkdownRenderer) {
       md.use(container, 'fw', {
         validate: (params: string) => /^fw(\s+\S+)+$/.test(params.trim()),

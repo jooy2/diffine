@@ -12,4 +12,14 @@ description: 'A picture as bytes — red, green, blue and alpha, with the width 
 | `width` | <Fw react="`number`" flutter="`int`" code /> |  |
 | `height` | <Fw react="`number`" flutter="`int`" code /> |  |
 
-<Fw react="The same shape as `ImageData`, so what a canvas hands back can be passed straight in." flutter="The same shape `ui.Image.toByteData` hands back in `ui.ImageByteFormat.rawRgba`, so a decoded picture reaches the engine without a copy of its own." />
+::: fw react
+
+The same shape as `ImageData`, so what a canvas hands back can be passed straight in.
+
+:::
+
+::: fw flutter
+
+The same shape `ui.Image.toByteData` hands back in `ui.ImageByteFormat.rawRgba`, so a decoded picture reaches the engine without a copy of its own.
+
+:::
