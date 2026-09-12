@@ -474,6 +474,20 @@ const vitePressConfig: UserConfig = {
           return `<div class="diffine-fw" data-fw="${wanted.join(' ')}">\n`;
         }
       });
+
+      /*
+       * `::: cards` … `:::` — a list drawn as a row of cards.
+       *
+       * A list and not a set of `<div>`s, because what is inside stays
+       * Markdown: the bold line is the card's name, the paragraph under it is
+       * what the card says, and an `<Fw>` phrase works in either. The whole of
+       * the difference is in `custom.css`, so a reader with no stylesheet gets
+       * the list it was written as.
+       */
+      md.use(container, 'cards', {
+        render: (tokens: { nesting: number }[], index: number) =>
+          tokens[index].nesting === 1 ? '<div class="diffine-cards">\n' : '</div>\n'
+      });
     }
   },
   /* -------------------------------------------------------------------------

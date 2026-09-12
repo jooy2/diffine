@@ -49,15 +49,45 @@ features:
 
 ## What it does
 
-- Compares two documents by line, then by word or character inside each changed line
-- Compares two pictures pixel by pixel, with a tolerance, antialiasing and offset detection
-- Split and unified views for text; split, overlay, wipe and mask for pictures
-- An editor mode with <Fw react="the browser's" flutter="the platform's" /> own undo, input method and selection
-- Search and replace in each pane
-- Syntax highlighting for 34 languages, or your own highlighter
-- Twenty thousand lines without dropping frames
-- Light and dark palettes, English and Korean, keyboard and screen reader support
-- <Fw react="TypeScript declarations in the package" flutter="No Material and no Cupertino, so it sits in any app" />
+::: cards
+
+- **Lines, then words**
+
+  Compares two documents by line, then by word or character inside each changed line.
+
+- **Pixels, with a tolerance**
+
+  Compares two pictures pixel by pixel, with antialiasing and offset detection.
+
+- **Ways to look at it**
+
+  Split and unified views for text; split, overlay, wipe and mask for pictures.
+
+- **An editor mode**
+
+  <Fw react="The browser's" flutter="The platform's" /> own undo, input method and selection, over the same comparison.
+
+- **Find and replace**
+
+  Each pane is searched on its own, and the editor replaces as well.
+
+- **Thirty-four languages**
+
+  Syntax highlighting for any of them, or a highlighter of your own instead.
+
+- **Twenty thousand lines**
+
+  A document that long scrolls without dropping frames.
+
+- **Light, dark, and two languages**
+
+  English and Korean, with the keyboard and a screen reader supported in both.
+
+- **<Fw react="Declarations included" flutter="Neither Material nor Cupertino" />**
+
+  <Fw react="TypeScript types ship in the package, so an application naming one in a prop imports it." flutter="Nothing from either design language is called, so the widgets sit in any app." />
+
+:::
 
 ## Two documents
 
