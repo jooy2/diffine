@@ -4,6 +4,10 @@
 
 ## vNext (2026--)
 
+## v1.0.0 (2026-09-12)
+
+The first stable release. Each view is its own entry now, so a page carries the comparison it asked for and nothing of the other one. The documents gained folding, patches read and written, marks over the whitespace and arrows for taking a change across; the pictures gained a loupe, a mask that can be written out as a file of its own, and a comparison of several at once rather than a pair.
+
 ### Breaking changes
 
 - **Each view is its own import.** `import { TextDiff } from 'diffine-react'` becomes `import { TextDiff } from 'diffine-react/text-diff'`, and `ImageDiff` the same way from `diffine-react/image-diff`. `DIFFINE_LANGUAGES` moved with the component whose menu it builds, to `diffine-react/text-diff`. Everything else the root exported is still there: the comparison, the patch reader and writer, and every type.
