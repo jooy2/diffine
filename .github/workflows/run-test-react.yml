@@ -52,7 +52,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node_version: ['20', '22', '24']
+        # Vitest 5 runs on Node 22.12 or later, so the oldest Node the
+        # suite runs on is 22. The package itself still declares 20.19,
+        # which is what it is written against and what it publishes.
+        node_version: ['22', '24']
         os: [ubuntu-latest, windows-latest, macos-latest]
 
     steps:
