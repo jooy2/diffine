@@ -4,18 +4,19 @@
  *
  * Every other page on this site is prose with demos in it, and this one is the
  * other way round. There is no reading to do and no second demo under the
- * first — a page that showed the editor and the viewer at once would show two
- * half-height boxes, and half a height is what makes both of them look like
- * illustrations. So: a switch, and whichever one is chosen gets the whole of
- * what is left below the navbar.
+ * first — a page that showed two of these at once would show two half-height
+ * boxes, and half a height is what makes both of them look like illustrations.
+ * So: documents or pictures, and whichever is chosen gets the whole of what is
+ * left below the navbar.
  *
- * The two share their documents. Type into the editor, move to the viewer, and
- * what is being read is what was just written — which is the comparison worth
- * making between the two components, and it is only worth anything if it is the
- * same pair of documents. The samples are there because the viewer has no way
- * of taking a document from a reader, and one of them is empty, because the
- * other thing somebody wants from a page like this is somewhere to paste their
- * own two versions.
+ * Whether the documents can be typed into is a checkbox rather than a third
+ * choice on that switch, because it is one component either way — `mode` lays a
+ * field over each pane of the same comparison. What a reader has typed survives
+ * the switch, so turning editing off reads back the document just written
+ * rather than opening a different page. The samples are there because a pane
+ * nobody can type into has no way of taking a document from a reader, and one
+ * of them is empty, because the other thing somebody wants from a page like
+ * this is somewhere to paste their own two versions.
  *
  * A reader on Flutter gets the same page. The controls stay where they are —
  * they are the page's rather than either package's, and drawing them twice
@@ -37,13 +38,13 @@ import { useReactIsland } from '../island';
 import { SAMPLES } from '../samples';
 import { pairOf, type PictureName, type PicturePair } from '../pictures';
 
-type Mode = 'editor' | 'viewer' | 'pictures';
+type Mode = 'text' | 'pictures';
 /** A pair of documents to start from. `blank` is the one with nothing in it. */
 type Pick = 'code' | 'prose' | 'config' | 'korean' | 'blank';
 /** A pair of pictures, or nothing and a pane to drop your own on. */
 type Shot = PictureName | 'blank';
 
-const MODES: readonly Mode[] = ['editor', 'viewer', 'pictures'];
+const MODES: readonly Mode[] = ['text', 'pictures'];
 const PICKS: readonly Pick[] = ['code', 'prose', 'config', 'korean', 'blank'];
 const SHOTS: readonly Shot[] = ['retouched', 'moved', 'saved', 'badge', 'blank'];
 const VIEWS: readonly DiffineImageView[] = ['split', 'overlay', 'wipe', 'mask'];
@@ -53,9 +54,9 @@ const DETAILS: readonly DiffInlineMode[] = ['word', 'character', 'none'];
 const WORDS = {
   en: {
     mode: 'What to try',
-    editor: 'Editor',
-    viewer: 'Viewer',
+    text: 'Text',
     pictures: 'Pictures',
+    editing: 'Let it be edited',
     sample: 'Documents',
     detail: 'Compare by',
     reset: 'Start over',
@@ -95,9 +96,9 @@ const WORDS = {
   },
   ko: {
     mode: '무엇을 써 볼지',
-    editor: '에디터',
-    viewer: '뷰어',
+    text: '텍스트',
     pictures: '이미지',
+    editing: '고쳐 쓸 수 있게',
     sample: '문서',
     detail: '비교 단위',
     reset: '처음으로',
@@ -151,7 +152,14 @@ const words = computed(() => WORDS[locale.value]);
  */
 const title = computed(() => page.value.title);
 
-const mode = ref<Mode>('editor');
+const mode = ref<Mode>('text');
+/**
+ * Whether the two documents can be typed into.
+ *
+ * On to begin with, because the first thing somebody who opened this page wants
+ * is to change a line and watch the comparison follow.
+ */
+const editing = ref(true);
 const pick = ref<Pick>('code');
 const options = ref({
   unified: false,
@@ -318,14 +326,22 @@ function draw() {
     ? { content: documents.after, label: documents.afterLabel }
     : documents.after;
 
-  if (mode.value === 'editor') {
+  /*
+   * Keyed by the switch as well as by the documents.
+   *
+   * Which of the two holds a document — this page or the component — is settled
+   * on the first render and does not change afterwards, so a pane that starts
+   * taking typing has to be a new component rather than the old one with
+   * another `mode`. The documents themselves are this page's either way, which
+   * is what carries what somebody wrote across the switch.
+   */
+  const key = `${editing.value ? 'editor' : 'viewer'}-${pick.value}-${generation.value}`;
+
+  if (editing.value) {
     return createElement(TextDiff, {
       ...shared,
       mode: 'editor' as const,
-      // A different pair of documents is a different editor. The component
-      // keeps them once it has them, which is what makes it an editor, so
-      // handing it new ones means building it again.
-      key: `${pick.value}-${generation.value}`,
+      key,
       defaultBefore: before,
       defaultAfter: after,
       indentWithTab: options.value.tab,
@@ -349,6 +365,7 @@ function draw() {
 
   return createElement(TextDiff, {
     ...shared,
+    key,
     before,
     after,
     view: options.value.unified ? 'unified' : 'split',
@@ -391,7 +408,20 @@ onMounted(() => {
 onBeforeUnmount(() => window.removeEventListener('resize', measure));
 
 useReactIsland(host, draw, {
-  watch: [mode, pick, generation, options, isDark, locale, height, language, shot, pictures, pair]
+  watch: [
+    mode,
+    editing,
+    pick,
+    generation,
+    options,
+    isDark,
+    locale,
+    height,
+    language,
+    shot,
+    pictures,
+    pair
+  ]
 });
 
 /* ---------------------------------------------------------------------------
@@ -465,7 +495,9 @@ function tell(): void {
   flutter.post({
     diffine: 'playground',
     value: {
-      mode: mode.value,
+      // The gallery keeps reading and writing as two modes of its own, so the
+      // checkbox is folded back into the word it is waiting for.
+      mode: mode.value === 'pictures' ? 'pictures' : editing.value ? 'editor' : 'viewer',
       // Not the switches: what says the documents below are new ones rather
       // than the reader's own, which the frame is holding and this page is not.
       generation: generation.value,
@@ -511,9 +543,13 @@ const flutter = useFlutterFrame({
 // `box` and `frame` are destructured for the template refs of the same names.
 const { box, frame, embedded, waiting, missing, src } = flutter;
 
-watch([mode, generation, language, shot, options, pictures, pair, embedded], () => tell(), {
-  deep: true
-});
+watch(
+  [mode, editing, generation, language, shot, options, pictures, pair, embedded],
+  () => tell(),
+  {
+    deep: true
+  }
+);
 
 // The note about a gallery that was never built is a row above the stage, and
 // it arrives one request after the page does — so the stage is measured again
@@ -611,7 +647,12 @@ watch(missing, () => void nextTick(measure));
         {{ words.reset }}
       </button>
       <div class="play-switches">
-        <label v-if="mode === 'viewer'">
+        <!-- First, because it decides which of the switches after it exist. -->
+        <label>
+          <input type="checkbox" v-model="editing" />
+          {{ words.editing }}
+        </label>
+        <label v-if="!editing">
           <input type="checkbox" v-model="options.unified" />
           {{ words.unified }}
         </label>
@@ -623,7 +664,7 @@ watch(missing, () => void nextTick(measure));
           <input type="checkbox" v-model="options.numbers" />
           {{ words.numbers }}
         </label>
-        <label v-if="mode === 'viewer'">
+        <label v-if="!editing">
           <input type="checkbox" v-model="options.align" />
           {{ words.align }}
         </label>
@@ -631,7 +672,7 @@ watch(missing, () => void nextTick(measure));
           <input type="checkbox" v-model="options.connectors" />
           {{ words.connectors }}
         </label>
-        <label v-if="mode === 'editor'">
+        <label v-if="editing">
           <input type="checkbox" v-model="options.tab" />
           {{ words.tab }}
         </label>
