@@ -414,9 +414,24 @@ class _ImageDiffState extends State<ImageDiff> {
     super.didUpdateWidget(old);
     _load();
 
-    // Nothing was decoded again and the answer still changed: which side has no
-    // picture at all is part of the question the comparison was asked.
-    if (old.absent != widget.absent) {
+    /*
+     * Nothing was decoded again and the answer still changed.
+     *
+     * Everything below is part of the question the comparison was asked rather
+     * than of the pictures it was asked about: how to compare the two, which
+     * side has no picture at all, which picture the rest are counted against,
+     * and a comparison the application worked out somewhere else. A decode is
+     * what used to be the only thing that started a comparison, so changing any
+     * of these left the widget drawing the answer to the question before it.
+     *
+     * The options are compared by value, so an application that writes them
+     * inline is not comparing four million pixels on every frame.
+     */
+    if (old.diff != widget.diff ||
+        old.absent != widget.absent ||
+        old.baseline != widget.baseline ||
+        old.result != widget.result ||
+        old.picturesResult != widget.picturesResult) {
       _recompare();
     }
   }

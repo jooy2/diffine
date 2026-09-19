@@ -664,6 +664,32 @@ class DiffImageOptions {
   /// the largest are kept, the rest are left on the mask where they still show,
   /// and [DiffImageResult.complete] is `false`.
   final int maxRegions;
+
+  /*
+   * Two of these with the same numbers in them are the same question, and that
+   * is what lets a widget tell a rebuild from a change: an application that
+   * writes its options inline builds a new object on every frame, and
+   * comparing those by identity would be a comparison of four million pixels
+   * for every keystroke somewhere else on the screen.
+   *
+   * The type is part of it, because [DiffImagesOptions] is one of these with a
+   * baseline on it and the two are not the same question.
+   */
+  @override
+  bool operator ==(Object other) {
+    return other.runtimeType == runtimeType &&
+        other is DiffImageOptions &&
+        other.tolerance == tolerance &&
+        other.ignoreAntialiasing == ignoreAntialiasing &&
+        other.align == align &&
+        other.alignRadius == alignRadius &&
+        other.blockSize == blockSize &&
+        other.maxRegions == maxRegions;
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(tolerance, ignoreAntialiasing, align, alignRadius, blockSize, maxRegions);
 }
 
 /// A rectangle, in the frame's own pixels.
@@ -887,6 +913,14 @@ class DiffImagesOptions extends DiffImageOptions {
   /// them the counting starts from: a pixel they all agree about has no bit set
   /// whoever is the baseline.
   final int baseline;
+
+  @override
+  bool operator ==(Object other) {
+    return other is DiffImagesOptions && other.baseline == baseline && super == other;
+  }
+
+  @override
+  int get hashCode => Object.hash(super.hashCode, baseline);
 }
 
 /// How much of the frame several pictures ended up agreeing about.

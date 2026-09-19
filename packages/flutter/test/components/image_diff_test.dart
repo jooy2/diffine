@@ -148,6 +148,42 @@ void main() {
     expect(looked!.scale, lessThan(zoomed));
   });
 
+  testWidgets('compares again when the options change and the pictures do not', (
+    WidgetTester tester,
+  ) async {
+    // Nothing is decoded again here, and a comparison that only started on a
+    // decode was a comparison that went on answering the question before this
+    // one.
+    final DiffinePixelImage nearly = plain(8, 8, <int>[245, 245, 245, 255]);
+    final List<DiffImageResult?> reported = <DiffImageResult?>[];
+
+    Widget at(double tolerance) => host(
+      ImageDiff(
+        before: white,
+        after: nearly,
+        diff: DiffImageOptions(tolerance: tolerance),
+        onDiff: reported.add,
+      ),
+    );
+
+    await pumpPictures(tester, at(0.05));
+
+    expect(reported.last?.stats.changed, 0);
+
+    await pumpPictures(tester, at(0));
+
+    expect(reported.last?.stats.changed, 64);
+
+    // And the same options written again are the same question, so an
+    // application that builds them inline is not comparing every pixel on
+    // every frame.
+    final int compared = reported.length;
+
+    await pumpPictures(tester, at(0));
+
+    expect(reported, hasLength(compared));
+  });
+
   testWidgets('compares a picture that arrived with the side it arrived on', (
     WidgetTester tester,
   ) async {

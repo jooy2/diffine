@@ -16,6 +16,12 @@
 
 - **`flow` runs the panes down the comparison instead of across it.** `DiffineImageFlow.down` puts one picture to a row, which is the way round a photograph, a banner, or any comparison in a column too narrow to cut in half wants to be read. Each pane carries its own name, because a row of titles over a column of panes names the wrong pictures, and the buttons take a row of their own above them. `DiffineImageFlow.across` is the default and is unchanged.
 
+### Fixed
+
+- **A comparison is worked out again when the question changes, not only when a picture does.** The only thing that started one was a decode, so an `ImageDiff` whose pictures stayed where they were went on drawing the answer to the question before it: a different `diff`, a different `baseline`, or a `result` the application worked out somewhere else and handed over changed nothing on the screen. All four are now looked at when the widget is rebuilt.
+
+  `DiffImageOptions` and `DiffImagesOptions` carry value equality for it. Two of them with the same numbers in them are the same question, which is what tells an option that changed from an application that writes its options inline and builds a new object every frame.
+
 ## v1.0.0 (2026-09-12)
 
 The first release. Diffine for Flutter is the React package's engine and view, written again in Dart — the same comparison, the same rows, the same palette down to the colour values, and the same answers for the same arguments.
