@@ -162,7 +162,13 @@ DiffImageOffset _search(_Level before, _Level after, DiffImageOffset around, int
 DiffImageOffset findOffset(DiffPixels before, DiffPixels after, int radius) {
   final int reach = math.max(0, radius);
 
-  if (reach == 0 || before.width == 0 || before.height == 0) {
+  // Either of them empty and there is nothing to line up: a picture compared
+  // with the side it arrived on is one picture, and it sits where it sits.
+  if (reach == 0 ||
+      before.width == 0 ||
+      before.height == 0 ||
+      after.width == 0 ||
+      after.height == 0) {
     return DiffImageOffset.zero;
   }
 

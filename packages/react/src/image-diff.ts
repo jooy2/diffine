@@ -16,6 +16,7 @@ export type {
   DiffineColorScheme,
   DiffineCommonStrings,
   DiffineImageContent,
+  DiffineImageFlow,
   DiffineImageInput,
   DiffineImageSource,
   DiffineImageStrings,

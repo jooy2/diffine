@@ -23,6 +23,7 @@ import type {
   DiffineImageWheel,
   DiffineImageStrings
 } from '../../types.js';
+import { fill } from '../../internal/strings/common.js';
 import { useIsomorphicLayoutEffect } from '../../internal/layout.js';
 import { paintPane, type Layer } from '../../internal/image/paint.js';
 import {
@@ -86,6 +87,11 @@ export interface ImageDiffPaneProps {
   onLook?: ((at: { x: number; y: number } | null) => void) | null;
   /** Whether there is anything to draw at all. */
   blank: boolean;
+  /**
+   * Whether this side has no picture because there is none, rather than none
+   * yet. An empty pane is otherwise a pane still waiting for something.
+   */
+  absent: boolean;
   /** Nothing to draw yet, and why. */
   loading: boolean;
   failed: boolean;
@@ -118,6 +124,7 @@ export function ImageDiffPane({
   wheel,
   onLook,
   blank,
+  absent,
   loading,
   failed,
   wipe,
@@ -401,6 +408,7 @@ export function ImageDiffPane({
       className="diffine-image-pane"
       data-side={side}
       data-blank={blank}
+      data-absent={absent || undefined}
       data-over={over || undefined}
       /*
        * A group holding a picture, rather than a picture.
@@ -430,8 +438,17 @@ export function ImageDiffPane({
 
       {blank ? (
         <div className="diffine-image-blank">
+          {/*
+           * A pane with no picture says one of three things, and which one it
+           * is, is the whole difference between a comparison that is waiting
+           * and a comparison that has its answer. There is no picture yet, or
+           * there is no picture at all — and the second is what a file that
+           * arrived or went away looks like from this side.
+           */}
           {loading ? (
             <span className="diffine-image-note">{strings.loading}</span>
+          ) : absent ? (
+            <span className="diffine-image-note">{fill(strings.absent, { label: name })}</span>
           ) : (
             <>
               {failed ? <span className="diffine-image-note">{strings.unsupported}</span> : null}

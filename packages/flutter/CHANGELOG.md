@@ -4,6 +4,18 @@
 
 ## vNext (2026--)
 
+### Breaking changes
+
+- **`DiffineStrings` takes three more words**, so an application that builds one from scratch has to give `imageAdded`, `imageRemoved` and `absent`. One built with `copyWith` over a locale's own table is unaffected.
+
+### Added
+
+- **`absent` compares a picture with the side it arrived on, or went away from.** A file added to a repository has nothing to put on the left and a file deleted from one has nothing to put on the right, and `ImageDiff` read both of those as a comparison waiting for its second picture. Naming the side that has none turns it into the comparison it is: every pixel of the picture that is there comes back as arrived or gone, the bar underneath says which of the two happened, and the empty pane says there is no picture rather than inviting one.
+
+  It is an argument rather than a picture left out, because a side with nothing in it is usually a side whose picture has not arrived yet, and only the application can tell those apart. `strings.absent` is what the empty pane says, and `strings.imageAdded` and `strings.imageRemoved` are what the bar says.
+
+- **`flow` runs the panes down the comparison instead of across it.** `DiffineImageFlow.down` puts one picture to a row, which is the way round a photograph, a banner, or any comparison in a column too narrow to cut in half wants to be read. Each pane carries its own name, because a row of titles over a column of panes names the wrong pictures, and the buttons take a row of their own above them. `DiffineImageFlow.across` is the default and is unchanged.
+
 ## v1.0.0 (2026-09-12)
 
 The first release. Diffine for Flutter is the React package's engine and view, written again in Dart — the same comparison, the same rows, the same palette down to the colour values, and the same answers for the same arguments.

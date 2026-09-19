@@ -18,12 +18,17 @@ import type {
   DiffImageResult,
   DiffImagesOptions,
   DiffImagesResult,
-  DiffineImageContent
+  DiffPixels,
+  DiffineImageContent,
+  DiffineSide
 } from '../../types.js';
 import { diffImage, diffImages } from '../../image.js';
 import { decodeImage, releasePicture, type Picture } from './decode.js';
 import { paintBits, paintMask, paintStencil, stencilBits, type MaskColours } from './paint.js';
 import { useIsomorphicLayoutEffect } from '../layout.js';
+
+/** A side that has no picture at all, as something the engine can be handed. */
+const NOTHING_PICTURED: DiffPixels = { data: new Uint8ClampedArray(0), width: 0, height: 0 };
 
 /** A picture on its way in, or the reason it never arrived. */
 export interface Loaded {
@@ -127,11 +132,14 @@ export function usePicture(content: DiffineImageContent | undefined, maxPixels: 
 export function useComparison({
   before,
   after,
+  absent,
   options,
   given
 }: {
   before: Picture | null;
   after: Picture | null;
+  /** Which side has no picture because there is none, rather than none yet. */
+  absent: DiffineSide | null;
   options: DiffImageOptions;
   given: DiffImageResult | undefined;
 }): DiffImageResult | null {
@@ -140,14 +148,26 @@ export function useComparison({
   const settledAfter = React.useDeferredValue(after);
 
   const worked = React.useMemo(() => {
-    if (given || !settledBefore || !settledAfter) {
+    /*
+     * A side that does not exist is compared as a picture with nothing in it,
+     * which is the whole of what a picture arriving or going away means: every
+     * pixel of the one that is there is covered by one side and not the other,
+     * so it comes back `added` or `removed` down to the last one. The engine
+     * already answers that — it is what it says about the strip two pictures
+     * of different sizes leave — and this is the same question with nothing on
+     * one side of it.
+     */
+    const first = absent === 'before' ? NOTHING_PICTURED : settledBefore?.pixels;
+    const second = absent === 'after' ? NOTHING_PICTURED : settledAfter?.pixels;
+
+    if (given || !first || !second) {
       return null;
     }
 
     return {
       before: settledBefore,
       after: settledAfter,
-      result: diffImage(settledBefore.pixels, settledAfter.pixels, {
+      result: diffImage(first, second, {
         tolerance,
         ignoreAntialiasing,
         align,
@@ -159,6 +179,7 @@ export function useComparison({
   }, [
     settledBefore,
     settledAfter,
+    absent,
     given,
     tolerance,
     ignoreAntialiasing,

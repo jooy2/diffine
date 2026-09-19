@@ -12,7 +12,12 @@ import { computed, onMounted, ref, watch } from 'vue';
 import { useData } from 'vitepress';
 import { createElement } from 'react';
 import { ImageDiff } from 'diffine-react/image-diff';
-import type { DiffineImageUnchanged, DiffineImageView } from 'diffine-react';
+import type {
+  DiffineImageFlow,
+  DiffineImageUnchanged,
+  DiffineImageView,
+  DiffineSide
+} from 'diffine-react';
 import 'diffine-react/styles.css';
 import { useReactIsland } from '../island';
 import { pairOf, type PictureName, type PicturePair } from '../pictures';
@@ -21,6 +26,10 @@ const props = withDefaults(
   defineProps<{
     sample?: PictureName;
     view?: DiffineImageView;
+    /** Which way the panes run. */
+    flow?: DiffineImageFlow;
+    /** Which side to drop, for the demos of a picture that arrived or went away. */
+    absent?: DiffineSide;
     /** What is done with the parts nothing happened to. */
     unchanged?: DiffineImageUnchanged;
     /** How much of a difference counts, from 0 to 1. */
@@ -42,6 +51,7 @@ const props = withDefaults(
   {
     sample: 'retouched',
     view: 'split',
+    flow: 'across',
     unchanged: 'keep',
     tolerance: 0.05,
     align: false,
@@ -93,9 +103,14 @@ function draw() {
     // its own will not take a second pair — so their arrival is a new one.
     key: loaded ? 'ready' : 'waiting',
     before:
-      loaded && !props.several ? { content: loaded.before, label: loaded.beforeLabel } : undefined,
+      loaded && !props.several && props.absent !== 'before'
+        ? { content: loaded.before, label: loaded.beforeLabel }
+        : undefined,
     after:
-      loaded && !props.several ? { content: loaded.after, label: loaded.afterLabel } : undefined,
+      loaded && !props.several && props.absent !== 'after'
+        ? { content: loaded.after, label: loaded.afterLabel }
+        : undefined,
+    absent: props.absent,
     pictures:
       loaded && props.several
         ? [
@@ -105,6 +120,7 @@ function draw() {
           ]
         : undefined,
     view: props.view,
+    flow: props.flow,
     unchanged: props.unchanged,
     diff: {
       tolerance: props.tolerance,
@@ -125,7 +141,16 @@ function draw() {
 }
 
 useReactIsland(host, draw, {
-  watch: [pair, chosen, isDark, locale, () => props.view, () => props.unchanged]
+  watch: [
+    pair,
+    chosen,
+    isDark,
+    locale,
+    () => props.view,
+    () => props.flow,
+    () => props.absent,
+    () => props.unchanged
+  ]
 });
 </script>
 

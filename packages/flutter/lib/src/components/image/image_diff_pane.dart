@@ -12,6 +12,7 @@ import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:diffine/src/components/shared/diffine_controls.dart';
+import 'package:diffine/src/internal/i18n.dart';
 import 'package:diffine/src/internal/image/paint.dart';
 import 'package:diffine/src/internal/image/viewport.dart';
 import 'package:diffine/src/theme/tokens.dart';
@@ -37,6 +38,7 @@ class ImageDiffPane extends StatefulWidget {
     required this.regions,
     required this.current,
     required this.blank,
+    required this.absent,
     required this.loading,
     required this.failed,
     required this.strings,
@@ -81,6 +83,10 @@ class ImageDiffPane extends StatefulWidget {
 
   /// Whether there is anything to draw at all.
   final bool blank;
+
+  /// Whether this side has no picture because there is none, rather than none
+  /// yet. An empty pane is otherwise a pane still waiting for something.
+  final bool absent;
 
   /// Nothing to draw yet.
   final bool loading;
@@ -328,11 +334,25 @@ class _ImageDiffPaneState extends State<ImageDiffPane> {
     );
   }
 
+  /// What a pane with no picture says, which is one of three things.
+  ///
+  /// Which one it is, is the whole difference between a comparison that is
+  /// waiting and a comparison that has its answer. There is no picture yet, or
+  /// there is no picture at all — and the second is what a file that arrived or
+  /// went away looks like from this side.
   Widget _blank(DiffineTheme theme) {
     final DiffineStrings strings = widget.strings;
 
     if (widget.loading) {
       return Text(strings.loading, style: TextStyle(fontSize: 12, color: theme.muted));
+    }
+
+    if (widget.absent) {
+      return Text(
+        fill(strings.absent, <String, String>{'label': widget.name}),
+        textAlign: TextAlign.center,
+        style: TextStyle(fontSize: 12, color: theme.muted),
+      );
     }
 
     return Column(

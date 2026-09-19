@@ -46,6 +46,7 @@ class PlaygroundSettings {
     this.connectors = true,
     this.tab = false,
     this.view = DiffineImageView.split,
+    this.flow = DiffineImageFlow.across,
     this.tolerance = 0.05,
     this.alignPictures = false,
     this.smoothing = true,
@@ -110,6 +111,7 @@ class PlaygroundSettings {
       connectors: flag('connectors', or: fallback.connectors),
       tab: flag('tab', or: fallback.tab),
       view: DiffineImageView.values.asNameMap()[value['view']] ?? fallback.view,
+      flow: DiffineImageFlow.values.asNameMap()[value['flow']] ?? fallback.flow,
       tolerance: switch (value['tolerance']) {
         final num given => given.toDouble().clamp(0, 1),
         _ => fallback.tolerance,
@@ -176,6 +178,9 @@ class PlaygroundSettings {
 
   /// How the two pictures are laid out.
   final DiffineImageView view;
+
+  /// Which way the panes run, where there are two of them.
+  final DiffineImageFlow flow;
 
   /// How different two pixels have to be before it counts.
   final double tolerance;

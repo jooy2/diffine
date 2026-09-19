@@ -148,6 +148,105 @@ void main() {
     expect(looked!.scale, lessThan(zoomed));
   });
 
+  testWidgets('compares a picture that arrived with the side it arrived on', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle handle = tester.ensureSemantics();
+    DiffImageResult? reported;
+
+    await pumpPictures(
+      tester,
+      host(
+        ImageDiff(
+          after: red,
+          absent: DiffineSide.before,
+          beforeLabel: 'saved',
+          onDiff: (DiffImageResult? result) => reported = result,
+        ),
+      ),
+    );
+
+    expect(reported, isNotNull);
+    expect(reported!.stats.added, 64);
+    expect(reported!.stats.removed, 0);
+    expect(find.text('No picture in saved.'), findsOneWidget);
+    expect(find.text('Nothing to compare yet.'), findsNothing);
+    expect(semanticsLabels(tester), contains('The picture was added.'));
+    handle.dispose();
+  });
+
+  testWidgets('compares the other way round for a picture that went away', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle handle = tester.ensureSemantics();
+    DiffImageResult? reported;
+
+    await pumpPictures(
+      tester,
+      host(
+        ImageDiff(
+          before: white,
+          absent: DiffineSide.after,
+          onDiff: (DiffImageResult? result) => reported = result,
+        ),
+      ),
+    );
+
+    expect(reported, isNotNull);
+    expect(reported!.stats.removed, 64);
+    expect(semanticsLabels(tester), contains('The picture was removed.'));
+    handle.dispose();
+  });
+
+  testWidgets('goes on inviting a picture where the reader is choosing them', (
+    WidgetTester tester,
+  ) async {
+    // An empty side of an editor is a side nobody has filled in yet, whatever
+    // the application says about it.
+    await pumpPictures(
+      tester,
+      host(
+        ImageDiff(
+          mode: DiffineMode.editor,
+          after: red,
+          absent: DiffineSide.before,
+          onChoose: (DiffineSide side) async => null,
+        ),
+      ),
+    );
+
+    expect(find.text('Choose an image'), findsWidgets);
+    expect(find.textContaining('No picture in'), findsNothing);
+  });
+
+  testWidgets('lays the panes down the comparison when it is asked to', (
+    WidgetTester tester,
+  ) async {
+    await pumpPictures(
+      tester,
+      host(
+        ImageDiff(
+          before: white,
+          after: red,
+          flow: DiffineImageFlow.down,
+          beforeLabel: 'saved',
+          afterLabel: 'rendered',
+        ),
+      ),
+    );
+
+    // A name over each pane rather than a row of them over both, which is what
+    // says the names moved with the panes.
+    expect(find.text('saved'), findsOneWidget);
+    expect(find.text('rendered'), findsOneWidget);
+
+    final Offset saved = tester.getCenter(find.text('saved'));
+    final Offset rendered = tester.getCenter(find.text('rendered'));
+
+    expect(rendered.dy, greaterThan(saved.dy));
+    expect(rendered.dx, saved.dx);
+  });
+
   testWidgets('draws one pane for the views that lay the two over each other', (
     WidgetTester tester,
   ) async {

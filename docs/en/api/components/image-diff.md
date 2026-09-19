@@ -33,6 +33,7 @@ ImageDiff(mode: DiffineMode.editor, view: DiffineImageView.wipe, onChoose: pick)
 | `mode` | `'viewer' \| 'editor'` | `'viewer'` | Whether the pictures are only looked at, or chosen as well. |
 | `before` | `DiffineImageInput` | — | The picture on the left. |
 | `after` | `DiffineImageInput` | — | The picture on the right. |
+| `absent` | `'before' \| 'after'` | — | Which side has no picture at all. |
 | `pictures` | `readonly DiffineImageInput[]` | — | Several pictures rather than two. Turns the list on. |
 | `baseline` | `number` | `0` | Which of them the rest are counted against. |
 | `picturesResult` | [`DiffImagesResult`](../types/diff-images-result) | — | A comparison of the list already worked out. |
@@ -50,6 +51,8 @@ ImageDiff(mode: DiffineMode.editor, view: DiffineImageView.wipe, onChoose: pick)
 
 `editor` mode is the usual React pair. `defaultBefore` and `defaultAfter` leave the pictures to the component; `before` and `after` make them the application's, and `onBeforeChange` and `onAfterChange` are called either way.
 
+`absent` is for a file that was added or deleted. It names the side that has no picture at all, and every pixel of the one opposite it then comes back as arrived or gone. It is a prop rather than a side left empty because a side with nothing in it is usually a side whose picture has not arrived yet, and it is ignored where the side it names has a picture, in `editor` mode, and with `pictures`.
+
 :::
 
 ::: fw flutter
@@ -59,6 +62,7 @@ ImageDiff(mode: DiffineMode.editor, view: DiffineImageView.wipe, onChoose: pick)
 | `mode` | `DiffineMode` | `DiffineMode.viewer` | Whether the pictures are only looked at, or chosen as well. |
 | `before` | `DiffineImageContent?` | — | The picture on the left. |
 | `after` | `DiffineImageContent?` | — | The picture on the right. |
+| `absent` | `DiffineSide?` | — | Which side has no picture at all. |
 | `beforeLabel` | `String?` | — | What the header calls the left side. |
 | `afterLabel` | `String?` | — | What it calls the right side. |
 | `pictures` | `List<DiffineImageContent>?` | — | Several pictures rather than two. Turns the list on. |
@@ -76,6 +80,8 @@ ImageDiff(mode: DiffineMode.editor, view: DiffineImageView.wipe, onChoose: pick)
 
 `onChoose` is the editor's, and it is the whole of it: the widget asks for a picture for one side and the application answers with one, or with `null` for a reader who changed their mind. A file picker is a plugin and a permission, and neither belongs inside a diff viewer.
 
+`absent` is for a file that was added or deleted. It names the side that has no picture at all, and every pixel of the one opposite it then comes back as arrived or gone. It is an argument rather than a picture left out because a side with nothing in it is usually a side whose picture has not arrived yet, and it is ignored where the side it names has a picture, in `DiffineMode.editor`, and with `pictures`.
+
 :::
 
 ## The view
@@ -85,6 +91,7 @@ ImageDiff(mode: DiffineMode.editor, view: DiffineImageView.wipe, onChoose: pick)
 | Prop | Type | Default | What it decides |
 | --- | --- | --- | --- |
 | `view` | `'split' \| 'overlay' \| 'wipe' \| 'mask'` | `'split'` | How the two are laid out. |
+| `flow` | `'across' \| 'down'` | `'across'` | Which way the panes run. Split only. |
 | `unchanged` | `'keep' \| 'dim' \| 'hide'` | `'keep'` | What is done with the parts nothing happened to. |
 | `wheel` | `'zoom' \| 'pan'` | `'zoom'` | What the wheel does over a pane. |
 | `loupe` | `boolean` | `true` | Whether the pixels under the pointer are shown magnified. |
@@ -102,7 +109,7 @@ ImageDiff(mode: DiffineMode.editor, view: DiffineImageView.wipe, onChoose: pick)
 | `locale` | `'en' \| 'ko'` | `'en'` | The language of the component's own words. |
 | `strings` | [`Partial<DiffineImageStrings>`](../types/diffine-strings) | — | Words to use instead of the locale's. |
 
-`split` draws two panes; the other three draw one, with both names over it. What the marks are drawn in is five [custom properties](../theme#colours) rather than props, because a canvas is painted rather than styled.
+`split` draws two panes; the other three draw one, with both names over it. `flow` is which way those two run — across the comparison, or down it, a picture to a row — so it only has an answer in `split`. What the marks are drawn in is five [custom properties](../theme#colours) rather than props, because a canvas is painted rather than styled.
 
 :::
 
@@ -111,6 +118,7 @@ ImageDiff(mode: DiffineMode.editor, view: DiffineImageView.wipe, onChoose: pick)
 | Argument | Type | Default | What it decides |
 | --- | --- | --- | --- |
 | `view` | `DiffineImageView` | `DiffineImageView.split` | How the two are laid out. |
+| `flow` | `DiffineImageFlow` | `.across` | Which way the panes run. Split only. |
 | `unchanged` | `DiffineImageUnchanged` | `.keep` | What is done with the parts nothing happened to. |
 | `wheel` | `DiffineImageWheel` | `.zoom` | What the wheel does over a pane. |
 | `loupe` | `bool` | `true` | Whether the pixels under the pointer are shown magnified. |
@@ -130,7 +138,7 @@ ImageDiff(mode: DiffineMode.editor, view: DiffineImageView.wipe, onChoose: pick)
 | `locale` | `DiffineLocale` | `DiffineLocale.en` | The language of the widget's own words. |
 | `strings` | [`DiffineStrings?`](../types/diffine-strings) | — | Words to use instead of the locale's. |
 
-`split` draws two panes; the other three draw one, with both names over it. What the marks are drawn in is `theme.image`, seven colours of the [palette](../theme#the-palette).
+`split` draws two panes; the other three draw one, with both names over it. `flow` is which way those two run — across the comparison, or down it, a picture to a row — so it only has an answer in `split`. What the marks are drawn in is `theme.image`, seven colours of the [palette](../theme#the-palette).
 
 :::
 

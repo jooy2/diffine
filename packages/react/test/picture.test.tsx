@@ -115,6 +115,46 @@ describe('ImageDiff', () => {
     expect(render({})).toContain('Nothing to compare yet.');
   });
 
+  it('says a side that has no picture at all has none, rather than none yet', () => {
+    const markup = render({ after: pixels(2, 2), absent: 'before' });
+
+    expect(markup).toContain('No picture in Before.');
+    expect(markup).not.toContain('Nothing to compare yet.');
+    expect(markup).toContain('data-absent="true"');
+  });
+
+  it('goes on inviting a picture where the reader is the one choosing them', () => {
+    // An empty side of an editor is a side nobody has filled in yet, whatever
+    // the application says about it.
+    const markup = render({ mode: 'editor', after: pixels(2, 2), absent: 'before' });
+
+    expect(markup).toContain('Choose an image');
+    expect(markup).not.toContain('No picture in');
+  });
+
+  it('lays the panes down the comparison when it is asked to', () => {
+    const markup = render({
+      before: { content: pixels(2, 2), label: 'v1.png' },
+      after: { content: pixels(2, 2), label: 'v2.png' },
+      flow: 'down'
+    });
+
+    expect(markup).toContain('data-flow="down"');
+    expect(markup.split('diffine-image-part')).toHaveLength(3);
+    // A name over each pane rather than a row of them over both.
+    expect(markup).not.toContain('diffine-header');
+    expect(markup).toContain('>v1.png<');
+    expect(markup).toContain('>v2.png<');
+  });
+
+  it('lays them across it by default', () => {
+    const markup = render({ before: pixels(2, 2), after: pixels(2, 2) });
+
+    expect(markup).toContain('data-flow="across"');
+    expect(markup).toContain('diffine-header');
+    expect(markup).not.toContain('diffine-image-part');
+  });
+
   it('invites a picture in the editor rather than reporting an empty one', () => {
     const markup = render({ mode: 'editor' });
 

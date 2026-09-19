@@ -1501,13 +1501,17 @@ button.diffine-fold:focus-visible {
   grid-template-columns: repeat(var(--diffine-panes, 2), 1fr);
 }
 
-/* Both sizes on one row, and the counts held at the far end of it. */
-.diffine-image:not([data-view='split']) .diffine-metrics {
+/* Both sizes on one row, and the counts held at the far end of it. Panes in a
+   column have one bar under all of them for the same reason a view that draws
+   them together does: there is no half of the bar that is under one picture. */
+.diffine-image:not([data-view='split']) .diffine-metrics,
+.diffine-image[data-flow='down'] .diffine-metrics {
   gap: 1.25rem;
   justify-content: flex-start;
 }
 
-.diffine-image:not([data-view='split']) .diffine-tally {
+.diffine-image:not([data-view='split']) .diffine-tally,
+.diffine-image[data-flow='down'] .diffine-tally {
   margin-inline-start: auto;
 }
 
@@ -1588,9 +1592,44 @@ button.diffine-fold:focus-visible {
   height: 100%;
 }
 
+/* The line between two panes, which is a column of pixels between panes in a
+   row and a row of them between panes in a column — the same rule either way,
+   because what it is across is whatever the body is laid out along. */
 .diffine-image-gap {
   flex: 0 0 1px;
   background: var(--diffine-border);
+}
+
+/*
+ * Panes in a column rather than in a row: one picture a line.
+ *
+ * Two screenshots of a page belong beside each other, and a photograph, a
+ * banner, or a comparison in a column too narrow to cut in half belongs this
+ * way round. What moves with them is the names — a row of titles above a
+ * column of panes would name the wrong pictures, so each pane carries its own
+ * and the controls take a row of their own.
+ */
+.diffine-image[data-flow='down'] .diffine-body {
+  flex-direction: column;
+}
+
+.diffine-image[data-flow='down'] .diffine-image-part {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* A pane in a column shrinks to the height the body gives it, which is what a
+   flex item will not do while its own content can claim more. */
+.diffine-image[data-flow='down'] .diffine-image-pane {
+  min-height: 0;
+}
+
+.diffine-image[data-flow='down'] .diffine-image-part .diffine-title {
+  flex: 0 0 auto;
+  border-bottom: 1px solid var(--diffine-border);
+  background: var(--diffine-gutter);
 }
 
 /* What a pane with no picture in it says, over the squares rather than instead

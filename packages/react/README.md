@@ -236,7 +236,7 @@ Each side takes a `Blob`, an `ImageBitmap`, or a buffer of pixels shaped like `I
 />
 ```
 
-`view` is `split`, `overlay`, `wipe` or `mask`; `mode="editor"` lets a reader drop a picture on either pane. `unchanged` is what happens to the parts nothing happened to — `dim` pushes them back and `hide` drops them, so what changed is read as a picture rather than as a mark on one. `tolerance` decides how much of a difference counts, `ignoreAntialiasing` drops the pixels a renderer's own smoothing left behind, and `align` finds the offset between two shots that are not lined up.
+`view` is `split`, `overlay`, `wipe` or `mask`; `mode="editor"` lets a reader drop a picture on either pane. `unchanged` is what happens to the parts nothing happened to — `dim` pushes them back and `hide` drops them, so what changed is read as a picture rather than as a mark on one. `tolerance` decides how much of a difference counts, `ignoreAntialiasing` drops the pixels a renderer's own smoothing left behind, and `align` finds the offset between two shots that are not lined up. `flow="down"` stacks the two panes a picture to a row, and `absent="before"` says the left side has no picture at all — a file that was added — so what is drawn is a comparison rather than a viewer waiting for its other half.
 
 The wheel zooms about the pointer, and the pixels under it are drawn magnified with their colours written out, both sides at once — `wheel` and `loupe` turn each of those into the other answer. The whole of it is on the [image diff page](https://diffine.cdget.com/guide/image-diff).
 
@@ -315,7 +315,7 @@ Every entry is its own bundle, and importing one costs what that one is. The roo
 | `diffine-react/image` | The picture comparison on its own. | 4.2 kB |
 | `diffine-react/patch` | Reading and writing a unified diff. | 3.3 kB |
 | `diffine-react/text-diff` | `TextDiff`, and the list its menu of languages is made from. | 17.6 kB |
-| `diffine-react/image-diff` | `ImageDiff`. | 15.0 kB |
+| `diffine-react/image-diff` | `ImageDiff`. | 15.4 kB |
 | `diffine-react/types` | The types on their own. | 0 kB |
 | `diffine-react/styles.css` | The stylesheet, for both components. | 4.3 kB |
 

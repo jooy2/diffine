@@ -254,6 +254,33 @@ void main() {
       expect(result.stats.removed, 2);
     });
 
+    test('reads a picture compared with nothing as a picture that arrived', () {
+      // Which is what a comparison of a file that was added hands it: one side
+      // with a picture on it, and one side with no picture at all.
+      final DiffPixels nothing = DiffPixels(data: Uint8List(0), width: 0, height: 0);
+      final DiffImageResult result = diffImage(nothing, picture(<String>['..', '..']));
+
+      expect(marks(result), <String>['++', '++']);
+      expect(result.stats.added, 4);
+      expect(result.stats.removed, 0);
+      expect(result.stats.ratio, 1);
+      expect(result.regions, hasLength(1));
+    });
+
+    test('reads the same comparison the other way round as one that went away', () {
+      final DiffPixels nothing = DiffPixels(data: Uint8List(0), width: 0, height: 0);
+      final DiffImageResult result = diffImage(
+        picture(<String>['..', '..']),
+        nothing,
+        const DiffImageOptions(align: DiffImageAlign.shift),
+      );
+
+      expect(marks(result), <String>['--', '--']);
+      expect(result.stats.removed, 4);
+      expect(result.offset.x, 0);
+      expect(result.offset.y, 0);
+    });
+
     test('lets a difference under the tolerance go', () {
       final DiffPixels before = picture(<String>['55']);
       final DiffPixels after = picture(<String>['56']);

@@ -23,6 +23,12 @@ export interface ImageDiffSummaryProps {
   complete: boolean;
   /** Whether there is a comparison at all. */
   compared: boolean;
+  /**
+   * Whether one of the two sides has no picture at all, and which way round
+   * that is: `added` for a picture that arrived, `removed` for one that went
+   * away. `null` where both sides have one.
+   */
+  change: 'added' | 'removed' | null;
   /** Whether the panes are side by side, so the bar is cut into as many parts. */
   split: boolean;
   locale: DiffineLocale;
@@ -49,6 +55,7 @@ export function ImageDiffSummary({
   regions,
   complete,
   compared,
+  change,
   split,
   locale,
   strings
@@ -58,16 +65,30 @@ export function ImageDiffSummary({
   // empty.
   const sentence = !compared
     ? ''
-    : changed === 0
-      ? strings.identical
-      : fill(strings.imageSummary, {
-          regions: formatCount(regions, locale),
-          percent: formatNumber(changed * 100, locale)
-        });
+    : change === 'added'
+      ? strings.imageAdded
+      : change === 'removed'
+        ? strings.imageRemoved
+        : changed === 0
+          ? strings.identical
+          : fill(strings.imageSummary, {
+              regions: formatCount(regions, locale),
+              percent: formatNumber(changed * 100, locale)
+            });
 
+  /*
+   * A picture that arrived or went away is one mark rather than a count. The
+   * count is right — every pixel of it changed, over one area — and it is the
+   * long way of saying the short thing, which is that there was no picture
+   * here and now there is.
+   */
   const tally = !compared ? null : (
     <div className="diffine-tally" title={sentence} aria-hidden="true">
-      {changed === 0 ? (
+      {change ? (
+        <span className="diffine-tally-item" data-kind={change === 'added' ? 'insert' : 'delete'}>
+          <TallyIcon kind={change === 'added' ? 'insert' : 'delete'} />
+        </span>
+      ) : changed === 0 ? (
         <span className="diffine-tally-item" data-kind="identical">
           <TallyIcon kind="identical" />
         </span>

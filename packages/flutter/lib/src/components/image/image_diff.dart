@@ -27,6 +27,7 @@ library;
 
 import 'dart:async';
 import 'dart:math' as math;
+import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:diffine/src/components/image/image_diff_loupe.dart';
@@ -50,6 +51,14 @@ import 'package:flutter/widgets.dart';
 /// How tall the bar above the panes is.
 const double _headerHeight = 34;
 
+/// A side that has no picture at all, as something the engine can be handed.
+///
+/// Every pixel of the picture on the other side is then covered by one side and
+/// not the other, which is the whole of what a picture arriving or going away
+/// means — and it is what the engine already says about the strip two pictures
+/// of different sizes leave.
+final DiffPixels _nothingPictured = DiffPixels(data: Uint8List(0), width: 0, height: 0);
+
 /// Two pictures, and what changed between them.
 class ImageDiff extends StatefulWidget {
   /// One comparison.
@@ -58,6 +67,7 @@ class ImageDiff extends StatefulWidget {
     this.mode = DiffineMode.viewer,
     this.before,
     this.after,
+    this.absent,
     this.pictures,
     this.pictureLabels,
     this.baseline = 0,
@@ -69,6 +79,7 @@ class ImageDiff extends StatefulWidget {
     this.result,
     this.diff = kDiffineImageDefaults,
     this.view = DiffineImageView.split,
+    this.flow = DiffineImageFlow.across,
     this.unchanged = DiffineImageUnchanged.keep,
     this.wheel = DiffineImageWheel.zoom,
     this.loupe = true,
@@ -114,6 +125,27 @@ class ImageDiff extends StatefulWidget {
 
   /// The picture on the right.
   final DiffineImageContent? after;
+
+  /// Which side has no picture at all, for a comparison of a picture that
+  /// arrived or went away.
+  ///
+  /// A file was added, and there is nothing to put on the left; a file was
+  /// deleted, and there is nothing to put on the right. Naming the side says
+  /// so, and what the comparison then answers is what it answers about any
+  /// pixel only one of the two covers: every pixel of the picture that is there
+  /// comes back added or removed, the bar underneath says which of the two
+  /// happened, and the empty pane says there is no picture rather than inviting
+  /// one.
+  ///
+  /// It is an argument rather than a picture left out, because those are two
+  /// different states and only the application can tell them apart. A side with
+  /// nothing in it is a side whose picture has not arrived yet, and reading that
+  /// as a deleted file would turn every comparison into one for as long as a
+  /// file takes to read.
+  ///
+  /// Ignored where the side it names has a picture, in [DiffineMode.editor],
+  /// and with [pictures].
+  final DiffineSide? absent;
 
   /// What the header calls the left side.
   final String? beforeLabel;
@@ -179,6 +211,15 @@ class ImageDiff extends StatefulWidget {
   /// How the two are laid out: side by side, one faded over the other, one
   /// wiped across the other, or neither of them and only what changed.
   final DiffineImageView view;
+
+  /// Which way the panes run: [DiffineImageFlow.across] for one beside another,
+  /// [DiffineImageFlow.down] for one under another, a picture to a row.
+  ///
+  /// Two screenshots of a page are taller than they are wide and belong beside
+  /// each other; a photograph, a banner, and anything in a column too narrow to
+  /// cut in half are the other way round. It only has an answer in
+  /// [DiffineImageView.split], because the other three draw one pane.
+  final DiffineImageFlow flow;
 
   /// What is done with the parts of the picture nothing happened to.
   ///
@@ -372,6 +413,12 @@ class _ImageDiffState extends State<ImageDiff> {
   void didUpdateWidget(ImageDiff old) {
     super.didUpdateWidget(old);
     _load();
+
+    // Nothing was decoded again and the answer still changed: which side has no
+    // picture at all is part of the question the comparison was asked.
+    if (old.absent != widget.absent) {
+      _recompare();
+    }
   }
 
   @override
@@ -400,6 +447,25 @@ class _ImageDiffState extends State<ImageDiff> {
 
   /// Whether the comparison is of a list rather than of a pair.
   bool get _many => widget.pictures != null;
+
+  /// Which side has nothing on it because there is nothing, rather than because
+  /// nothing has arrived yet.
+  ///
+  /// A side that was handed a picture has one, whatever the argument says, and
+  /// a reader who is choosing the pictures can put one on either side — so an
+  /// editor and a list both leave it alone. What is left is the case it is for:
+  /// a viewer drawing a file that arrived or went away.
+  DiffineSide? get _missing {
+    final DiffineSide? named = widget.absent;
+
+    if (named == null || _many || widget.mode == DiffineMode.editor) {
+      return null;
+    }
+
+    final DiffineImageContent? held = named == DiffineSide.before ? _wantedBefore : _wantedAfter;
+
+    return held == null ? named : null;
+  }
 
   /// Every picture the arguments ask for, in the order the panes draw them.
   List<DiffineImageContent?> get _wanted => _many
@@ -512,10 +578,21 @@ class _ImageDiffState extends State<ImageDiff> {
 
   void _recompare() {
     final List<Picture?> held = List<Picture?>.of(_held);
-    final bool ready = held.length >= 2 && held.every((Picture? one) => one != null);
+    final DiffineSide? missing = _missing;
+    // A side that does not exist waits for no picture to arrive, and the one
+    // opposite it is the whole of what there is to compare.
+    final bool ready =
+        held.length >= 2 &&
+        (missing == null
+            ? held.every((Picture? one) => one != null)
+            : held[missing == DiffineSide.before ? 1 : 0] != null);
     final DiffImageResult? pair = _many || widget.result != null || !ready
         ? widget.result
-        : diffImage(held[0]!.pixels, held[1]!.pixels, widget.diff);
+        : diffImage(
+            missing == DiffineSide.before ? _nothingPictured : held[0]!.pixels,
+            missing == DiffineSide.after ? _nothingPictured : held[1]!.pixels,
+            widget.diff,
+          );
     final DiffImagesResult? several = !_many || widget.picturesResult != null || !ready
         ? widget.picturesResult
         : diffImages(
@@ -796,15 +873,44 @@ class _ImageDiffState extends State<ImageDiff> {
           ];
     final _Looking? looking = _looking;
     final bool blank = _held.every((Picture? one) => one == null);
+    final DiffineSide? missing = _missing;
     final bool tools =
         (widget.navigation && regions.isNotEmpty) || widget.zoom || (editing && !_laidSplit);
+
+    // Whether the panes run down the comparison rather than across it.
+    final bool down = _laidSplit && widget.flow == DiffineImageFlow.down;
     /*
      * Where the controls go. A title has room for a name and a row of buttons
      * when there are two of them and none when there are five, so past two they
      * get a row of their own rather than squeezing the name out of the last
-     * one.
+     * one. Panes running downwards have no row of titles to put them at the end
+     * of.
      */
-    final bool stacked = _laidSplit && labels.length > 2;
+    final bool stacked = _laidSplit && (down || labels.length > 2);
+    /*
+     * And whether there is a bar above at all. A row of names over a column of
+     * panes names the wrong pictures, so a stacked comparison has none: each
+     * name goes over the pane it belongs to instead.
+     */
+    final bool bar = !down && (widget.header || (tools && !stacked));
+
+    // One pane, wherever the layout ends up putting it.
+    Widget paneAt(int at) => _pane(
+      at: at,
+      theme: theme,
+      strings: strings,
+      name: labels[at],
+      frame: frame,
+      viewport: viewport,
+      layers: layers.each[at],
+      regions: regions,
+      current: current,
+      blank: _held[at] == null,
+      absent: missing == (at == 0 ? DiffineSide.before : DiffineSide.after),
+      loading: _loading[at],
+      failed: _failed[at],
+      editing: editing,
+    );
 
     final Widget frameBox = DecoratedBox(
       decoration: BoxDecoration(
@@ -824,7 +930,7 @@ class _ImageDiffState extends State<ImageDiff> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              if (widget.header || (tools && !stacked))
+              if (bar)
                 _header(
                   theme: theme,
                   strings: strings,
@@ -869,27 +975,41 @@ class _ImageDiffState extends State<ImageDiff> {
                     children: <Widget>[
                       Positioned.fill(
                         child: _laidSplit
-                            ? Row(
+                            ? Flex(
+                                direction: down ? Axis.vertical : Axis.horizontal,
                                 crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: <Widget>[
                                   for (int at = 0; at < _held.length; at += 1) ...<Widget>[
-                                    if (at > 0) _Rule(colour: theme.border),
+                                    if (at > 0) _Rule(colour: theme.border, down: down),
+                                    /*
+                                     * A pane on its own where the panes run
+                                     * across, because the row of names above is
+                                     * over the pictures already. Running down
+                                     * they are not, so each pane is wrapped
+                                     * with its own name — and with the button
+                                     * that puts a picture in it, which has
+                                     * nowhere else left to be.
+                                     */
                                     Expanded(
-                                      child: _pane(
-                                        at: at,
-                                        theme: theme,
-                                        strings: strings,
-                                        name: labels[at],
-                                        frame: frame,
-                                        viewport: viewport,
-                                        layers: layers.each[at],
-                                        regions: regions,
-                                        current: current,
-                                        blank: _held[at] == null,
-                                        loading: _loading[at],
-                                        failed: _failed[at],
-                                        editing: editing,
-                                      ),
+                                      child: down
+                                          ? Column(
+                                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                                              children: <Widget>[
+                                                if (widget.header ||
+                                                    (editing && widget.onChoose != null))
+                                                  _partTitle(
+                                                    theme: theme,
+                                                    strings: strings,
+                                                    label: labels[at],
+                                                    side: at == 0
+                                                        ? DiffineSide.before
+                                                        : DiffineSide.after,
+                                                    editing: editing,
+                                                  ),
+                                                Expanded(child: paneAt(at)),
+                                              ],
+                                            )
+                                          : paneAt(at),
                                     ),
                                   ],
                                 ],
@@ -905,6 +1025,7 @@ class _ImageDiffState extends State<ImageDiff> {
                                 regions: regions,
                                 current: current,
                                 blank: blank,
+                                absent: false,
                                 loading: _loading.any((bool one) => one),
                                 failed: _failed.any((bool one) => one),
                                 editing: editing,
@@ -925,7 +1046,7 @@ class _ImageDiffState extends State<ImageDiff> {
               if (widget.summary)
                 ImageDiffSummary(
                   theme: theme,
-                  split: _laidSplit,
+                  split: _laidSplit && !down,
                   locale: widget.locale,
                   strings: strings,
                   pictures: <ImageMetrics?>[
@@ -935,6 +1056,11 @@ class _ImageDiffState extends State<ImageDiff> {
                   regions: regions.length,
                   complete: _whole,
                   compared: compared,
+                  change: missing == null
+                      ? null
+                      : missing == DiffineSide.before
+                      ? DiffPixelKind.added
+                      : DiffPixelKind.removed,
                 ),
             ],
           ),
@@ -1053,6 +1179,7 @@ class _ImageDiffState extends State<ImageDiff> {
     required List<DiffImageRegion> regions,
     required int current,
     required bool blank,
+    required bool absent,
     required bool loading,
     required bool failed,
     required bool editing,
@@ -1069,6 +1196,12 @@ class _ImageDiffState extends State<ImageDiff> {
         : _mask;
     final DiffineSide side = at <= 0 ? DiffineSide.before : DiffineSide.after;
 
+    /*
+     * Nothing is marked or boxed on a side that has no picture. What a mark
+     * says is which pixels arrived or went away, and a pane with no picture in
+     * it is not where either of those happened — it is the side that says so,
+     * and a box round the whole of it is a box round nothing.
+     */
     return ImageDiffPane(
       theme: theme,
       name: name,
@@ -1077,14 +1210,15 @@ class _ImageDiffState extends State<ImageDiff> {
       onViewport: _setLook,
       onBox: _onBox,
       layers: layers,
-      mask: widget.marks ? mask : null,
+      mask: widget.marks && !absent ? mask : null,
       unchanged: widget.unchanged,
       stencil: _stencil,
       wheel: widget.wheel,
       onLook: widget.loupe ? (Offset? where) => _onLook(at, where) : null,
-      regions: widget.outlines ? regions : const <DiffImageRegion>[],
+      regions: widget.outlines && !absent ? regions : const <DiffImageRegion>[],
       current: current,
       blank: blank,
+      absent: absent,
       loading: loading,
       failed: failed,
       strings: strings,
@@ -1200,6 +1334,50 @@ class _ImageDiffState extends State<ImageDiff> {
     );
   }
 
+  /// The name over one pane, for panes that run down the comparison.
+  ///
+  /// The bar above names them all where they run across it, and there is no bar
+  /// above a column of panes that could — so the name sits here instead, along
+  /// with the button that puts a picture in this pane.
+  Widget _partTitle({
+    required DiffineTheme theme,
+    required DiffineStrings strings,
+    required String label,
+    required DiffineSide side,
+    required bool editing,
+  }) {
+    return Container(
+      height: _headerHeight,
+      decoration: BoxDecoration(
+        color: theme.gutter,
+        border: Border(bottom: BorderSide(color: theme.border)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        child: Row(
+          children: <Widget>[
+            if (widget.header)
+              Expanded(
+                child: Text(
+                  label,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: theme.text),
+                ),
+              )
+            else
+              const Spacer(),
+            if (editing && widget.onChoose != null)
+              DiffineTextButton(
+                theme: theme,
+                label: strings.choose,
+                onPressed: () => _choose(side),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
   List<Widget> _tools({
     required DiffineTheme theme,
     required DiffineStrings strings,
@@ -1284,15 +1462,23 @@ class _Layers {
   final List<Layer> both;
 }
 
-/// A one-pixel rule between two panes.
+/// A one-pixel rule between two panes: a column of pixels between panes in a
+/// row, and a row of them between panes in a column.
 class _Rule extends StatelessWidget {
-  const _Rule({required this.colour});
+  const _Rule({required this.colour, required this.down});
 
   final Color colour;
 
+  /// Whether the panes either side of it run down the comparison.
+  final bool down;
+
   @override
   Widget build(BuildContext context) {
-    return SizedBox(width: 1, child: ColoredBox(color: colour));
+    return SizedBox(
+      width: down ? null : 1,
+      height: down ? 1 : null,
+      child: ColoredBox(color: colour),
+    );
   }
 }
 

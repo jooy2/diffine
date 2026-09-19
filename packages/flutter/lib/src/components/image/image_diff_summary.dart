@@ -57,6 +57,7 @@ class ImageDiffSummary extends StatelessWidget {
     required this.regions,
     required this.complete,
     required this.compared,
+    this.change,
     super.key,
   });
 
@@ -88,6 +89,12 @@ class ImageDiffSummary extends StatelessWidget {
   /// Whether there is a comparison at all.
   final bool compared;
 
+  /// Whether one of the two sides has no picture at all, and which way round
+  /// that is: [DiffPixelKind.added] for a picture that arrived,
+  /// [DiffPixelKind.removed] for one that went away, and `null` where both
+  /// sides have one.
+  final DiffPixelKind? change;
+
   @override
   Widget build(BuildContext context) {
     // Nothing has been compared, so there is nothing to say about it — and
@@ -95,6 +102,10 @@ class ImageDiffSummary extends StatelessWidget {
     // empty.
     final String sentence = !compared
         ? ''
+        : change == DiffPixelKind.added
+        ? strings.imageAdded
+        : change == DiffPixelKind.removed
+        ? strings.imageRemoved
         : changed == 0
         ? strings.identical
         : fill(strings.imageSummary, <String, Object>{
@@ -160,6 +171,21 @@ class ImageDiffSummary extends StatelessWidget {
   }
 
   Widget _tally() {
+    /*
+     * A picture that arrived or went away is one mark rather than a count. The
+     * count is right — every pixel of it changed, over one area — and it is the
+     * long way of saying the short thing, which is that there was no picture
+     * here and now there is.
+     */
+    if (change != null) {
+      return DiffineIcons(
+        change == DiffPixelKind.added ? DiffineIcon.insert : DiffineIcon.delete,
+        size: 13,
+        strokeWidth: 1.5,
+        color: change == DiffPixelKind.added ? theme.insertText : theme.deleteText,
+      );
+    }
+
     if (changed == 0) {
       return DiffineIcons(
         DiffineIcon.identical,

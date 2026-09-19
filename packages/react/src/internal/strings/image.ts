@@ -14,6 +14,9 @@ const IMAGE: Record<DiffineLocale, Omit<DiffineImageStrings, keyof typeof COMMON
   en: {
     imageSize: '{label}: {width} × {height}, {size}',
     imageSummary: '{regions} changed areas, {percent}% of the picture',
+    imageAdded: 'The picture was added.',
+    imageRemoved: 'The picture was removed.',
+    absent: 'No picture in {label}.',
     choose: 'Choose an image',
     chooseIn: 'Choose an image for {label}',
     unsupported: 'That file is not an image.',
@@ -32,6 +35,9 @@ const IMAGE: Record<DiffineLocale, Omit<DiffineImageStrings, keyof typeof COMMON
   ko: {
     imageSize: '{label}: {width} × {height}, {size}',
     imageSummary: '변경 {regions}곳, 전체의 {percent}%',
+    imageAdded: '이미지가 추가되었습니다.',
+    imageRemoved: '이미지가 삭제되었습니다.',
+    absent: '{label}에는 이미지가 없습니다.',
     choose: '이미지 고르기',
     chooseIn: '{label}에 넣을 이미지 고르기',
     unsupported: '이미지 파일이 아닙니다.',

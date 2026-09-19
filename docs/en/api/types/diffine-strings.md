@@ -55,6 +55,9 @@ What the picture comparison adds. <Fw react="`DiffineImageStrings`, which is wha
 | -------------- | ---------------------------------------------------- |
 | `imageSize`    | `{label}: {width} × {height}, {size}`                |
 | `imageSummary` | `{regions} changed areas, {percent}% of the picture` |
+| `imageAdded`   | `The picture was added.`                             |
+| `imageRemoved` | `The picture was removed.`                           |
+| `absent`       | `No picture in {label}.`                             |
 | `choose`       | `Choose an image`                                    |
 | `chooseIn`     | `Choose an image for {label}`                        |
 | `unsupported`  | `That file is not an image.`                         |
@@ -69,9 +72,9 @@ What the picture comparison adds. <Fw react="`DiffineImageStrings`, which is wha
 | `loupeMove`    | `Drag to move the magnified pixels`                  |
 | `loupeSize`    | `Drag to show more pixels`                           |
 
-`added`, `removed`, `changed`, `summary`, `documentSize`, `changePosition`, `searchPosition`, `searchEmpty` and `imageSummary` are read by a screen reader rather than shown. `language` names the editor's menu of languages to one.
+`added`, `removed`, `changed`, `summary`, `documentSize`, `changePosition`, `searchPosition`, `searchEmpty`, `imageSummary`, `imageAdded` and `imageRemoved` are read by a screen reader rather than shown. `language` names the editor's menu of languages to one.
 
-The placeholders are filled in as follows. `searchIn` and `chooseIn` fill `{label}` with the name of the side the button belongs to, so two of the same button on one <Fw react="component" flutter="widget" /> are told apart. `summary` fills `{changes}`, `{inserted}` and `{deleted}` with the counts. `documentSize` fills `{label}` with the name of a side and `{characters}` and `{size}` with numbers already written in the reader's own language, and `imageSize` fills `{width}`, `{height}` and `{size}` the same way. `imageSummary` takes `{regions}` and `{percent}`, and `zoomLevel` takes `{percent}`. `at` is what goes before the coordinates under the magnified pixels, and `loupeMove` and `loupeSize` name the handle that moves that panel and the corner that shows more pixels in it. `placeholder` is what an empty field in the editor says.
+The placeholders are filled in as follows. `searchIn` and `chooseIn` fill `{label}` with the name of the side the button belongs to, so two of the same button on one <Fw react="component" flutter="widget" /> are told apart. `summary` fills `{changes}`, `{inserted}` and `{deleted}` with the counts. `documentSize` fills `{label}` with the name of a side and `{characters}` and `{size}` with numbers already written in the reader's own language, and `imageSize` fills `{width}`, `{height}` and `{size}` the same way. `imageSummary` takes `{regions}` and `{percent}`, and `zoomLevel` takes `{percent}`. `absent` fills `{label}` with the name of the side that has no picture, which is the name over the pane it is written in. `at` is what goes before the coordinates under the magnified pixels, and `loupeMove` and `loupeSize` name the handle that moves that panel and the corner that shows more pixels in it. `placeholder` is what an empty field in the editor says.
 
 ::: fw react
 

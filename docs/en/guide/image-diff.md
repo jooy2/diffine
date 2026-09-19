@@ -133,6 +133,38 @@ There is no URL on that list, and it is missing on purpose. A picture fetched by
 
 :::
 
+## A picture that arrived, or went away
+
+A comparison in a repository is not always two pictures. A file was added, and there is nothing to put on the left; a file was deleted, and there is nothing to put on the right. `absent` says which side has no picture at all:
+
+::: fw react
+
+```tsx
+<ImageDiff after={rendered} absent="before" />
+<ImageDiff before={saved} absent="after" />
+```
+
+:::
+
+::: fw flutter
+
+```dart
+ImageDiff(after: DiffineEncodedImage(rendered), absent: DiffineSide.before);
+ImageDiff(before: DiffineEncodedImage(saved), absent: DiffineSide.after);
+```
+
+:::
+
+What that draws is a comparison rather than an empty viewer. Every pixel of the picture that is there is covered by one side and not the other, which is exactly what the engine says about the strip two pictures of different sizes leave — so the whole of it comes back as arrived or gone, the bar underneath says which of the two happened, and the empty pane says there is no picture rather than waiting for one.
+
+<DiffinePictures sample="badge" absent="before" height="22rem" />
+
+It is a prop rather than a side left empty, because those are two different states and only the application can tell them apart. A side with nothing in it is usually a side whose picture has not arrived yet, and reading that as a deleted file would turn every comparison into one for as long as a `fetch` takes. The prop is ignored where the side it names has a picture, in `editor` mode, and for a list.
+
+Turning the marks off is worth knowing about here. What the tint says is which pixels arrived, and when the answer is every one of them it is a wash over the picture somebody came to look at:
+
+<DiffinePictures sample="badge" absent="before" :marks="false" height="22rem" />
+
 ## Four ways of looking at them
 
 `view` decides how the two are laid out. There are four because no single one of them answers every question.
@@ -150,6 +182,38 @@ There is no URL on that list, and it is missing on purpose. A picture fetched by
 `mask` drops both pictures and leaves what changed, over the squares that say there is nothing there. It is the view that says where to point the other three.
 
 <DiffinePictures sample="badge" view="mask" height="20rem" />
+
+## Which way the panes run
+
+`flow` is the other half of `split`: whether the two panes sit beside each other or one under the other.
+
+`across` is the default, and it is what two screenshots of a page want. A page is taller than it is wide, so half the width of a comparison holds more of one than half its height would.
+
+`down` is the answer for everything shaped the other way. A photograph, a banner, a header image, and any comparison in a column too narrow to cut in half all read better a picture to a row:
+
+<DiffinePictures sample="retouched" flow="down" height="30rem" />
+
+::: fw react
+
+```tsx
+<ImageDiff before={saved} after={rendered} flow="down" />
+```
+
+:::
+
+::: fw flutter
+
+```dart
+ImageDiff(
+  before: DiffineEncodedImage(saved),
+  after: DiffineEncodedImage(rendered),
+  flow: DiffineImageFlow.down,
+);
+```
+
+:::
+
+The names move with the panes. A row of titles over a column of panes would sit above the wrong pictures, so each pane carries its own name and the buttons take a row of their own. It only has an answer in the `split` view — the other three draw one pane, and one pane runs nowhere.
 
 ## What is marked, and in what
 

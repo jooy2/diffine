@@ -153,6 +153,7 @@ class _PlaygroundState extends State<Playground> {
       afterLabel: settings.pictureAfterLabel,
       onChoose: chooseImage,
       view: settings.view,
+      flow: settings.flow,
       diff: DiffImageOptions(
         tolerance: settings.tolerance,
         align: settings.alignPictures ? DiffImageAlign.shift : DiffImageAlign.none,

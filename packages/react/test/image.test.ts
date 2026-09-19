@@ -227,6 +227,28 @@ describe('diffImage', () => {
     expect(result.stats.removed).toBe(2);
   });
 
+  it('reads a picture compared with nothing as a picture that arrived', () => {
+    // Which is what a comparison of a file that was added hands it: one side
+    // with a picture on it, and one side with no picture at all.
+    const nothing: DiffPixels = { data: new Uint8ClampedArray(0), width: 0, height: 0 };
+    const result = diffImage(nothing, picture('..', '..'));
+
+    expect(marks(result)).toEqual(['++', '++']);
+    expect(result.stats.added).toBe(4);
+    expect(result.stats.removed).toBe(0);
+    expect(result.stats.ratio).toBe(1);
+    expect(result.regions).toHaveLength(1);
+  });
+
+  it('reads the same comparison the other way round as one that went away', () => {
+    const nothing: DiffPixels = { data: new Uint8ClampedArray(0), width: 0, height: 0 };
+    const result = diffImage(picture('..', '..'), nothing, { align: 'shift' });
+
+    expect(marks(result)).toEqual(['--', '--']);
+    expect(result.stats.removed).toBe(4);
+    expect(result.offset).toEqual({ x: 0, y: 0 });
+  });
+
   it('lets a difference under the tolerance go', () => {
     const before = picture('55');
     const after = picture('56');

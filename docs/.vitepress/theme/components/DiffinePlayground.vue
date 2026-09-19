@@ -90,6 +90,7 @@ const WORDS = {
     smoothing: 'Ignore smoothing',
     marks: 'Mark the pixels',
     outlines: 'Box the changes',
+    stack: 'One picture to a row',
     loupe: 'Show the pixels under the pointer',
     unchanged: 'The rest of it',
     rests: { keep: 'Leave it', dim: 'Push it back', hide: 'Drop it' }
@@ -132,6 +133,7 @@ const WORDS = {
     smoothing: '경계 보정 무시',
     marks: '픽셀 표시',
     outlines: '변경 영역 표시',
+    stack: '한 줄에 한 장씩',
     loupe: '포인터 아래 픽셀 보기',
     unchanged: '나머지 부분',
     rests: { keep: '그대로', dim: '흐리게', hide: '감추기' }
@@ -177,6 +179,8 @@ const generation = ref(0);
 const shot = ref<Shot>('retouched');
 const pictures = ref({
   view: 'split' as DiffineImageView,
+  /** Whether the panes run down the comparison rather than across it. */
+  stack: false,
   /** Out of a hundred, because that is what a slider counts in. */
   tolerance: 5,
   align: false,
@@ -289,6 +293,7 @@ function drawPictures() {
     defaultBefore: loaded ? { content: loaded.before, label: loaded.beforeLabel } : undefined,
     defaultAfter: loaded ? { content: loaded.after, label: loaded.afterLabel } : undefined,
     view: pictures.value.view,
+    flow: pictures.value.stack ? ('down' as const) : ('across' as const),
     diff: {
       tolerance: pictures.value.tolerance / 100,
       align: pictures.value.align ? ('shift' as const) : ('none' as const),
@@ -514,6 +519,7 @@ function tell(): void {
       connectors: options.value.connectors,
       tab: options.value.tab,
       view: pictures.value.view,
+      flow: pictures.value.stack ? 'down' : 'across',
       tolerance: pictures.value.tolerance / 100,
       alignPictures: pictures.value.align,
       smoothing: pictures.value.smoothing,
@@ -620,6 +626,10 @@ watch(missing, () => void nextTick(measure));
         <label>
           <input type="checkbox" v-model="pictures.outlines" />
           {{ words.outlines }}
+        </label>
+        <label>
+          <input type="checkbox" v-model="pictures.stack" />
+          {{ words.stack }}
         </label>
         <label>
           <input type="checkbox" v-model="pictures.loupe" />

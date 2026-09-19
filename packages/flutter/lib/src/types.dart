@@ -1357,6 +1357,24 @@ enum DiffineImageView {
   mask,
 }
 
+/// Which way the panes of a split comparison run.
+///
+/// It is not part of [DiffineImageView] because it is a different question, and
+/// it only has an answer where there are panes: a view that draws both pictures
+/// in one pane has one pane whichever way this is set.
+enum DiffineImageFlow {
+  /// One pane beside another, which is what two pictures of a page or a screen
+  /// want: they are taller than they are wide, and a pane half the width of the
+  /// comparison holds more of one than a pane half its height.
+  across,
+
+  /// One pane under another, a picture to a row. A photograph, a banner and
+  /// anything else wider than it is tall is the other way round, and so is a
+  /// comparison in a column narrow enough that two panes beside each other are
+  /// two thumbnails.
+  down,
+}
+
 /// What is done with the parts of a picture nothing happened to.
 ///
 /// It is not [DiffineImageView], because it is a different question and holds
@@ -1536,6 +1554,9 @@ class DiffineStrings {
     required this.replaceAll,
     required this.imageSize,
     required this.imageSummary,
+    required this.imageAdded,
+    required this.imageRemoved,
+    required this.absent,
     required this.choose,
     required this.chooseIn,
     required this.unsupported,
@@ -1663,6 +1684,15 @@ class DiffineStrings {
   /// frame.
   final String imageSummary;
 
+  /// What the bar says when one side has no picture and the other one arrived.
+  final String imageAdded;
+
+  /// What it says when the picture that was there went away.
+  final String imageRemoved;
+
+  /// What a pane whose side has no picture at all says: `{label}`.
+  final String absent;
+
   /// What an empty pane invites, and what its button is called.
   final String choose;
 
@@ -1742,6 +1772,9 @@ class DiffineStrings {
     String? replaceAll,
     String? imageSize,
     String? imageSummary,
+    String? imageAdded,
+    String? imageRemoved,
+    String? absent,
     String? choose,
     String? chooseIn,
     String? unsupported,
@@ -1793,6 +1826,9 @@ class DiffineStrings {
       replaceAll: replaceAll ?? this.replaceAll,
       imageSize: imageSize ?? this.imageSize,
       imageSummary: imageSummary ?? this.imageSummary,
+      imageAdded: imageAdded ?? this.imageAdded,
+      imageRemoved: imageRemoved ?? this.imageRemoved,
+      absent: absent ?? this.absent,
       choose: choose ?? this.choose,
       chooseIn: chooseIn ?? this.chooseIn,
       unsupported: unsupported ?? this.unsupported,

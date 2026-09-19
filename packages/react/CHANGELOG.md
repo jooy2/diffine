@@ -4,6 +4,14 @@
 
 ## vNext (2026--)
 
+### Added
+
+- **`absent` compares a picture with the side it arrived on, or went away from.** A file added to a repository has nothing to put on the left and a file deleted from one has nothing to put on the right, and `ImageDiff` read both of those as a comparison waiting for its second picture. Naming the side that has none turns it into the comparison it is: every pixel of the picture that is there comes back as arrived or gone, the bar underneath says which of the two happened, and the empty pane says there is no picture rather than inviting one.
+
+  It is a prop rather than a side left empty, because a side with nothing in it is usually a side whose picture has not arrived yet, and only the application can tell those apart. `strings.absent` is what the empty pane says, and `strings.imageAdded` and `strings.imageRemoved` are what the bar says.
+
+- **`flow` runs the panes down the comparison instead of across it.** `flow="down"` puts one picture to a row, which is the way round a photograph, a banner, or any comparison in a column too narrow to cut in half wants to be read. Each pane carries its own name, because a row of titles over a column of panes names the wrong pictures, and the buttons take a row of their own above them. `across` is the default and is unchanged.
+
 ## v1.0.0 (2026-09-12)
 
 The first stable release. Each view is its own entry now, so a page carries the comparison it asked for and nothing of the other one. The documents gained folding, patches read and written, marks over the whitespace and arrows for taking a change across; the pictures gained a loupe, a mask that can be written out as a file of its own, and a comparison of several at once rather than a pair.

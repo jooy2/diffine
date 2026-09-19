@@ -166,7 +166,15 @@ function search(before: Level, after: Level, around: Offset, reach: number): Off
 export function findOffset(before: DiffPixels, after: DiffPixels, radius: number): Offset {
   const reach = Math.max(0, Math.floor(radius));
 
-  if (reach === 0 || before.width === 0 || before.height === 0) {
+  // Either of them empty and there is nothing to line up: a picture compared
+  // with the side it arrived on is one picture, and it sits where it sits.
+  if (
+    reach === 0 ||
+    before.width === 0 ||
+    before.height === 0 ||
+    after.width === 0 ||
+    after.height === 0
+  ) {
     return NO_OFFSET;
   }
 

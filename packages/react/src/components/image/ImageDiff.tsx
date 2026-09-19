@@ -7,6 +7,7 @@ import type {
   DiffImageResult,
   DiffImagesResult,
   DiffineColorScheme,
+  DiffineImageFlow,
   DiffineImageInput,
   DiffineImageUnchanged,
   DiffineImageView,
@@ -77,6 +78,29 @@ export interface ImageDiffProps extends Omit<
   before?: DiffineImageInput;
   /** The picture on the right. */
   after?: DiffineImageInput;
+
+  /**
+   * Which side has no picture at all, for a comparison of a picture that
+   * arrived or went away.
+   *
+   * A file was added, and there is nothing to put on the left; a file was
+   * deleted, and there is nothing to put on the right. Passing the side says
+   * so, and what the comparison then answers is what it answers about any
+   * pixel only one of the two covers: every pixel of the picture that is there
+   * comes back `added` or `removed`, the bar underneath says which of the two
+   * happened, and the empty pane says there is no picture rather than inviting
+   * one.
+   *
+   * It is a prop rather than a picture left out, because those are two
+   * different states and only the application can tell them apart. A side
+   * with nothing in it is a side whose picture has not arrived yet, and
+   * reading that as a deleted file would turn every comparison into one for as
+   * long as a `fetch` takes.
+   *
+   * Ignored where the side it names has a picture, in `editor` mode, and with
+   * `pictures`.
+   */
+  absent?: DiffineSide;
 
   /**
    * Several pictures rather than two, compared all at once.
@@ -166,6 +190,19 @@ export interface ImageDiffProps extends Omit<
    * @default 'split'
    */
   view?: DiffineImageView;
+
+  /**
+   * Which way the panes run: `across` for one beside another, `down` for one
+   * under another, a picture to a row.
+   *
+   * Two screenshots of a page are taller than they are wide and belong beside
+   * each other; a photograph, a banner, and anything in a column too narrow to
+   * cut in half are the other way round. It only has an answer in the `split`
+   * view, because the other three draw one pane.
+   *
+   * @default 'across'
+   */
+  flow?: DiffineImageFlow;
 
   /**
    * What is done with the parts of the picture nothing happened to.
@@ -362,6 +399,7 @@ export function ImageDiff({
   mode = 'viewer',
   before,
   after,
+  absent,
   pictures,
   baseline = 0,
   picturesResult,
@@ -374,6 +412,7 @@ export function ImageDiff({
   result,
   diff,
   view = 'split',
+  flow = 'across',
   unchanged = 'keep',
   fade: fadeProp,
   onFadeChange,
@@ -425,6 +464,23 @@ export function ImageDiff({
     [pictures, strings]
   );
 
+  /*
+   * Which side has nothing on it because there is nothing, rather than because
+   * nothing has arrived yet.
+   *
+   * A side that was handed a picture has one, whatever the prop says, and a
+   * reader who is choosing the pictures can put one on either side — so an
+   * editor and a list both leave it alone. What is left is the case it is for:
+   * a viewer drawing a file that arrived or went away.
+   */
+  const missing: DiffineSide | null =
+    !absent ||
+    many ||
+    editing ||
+    (absent === 'before' ? beforeSource.content : afterSource.content) !== undefined
+      ? null
+      : absent;
+
   const [beforeHeld, setBeforeHeld] = useControlled(
     imageContentOf(before),
     imageContentOf(defaultBefore)
@@ -451,6 +507,7 @@ export function ImageDiff({
   const pair = useComparison({
     before: many ? null : beforeLoaded.picture,
     after: many ? null : afterLoaded.picture,
+    absent: missing,
     options: diff ?? {},
     given: many ? undefined : result
   });
@@ -723,6 +780,10 @@ export function ImageDiff({
   const failed = loaded.some((one) => one.failed) || rejected !== null;
   const bothLabel = labels.join(' → ');
 
+  /** Which side a pane is, which is the first, the last, and anything between. */
+  const sideAt = (at: number): DiffineSide | 'between' =>
+    at === 0 ? 'before' : at === shown.length - 1 ? 'after' : 'between';
+
   const shared = {
     frame,
     viewport,
@@ -743,23 +804,59 @@ export function ImageDiff({
   };
 
   const tools = (navigation && changes.length > 0) || zoom || (editing && !split);
+  /** Whether the panes run down the comparison rather than across it. */
+  const down = split && flow === 'down';
   /*
    * Where the controls go. A title has room for a name and a row of buttons
    * when there are two of them and none when there are five, so past two they
    * get a row of their own rather than squeezing the name out of the last one.
+   * Panes running downwards have no row of titles to put them at the end of.
    */
-  const stacked = split && labels.length > 2;
-  const bar = header || (tools && !stacked);
+  const stacked = split && (down || labels.length > 2);
+  /*
+   * And whether there is a bar above at all. A row of names over a column of
+   * panes names the wrong pictures, so a stacked comparison has none: each
+   * name goes over the pane it belongs to instead.
+   */
+  const bar = !down && (header || (tools && !stacked));
+
+  /** One pane, wherever the layout ends up putting it. */
+  const paneAt = (at: number) => (
+    <ImageDiffPane
+      {...shared}
+      side={sideAt(at)}
+      name={labels[at]}
+      layers={layers.each[at]}
+      /*
+       * Nothing is marked or boxed on a side that has no picture. What a mark
+       * says is which pixels arrived or went away, and a pane with no picture
+       * in it is not where either of those happened — it is the side that says
+       * so, and a box round the whole of it is a box round nothing.
+       */
+      mask={marks && missing !== sideAt(at) ? (masks[at] ?? null) : null}
+      regions={missing === sideAt(at) ? NO_REGIONS : regions}
+      blank={!shown[at]}
+      absent={missing === sideAt(at)}
+      loading={loaded[at].loading}
+      failed={loaded[at].failed || rejected === (at === 0 ? 'before' : 'after')}
+      onFile={(file) => take(at === 0 ? 'before' : 'after', file)}
+      onLook={watching(at)}
+    />
+  );
 
   return (
     <div
       ref={root}
       className={['diffine diffine-image', className].filter(Boolean).join(' ')}
       data-view={laid}
+      data-flow={down ? 'down' : 'across'}
       data-scheme={colorScheme}
       // How many parts the bars above and below are cut into, because a
-      // stylesheet cannot count panes.
-      style={{ ...style, '--diffine-panes': split ? shown.length : 1 } as React.CSSProperties}
+      // stylesheet cannot count panes. Panes in a column stand over one bar
+      // rather than one part of it each.
+      style={
+        { ...style, '--diffine-panes': split && !down ? shown.length : 1 } as React.CSSProperties
+      }
       {...rest}
     >
       {bar ? (
@@ -854,21 +951,37 @@ export function ImageDiff({
         }}
       >
         {split ? (
-          shown.map((picture, at) => (
+          shown.map((_, at) => (
             <React.Fragment key={at}>
               {at > 0 ? <div className="diffine-image-gap" aria-hidden="true" /> : null}
-              <ImageDiffPane
-                {...shared}
-                side={at === 0 ? 'before' : at === shown.length - 1 ? 'after' : 'between'}
-                name={labels[at]}
-                layers={layers.each[at]}
-                mask={marks ? (masks[at] ?? null) : null}
-                blank={!picture}
-                loading={loaded[at].loading}
-                failed={loaded[at].failed || rejected === (at === 0 ? 'before' : 'after')}
-                onFile={(file) => take(at === 0 ? 'before' : 'after', file)}
-                onLook={watching(at)}
-              />
+              {/*
+               * A pane on its own where the panes run across, because the row
+               * of names above is over the pictures already. Running down they
+               * are not, so each pane is wrapped with its own name — and with
+               * the button that puts a picture in it, which has nowhere else
+               * left to be.
+               */}
+              {down ? (
+                <div className="diffine-image-part">
+                  {header || editing ? (
+                    <div className="diffine-title" data-side={sideAt(at)}>
+                      {header ? <span className="diffine-label">{labels[at]}</span> : null}
+                      {editing ? (
+                        <div className="diffine-tools">
+                          <Chooser
+                            label={labels[at]}
+                            onFile={(file) => take(at === 0 ? 'before' : 'after', file)}
+                            strings={strings}
+                          />
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : null}
+                  {paneAt(at)}
+                </div>
+              ) : (
+                paneAt(at)
+              )}
             </React.Fragment>
           ))
         ) : (
@@ -882,6 +995,7 @@ export function ImageDiff({
             loading={loading}
             failed={failed}
             onFile={bothTake}
+            absent={false}
             wipe={laid === 'wipe' ? wipe : undefined}
             onWipe={
               laid === 'wipe'
@@ -934,7 +1048,8 @@ export function ImageDiff({
           regions={changes.length}
           complete={whole}
           compared={compared}
-          split={split}
+          change={missing ? (missing === 'before' ? 'added' : 'removed') : null}
+          split={split && !down}
           locale={locale}
           strings={strings}
         />

@@ -133,6 +133,38 @@ setState(() => before = DiffineEncodedImage(bytes.buffer.asUint8List()));
 
 :::
 
+## 없던 이미지, 사라진 이미지
+
+저장소에서 비교하는 것이 늘 두 장은 아닙니다. 파일이 새로 생기면 왼쪽에 놓을 것이 없고, 파일이 지워지면 오른쪽에 놓을 것이 없습니다. `absent`는 이미지가 아예 없는 쪽을 적는 자리입니다.
+
+::: fw react
+
+```tsx
+<ImageDiff after={rendered} absent="before" />
+<ImageDiff before={saved} absent="after" />
+```
+
+:::
+
+::: fw flutter
+
+```dart
+ImageDiff(after: DiffineEncodedImage(rendered), absent: DiffineSide.before);
+ImageDiff(before: DiffineEncodedImage(saved), absent: DiffineSide.after);
+```
+
+:::
+
+그러면 빈 뷰어가 아니라 비교 결과가 나옵니다. 남아 있는 이미지의 모든 픽셀은 한쪽만 덮는 픽셀이고, 이는 크기가 다른 두 이미지가 남기는 자리를 두고 엔진이 이미 내놓던 답입니다. 그래서 이미지 전체가 생긴 것이나 사라진 것으로 돌아오고, 아래 막대가 둘 중 무엇인지 말하며, 빈 칸은 이미지를 기다리는 대신 이미지가 없다고 적습니다.
+
+<DiffinePictures sample="badge" absent="before" height="22rem" />
+
+한쪽을 비워 두는 대신 <Fw react="prop으로" flutter="인자로" /> 받는 까닭은 둘이 서로 다른 상태이고, 그 둘을 구분할 수 있는 쪽은 애플리케이션뿐이기 때문입니다. 비어 있는 쪽은 대개 이미지가 아직 도착하지 않은 쪽이고, 그것을 지워진 파일로 읽으면 이미지를 받아 오는 동안 모든 비교가 삭제로 보입니다. 적어 준 쪽에 이미지가 있거나, 에디터이거나, 여러 장을 넘겼다면 무시합니다.
+
+표시를 끄는 선택지도 여기서는 알아 둘 만합니다. 색을 까는 일은 어느 픽셀이 새로 왔는지 말하는 일인데, 답이 전부일 때는 보러 온 이미지 위에 색을 한 겹 덮는 셈이 됩니다.
+
+<DiffinePictures sample="badge" absent="before" :marks="false" height="22rem" />
+
 ## 네 가지 보기
 
 `view`는 두 장을 어떻게 놓을지 정합니다. 하나로는 모든 질문에 답할 수 없어서 네 가지입니다.
@@ -150,6 +182,38 @@ setState(() => before = DiffineEncodedImage(bytes.buffer.asUint8List()));
 `mask`는 두 이미지를 모두 치우고 달라진 것만 남깁니다. 아무것도 없는 자리를 뜻하는 격자 위에 표시만 뜹니다. 나머지 셋에서 어디를 봐야 할지 알려 주는 보기입니다.
 
 <DiffinePictures sample="badge" view="mask" height="20rem" />
+
+## 창을 늘어놓는 방향
+
+`flow`는 `split`의 나머지 절반입니다. 두 창을 좌우로 둘지, 위아래로 쌓을지 정합니다.
+
+기본값인 `across`는 화면을 찍은 두 장에 맞습니다. 페이지는 폭보다 높이가 길어서, 비교창을 세로로 반씩 나눠 쓰는 편이 가로로 나누는 것보다 더 많이 담습니다.
+
+`down`은 반대로 생긴 것들을 위한 답입니다. 사진, 배너, 머리글 이미지, 그리고 반으로 가르기엔 좁은 칸에 놓인 비교는 한 줄에 한 장씩 놓을 때 더 잘 읽힙니다.
+
+<DiffinePictures sample="retouched" flow="down" height="30rem" />
+
+::: fw react
+
+```tsx
+<ImageDiff before={saved} after={rendered} flow="down" />
+```
+
+:::
+
+::: fw flutter
+
+```dart
+ImageDiff(
+  before: DiffineEncodedImage(saved),
+  after: DiffineEncodedImage(rendered),
+  flow: DiffineImageFlow.down,
+);
+```
+
+:::
+
+이름도 창을 따라 내려갑니다. 세로로 쌓은 창 위에 이름을 한 줄로 늘어놓으면 엉뚱한 이미지를 가리키게 되므로, 각 창이 자기 이름을 이고 버튼은 그 위에 자기 줄을 하나 가져갑니다. 뜻이 있는 것은 `split`에서뿐입니다. 나머지 셋은 창을 하나만 그리고, 창 하나에는 늘어설 방향이 없습니다.
 
 ## 무엇을 어떤 색으로 표시하는지
 

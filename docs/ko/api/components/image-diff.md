@@ -33,6 +33,7 @@ ImageDiff(mode: DiffineMode.editor, view: DiffineImageView.wipe, onChoose: pick)
 | `mode` | `'viewer' \| 'editor'` | `'viewer'` | 이미지를 보기만 할지 고르기도 할지. |
 | `before` | `DiffineImageInput` | — | 왼쪽 이미지. |
 | `after` | `DiffineImageInput` | — | 오른쪽 이미지. |
+| `absent` | `'before' \| 'after'` | — | 어느 쪽에 이미지가 아예 없는지. |
 | `pictures` | `readonly DiffineImageInput[]` | — | 두 장 대신 여러 장. 목록 모드를 켭니다. |
 | `baseline` | `number` | `0` | 나머지를 무엇에 견줄지. |
 | `picturesResult` | [`DiffImagesResult`](../types/diff-images-result) | — | 이미 구해 둔 목록 비교 결과. |
@@ -50,6 +51,8 @@ ImageDiff(mode: DiffineMode.editor, view: DiffineImageView.wipe, onChoose: pick)
 
 `editor`도 제어 컴포넌트와 비제어 컴포넌트 양쪽을 지원합니다. `defaultBefore`와 `defaultAfter`는 컴포넌트에 맡기고, `before`와 `after`는 애플리케이션이 관리합니다. `onBeforeChange`와 `onAfterChange`는 누가 관리하든 호출됩니다.
 
+`absent`는 파일이 새로 생겼거나 지워진 경우를 위한 prop입니다. 이미지가 아예 없는 쪽을 적어 주면 맞은편 이미지의 모든 픽셀이 생긴 픽셀이나 사라진 픽셀로 돌아옵니다. 한쪽을 비워 두는 대신 prop으로 받는 까닭은, 비어 있는 쪽은 대개 이미지가 아직 도착하지 않은 쪽이기 때문입니다. 적어 준 쪽에 이미지가 있거나, `editor`이거나, `pictures`를 넘겼다면 무시합니다.
+
 :::
 
 ::: fw flutter
@@ -59,6 +62,7 @@ ImageDiff(mode: DiffineMode.editor, view: DiffineImageView.wipe, onChoose: pick)
 | `mode` | `DiffineMode` | `DiffineMode.viewer` | 이미지를 보기만 할지 고르기도 할지. |
 | `before` | `DiffineImageContent?` | — | 왼쪽 이미지. |
 | `after` | `DiffineImageContent?` | — | 오른쪽 이미지. |
+| `absent` | `DiffineSide?` | — | 어느 쪽에 이미지가 아예 없는지. |
 | `beforeLabel` | `String?` | — | 헤더가 왼쪽을 부르는 이름. |
 | `afterLabel` | `String?` | — | 오른쪽을 부르는 이름. |
 | `pictures` | `List<DiffineImageContent>?` | — | 두 장 대신 여러 장. 목록 모드를 켭니다. |
@@ -76,6 +80,8 @@ ImageDiff(mode: DiffineMode.editor, view: DiffineImageView.wipe, onChoose: pick)
 
 `onChoose`가 에디터의 전부입니다. 위젯이 한쪽에 넣을 이미지를 달라고 하면 애플리케이션이 하나를 주거나, 마음을 바꾼 사람을 위해 `null`을 줍니다. 파일 선택기는 플러그인이고 권한이며, 둘 다 비교 뷰어 안에 들어갈 것이 아닙니다.
 
+`absent`는 파일이 새로 생겼거나 지워진 경우를 위한 인자입니다. 이미지가 아예 없는 쪽을 적어 주면 맞은편 이미지의 모든 픽셀이 생긴 픽셀이나 사라진 픽셀로 돌아옵니다. 이미지를 넘기지 않는 대신 인자로 받는 까닭은, 비어 있는 쪽은 대개 이미지가 아직 도착하지 않은 쪽이기 때문입니다. 적어 준 쪽에 이미지가 있거나, `DiffineMode.editor`이거나, `pictures`를 넘겼다면 무시합니다.
+
 :::
 
 ## 화면
@@ -85,6 +91,7 @@ ImageDiff(mode: DiffineMode.editor, view: DiffineImageView.wipe, onChoose: pick)
 | prop | 타입 | 기본값 | 무엇을 정하는지 |
 | --- | --- | --- | --- |
 | `view` | `'split' \| 'overlay' \| 'wipe' \| 'mask'` | `'split'` | 두 장을 어떻게 놓을지. |
+| `flow` | `'across' \| 'down'` | `'across'` | 창을 어느 방향으로 늘어놓을지. split 전용. |
 | `unchanged` | `'keep' \| 'dim' \| 'hide'` | `'keep'` | 달라지지 않은 부분을 어떻게 할지. |
 | `wheel` | `'zoom' \| 'pan'` | `'zoom'` | 창 위에서 휠이 하는 일. |
 | `loupe` | `boolean` | `true` | 포인터 아래 픽셀을 확대해 보여 줄지. |
@@ -102,7 +109,7 @@ ImageDiff(mode: DiffineMode.editor, view: DiffineImageView.wipe, onChoose: pick)
 | `locale` | `'en' \| 'ko'` | `'en'` | 컴포넌트가 쓰는 말의 언어. |
 | `strings` | [`Partial<DiffineImageStrings>`](../types/diffine-strings) | — | 로케일 대신 쓸 낱말. |
 
-`split`은 창을 둘 그리고 나머지 셋은 하나를 그리며, 그 위에 두 이름을 함께 씁니다. 표시하는 색은 prop이 아니라 [커스텀 속성](../theme#색)입니다. 캔버스에는 스타일을 입힐 수 없어서 값을 읽어 직접 칠하기 때문입니다.
+`split`은 창을 둘 그리고 나머지 셋은 하나를 그리며, 그 위에 두 이름을 함께 씁니다. `flow`는 그 두 창이 가로로 늘어설지 세로로 쌓일지를 정하므로 `split`에서만 뜻이 있습니다. 표시하는 색은 prop이 아니라 [커스텀 속성](../theme#색)입니다. 캔버스에는 스타일을 입힐 수 없어서 값을 읽어 직접 칠하기 때문입니다.
 
 :::
 
@@ -111,6 +118,7 @@ ImageDiff(mode: DiffineMode.editor, view: DiffineImageView.wipe, onChoose: pick)
 | 인자 | 타입 | 기본값 | 무엇을 정하는지 |
 | --- | --- | --- | --- |
 | `view` | `DiffineImageView` | `DiffineImageView.split` | 두 장을 어떻게 놓을지. |
+| `flow` | `DiffineImageFlow` | `.across` | 창을 어느 방향으로 늘어놓을지. split 전용. |
 | `unchanged` | `DiffineImageUnchanged` | `.keep` | 달라지지 않은 부분을 어떻게 할지. |
 | `wheel` | `DiffineImageWheel` | `.zoom` | 창 위에서 휠이 하는 일. |
 | `loupe` | `bool` | `true` | 포인터 아래 픽셀을 확대해 보여 줄지. |
@@ -130,7 +138,7 @@ ImageDiff(mode: DiffineMode.editor, view: DiffineImageView.wipe, onChoose: pick)
 | `locale` | `DiffineLocale` | `DiffineLocale.en` | 위젯이 쓰는 말의 언어. |
 | `strings` | [`DiffineStrings?`](../types/diffine-strings) | — | 로케일 대신 쓸 낱말. |
 
-`split`은 창을 둘 그리고 나머지 셋은 하나를 그리며, 그 위에 두 이름을 함께 씁니다. 표시하는 색은 [팔레트](../theme#팔레트)의 `theme.image` 일곱 개입니다.
+`split`은 창을 둘 그리고 나머지 셋은 하나를 그리며, 그 위에 두 이름을 함께 씁니다. `flow`는 그 두 창이 가로로 늘어설지 세로로 쌓일지를 정하므로 `split`에서만 뜻이 있습니다. 표시하는 색은 [팔레트](../theme#팔레트)의 `theme.image` 일곱 개입니다.
 
 :::
 

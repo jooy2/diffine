@@ -981,6 +981,12 @@ export interface DiffineImageStrings extends DiffineCommonStrings {
   imageSize: string;
   /** How the counts are read out: `{regions}` areas over `{percent}` of the frame. */
   imageSummary: string;
+  /** What the bar says when one side has no picture and the other one arrived. */
+  imageAdded: string;
+  /** What it says when the picture that was there went away. */
+  imageRemoved: string;
+  /** What a pane whose side has no picture at all says: `{label}`. */
+  absent: string;
   /** What an empty pane invites, and what its button is called. */
   choose: string;
   /** What the button in the bar above one pane is called: `{label}`. */
@@ -1111,6 +1117,23 @@ export type DiffineRender = (line: DiffLine, side: DiffineSide) => React.ReactNo
  * does not, and the mask says where to point them.
  */
 export type DiffineImageView = 'split' | 'overlay' | 'wipe' | 'mask';
+
+/**
+ * Which way the panes of a split comparison run.
+ *
+ * - `across` — one pane beside another, which is what two pictures of a page
+ *   or a screen want: they are taller than they are wide, and a pane half the
+ *   width of the comparison holds more of one than a pane half its height.
+ * - `down` — one pane under another, a picture to a row. A photograph, a
+ *   banner and anything else wider than it is tall is the other way round, and
+ *   so is a comparison in a column narrow enough that two panes beside each
+ *   other are two thumbnails.
+ *
+ * It is not part of {@link DiffineImageView} because it is a different
+ * question, and it only has an answer where there are panes: a view that draws
+ * both pictures in one pane has one pane whichever way this is set.
+ */
+export type DiffineImageFlow = 'across' | 'down';
 
 /**
  * What is done with the parts of a picture nothing happened to.
