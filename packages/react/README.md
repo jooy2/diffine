@@ -317,7 +317,7 @@ Every entry is its own bundle, and importing one costs what that one is. The roo
 | `diffine-react/text-diff` | `TextDiff`, and the list its menu of languages is made from. | 17.6 kB |
 | `diffine-react/image-diff` | `ImageDiff`. | 15.4 kB |
 | `diffine-react/types` | The types on their own. | 0 kB |
-| `diffine-react/styles.css` | The stylesheet, for both components. | 4.3 kB |
+| `diffine-react/styles.css` | The stylesheet, for both components. | 4.6 kB |
 
 The sizes are gzipped, with React left out because it is the page's already, and they are what a page fetches before it draws anything. A grammar is not among them: `TextDiff` colours a document with a file it asks for when it is given a `language`, and a viewer that is given none never asks. `npm run size` is what measures this, and CI fails a change that outgrows a budget.
 

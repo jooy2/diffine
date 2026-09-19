@@ -16,12 +16,12 @@ description: 'Every export of Diffine, a page apiece — the two views, the engi
 | --- | --- | --- |
 | `diffine-react` | The whole comparison: text, pictures, patches and the types. | 2.6 kB |
 | `diffine-react/diff` | The text comparison, on its own. | 2.9 kB |
-| `diffine-react/image` | The picture comparison, on its own. | 2.6 kB |
+| `diffine-react/image` | The picture comparison, on its own. | 4.2 kB |
 | `diffine-react/patch` | Reading and writing a unified diff. | 3.3 kB |
 | `diffine-react/text-diff` | `TextDiff`, and `DIFFINE_LANGUAGES`. | 17.6 kB |
-| `diffine-react/image-diff` | `ImageDiff`. | 10.5 kB |
+| `diffine-react/image-diff` | `ImageDiff`. | 15.4 kB |
 | `diffine-react/types` | The types on their own, for an application naming one in a prop. | 0 kB |
-| `diffine-react/styles.css` | The stylesheet, for both components. | 4.3 kB |
+| `diffine-react/styles.css` | The stylesheet, for both components. | 4.6 kB |
 
 Nothing reaches a bundle that did not ask for it. The root is functions and types, so a page that counts the changes without drawing them carries no React and no stylesheet; each view is its own import, so a page with one of them carries one of them. The sizes are gzipped with React left out, and they are what a page fetches before it draws — a grammar is not among them, because `TextDiff` asks for one only when it is given a `language`.
 
