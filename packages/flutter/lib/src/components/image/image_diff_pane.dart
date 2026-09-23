@@ -140,10 +140,47 @@ class _ImageDiffPaneState extends State<ImageDiffPane> {
   final FocusNode _focus = FocusNode(debugLabel: 'diffine picture');
   Size _box = Size.zero;
 
+  /// Where the last move this frame left the view, until the frame that draws
+  /// it has been built.
+  ///
+  /// A browser hands over every pointer move since the last frame in one go,
+  /// and a fast mouse makes several of those a frame. The widget still holds
+  /// the viewport it was built with while they arrive, so each one worked out
+  /// from [ImageDiffPane.viewport] undid the one before it and only the last
+  /// counted — which is a picture that moves a fraction of the way the mouse
+  /// did, and a wheel that loses most of its notches. Each move starts from
+  /// this instead, where the one before it ended.
+  DiffineImageViewport? _pending;
+
+  /// The view as it stands, moves this frame included.
+  DiffineImageViewport get _viewport => _pending ?? widget.viewport;
+
+  @override
+  void didUpdateWidget(ImageDiffPane old) {
+    super.didUpdateWidget(old);
+
+    // Built again, so the viewport it was handed is the answer to every move
+    // so far, or the one the application kept instead of them.
+    _pending = null;
+  }
+
   @override
   void dispose() {
     _focus.dispose();
     super.dispose();
+  }
+
+  void _move(DiffineImageViewport next) {
+    if (_pending == null) {
+      // An application holding the viewport is free to refuse the move and not
+      // build at all, and the next frame is where that has been decided.
+      WidgetsBinding.instance
+        ..addPostFrameCallback((Duration _) => _pending = null)
+        ..ensureVisualUpdate();
+    }
+
+    _pending = next;
+    widget.onViewport(next);
   }
 
   void _measure(Size size) {
@@ -179,21 +216,21 @@ class _ImageDiffPaneState extends State<ImageDiffPane> {
 
     if (!zooming &&
         widget.wheel == DiffineImageWheel.pan &&
-        widget.viewport.scale <= fitScale(widget.frame, _box)) {
+        _viewport.scale <= fitScale(widget.frame, _box)) {
       return;
     }
 
     if (zooming) {
-      widget.onViewport(
+      _move(
         zoomAbout(
-          viewport: widget.viewport,
+          viewport: _viewport,
           frame: widget.frame,
           pane: _box,
           // A wheel notch is not a step of a button, and it is not the same
           // size on two devices. Reading it as an exponent is what keeps a
           // trackpad's hundred small deltas smooth and a mouse's three large
           // ones from crossing the whole range.
-          scale: widget.viewport.scale * math.exp(-event.scrollDelta.dy / 400),
+          scale: _viewport.scale * math.exp(-event.scrollDelta.dy / 400),
           paneX: event.localPosition.dx,
           paneY: event.localPosition.dy,
         ),
@@ -202,9 +239,7 @@ class _ImageDiffPaneState extends State<ImageDiffPane> {
       return;
     }
 
-    widget.onViewport(
-      panBy(widget.viewport, widget.frame, -event.scrollDelta.dx, -event.scrollDelta.dy),
-    );
+    _move(panBy(_viewport, widget.frame, -event.scrollDelta.dx, -event.scrollDelta.dy));
   }
 
   /// Where the pointer is in the pane, for the loupe, or `null` when it has
@@ -217,7 +252,7 @@ class _ImageDiffPaneState extends State<ImageDiffPane> {
       return;
     }
 
-    tell(frameAt(widget.viewport, _box, event.localPosition.dx, event.localPosition.dy));
+    tell(frameAt(_viewport, _box, event.localPosition.dx, event.localPosition.dy));
   }
 
   KeyEventResult _onKey(FocusNode node, KeyEvent event) {
@@ -235,7 +270,7 @@ class _ImageDiffPaneState extends State<ImageDiffPane> {
     final Offset? move = moves[event.logicalKey];
 
     if (move != null) {
-      widget.onViewport(panBy(widget.viewport, widget.frame, move.dx, move.dy));
+      _move(panBy(_viewport, widget.frame, move.dx, move.dy));
 
       return KeyEventResult.handled;
     }
@@ -248,12 +283,12 @@ class _ImageDiffPaneState extends State<ImageDiffPane> {
         : 0;
 
     if (zooming != 0) {
-      widget.onViewport(
+      _move(
         zoomAbout(
-          viewport: widget.viewport,
+          viewport: _viewport,
           frame: widget.frame,
           pane: _box,
-          scale: widget.viewport.scale * zooming,
+          scale: _viewport.scale * zooming,
           paneX: _box.width / 2,
           paneY: _box.height / 2,
         ),
@@ -292,8 +327,8 @@ class _ImageDiffPaneState extends State<ImageDiffPane> {
                   onTap: _focus.requestFocus,
                   onPanUpdate: widget.blank
                       ? null
-                      : (DragUpdateDetails details) => widget.onViewport(
-                          panBy(widget.viewport, widget.frame, details.delta.dx, details.delta.dy),
+                      : (DragUpdateDetails details) => _move(
+                          panBy(_viewport, widget.frame, details.delta.dx, details.delta.dy),
                         ),
                   child: Stack(
                     children: <Widget>[
@@ -302,6 +337,8 @@ class _ImageDiffPaneState extends State<ImageDiffPane> {
                           painter: _PanePainter(
                             options: PaneOptions(
                               frame: widget.frame,
+                              // What the comparison says, rather than a move
+                              // it has not answered yet.
                               viewport: widget.viewport,
                               layers: widget.layers,
                               regions: widget.regions,

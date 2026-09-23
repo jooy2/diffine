@@ -22,6 +22,8 @@
 
 ### Fixed
 
+- **A picture follows the pointer the whole way it is dragged, and the wheel zooms by every notch.** On the web, a browser hands over every move since the last frame at once, and a mouse that reports more often than the screen draws makes several of them a frame. Each was worked out from where the view stood when the frame began, so only the last one counted and the picture travelled a fraction of the distance the mouse did. The wheel lost notches the same way. Each move now starts where the one before it ended.
+
 - **A comparison is worked out again when the question changes, not only when a picture does.** The only thing that started one was a decode, so an `ImageDiff` whose pictures stayed where they were went on drawing the answer to the question before it: a different `diff`, a different `baseline`, or a `result` the application worked out somewhere else and handed over changed nothing on the screen. All four are now looked at when the widget is rebuilt.
 
   `DiffImageOptions` and `DiffImagesOptions` carry value equality for it. Two of them with the same numbers in them are the same question, which is what tells an option that changed from an application that writes its options inline and builds a new object every frame.

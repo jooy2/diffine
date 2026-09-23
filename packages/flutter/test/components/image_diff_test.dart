@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
@@ -325,6 +326,81 @@ void main() {
       expect(find.text('saved'), findsOneWidget, reason: unchanged.name);
       expect(tester.takeException(), isNull, reason: unchanged.name);
     }
+  });
+
+  testWidgets('counts every move a frame holds, not only the last one', (
+    WidgetTester tester,
+  ) async {
+    DiffineImageViewport? looked;
+
+    await pumpPictures(
+      tester,
+      host(
+        ImageDiff(
+          before: white,
+          after: red,
+          onViewportChanged: (DiffineImageViewport viewport) => looked = viewport,
+        ),
+      ),
+    );
+
+    final TestGesture gesture = await tester.startGesture(
+      tester.getCenter(find.byType(ImageDiffPane).first),
+      kind: PointerDeviceKind.mouse,
+    );
+
+    // Past the slop, and drawn, so the drag has started before it is measured.
+    await gesture.moveBy(const Offset(20, 0));
+    await tester.pump();
+    await gesture.moveBy(const Offset(5, 0));
+    await tester.pump();
+
+    final DiffineImageViewport from = looked!;
+
+    // Three moves before the next frame, which is what a browser hands over
+    // from a mouse that reports more often than the screen draws.
+    await gesture.moveBy(const Offset(5, 0));
+    await gesture.moveBy(const Offset(5, 0));
+    await gesture.moveBy(const Offset(5, 0));
+    await tester.pump();
+    await gesture.up();
+
+    expect(looked!.x, closeTo(from.x - 15 / from.scale, 1e-9));
+  });
+
+  testWidgets('counts every notch of the wheel a frame holds', (WidgetTester tester) async {
+    DiffineImageViewport? looked;
+
+    await pumpPictures(
+      tester,
+      host(
+        ImageDiff(
+          before: white,
+          after: red,
+          onViewportChanged: (DiffineImageViewport viewport) => looked = viewport,
+        ),
+      ),
+    );
+
+    final Offset over = tester.getCenter(find.byType(ImageDiffPane).first);
+    final TestPointer mouse = TestPointer(1, PointerDeviceKind.mouse);
+
+    await tester.sendEventToBinding(mouse.hover(over));
+    await tester.pump();
+
+    // Out rather than in, because a picture eight pixels across already fills
+    // the pane at close to the most it can be zoomed. Once on its own first, so
+    // the view being measured from is a number rather than a fitted one.
+    await tester.sendEventToBinding(mouse.scroll(const Offset(0, 40)));
+    await tester.pump();
+
+    final double from = looked!.scale;
+
+    await tester.sendEventToBinding(mouse.scroll(const Offset(0, 40)));
+    await tester.sendEventToBinding(mouse.scroll(const Offset(0, 40)));
+    await tester.pump();
+
+    expect(looked!.scale, closeTo(from * math.exp(-80 / 400), 1e-9));
   });
 
   testWidgets('shows the pixels under the pointer, from both sides at once', (
