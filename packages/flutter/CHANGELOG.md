@@ -16,6 +16,10 @@
 
 - **`flow` runs the panes down the comparison instead of across it.** `DiffineImageFlow.down` puts one picture to a row, which is the way round a photograph, a banner, or any comparison in a column too narrow to cut in half wants to be read. Each pane carries its own name, because a row of titles over a column of panes names the wrong pictures, and the buttons take a row of their own above them. `DiffineImageFlow.across` is the default and is unchanged.
 
+### Changed
+
+- **Two pictures with nothing in common are compared about five times faster.** Every pixel of such a pair differs, and each one was checked for an edge drawn smooth by looking for something level around it in both pictures before anything cheaper was asked. The screen did not move while that ran: a second and a half for two photographs of four million pixels. The check for something level now comes first and its answers are kept, which brings the same pair down to under a third of a second. The result is the same to the pixel.
+
 ### Fixed
 
 - **A comparison is worked out again when the question changes, not only when a picture does.** The only thing that started one was a decode, so an `ImageDiff` whose pictures stayed where they were went on drawing the answer to the question before it: a different `diff`, a different `baseline`, or a `result` the application worked out somewhere else and handed over changed nothing on the screen. All four are now looked at when the widget is rebuilt.

@@ -88,16 +88,35 @@ function wordsOf(data: Uint8ClampedArray): Uint32Array {
   return new Uint32Array(new Uint8Array(data).buffer);
 }
 
-/** Where a pixel is in a picture, in bytes, with anything outside it clamped in. */
-function indexIn(image: DiffPixels, x: number, y: number): number {
-  const column = x < 0 ? 0 : x >= image.width ? image.width - 1 : x;
-  const row = y < 0 ? 0 : y >= image.height ? image.height - 1 : y;
-
-  return (row * image.width + column) * 4;
-}
-
 /** How many of the eight pixels around one have to be exactly its colour. */
 const ALIKE = 2;
+
+/** What {@link Levels} holds for a pixel it has not been asked about yet, and for the two answers. */
+const UNKNOWN = 0;
+const LEVEL = 1;
+const UNEVEN = 2;
+
+/**
+ * One picture, and whether each of its pixels sits inside something level, as
+ * far as anybody has asked.
+ *
+ * The answer for a pixel is asked once for every pixel about it that differs,
+ * which is nine times over wherever a change is more than a pixel wide — and a
+ * change as large as the picture is every pixel of it asked nine times, eight
+ * words read each time. Keeping the answers is what turns that into eight words
+ * a pixel. The byte a pixel is only made the first time one is asked for, so a
+ * pair of pictures that hardly differ never pays for it.
+ */
+interface Levels {
+  words: Uint32Array;
+  width: number;
+  height: number;
+  known: Uint8Array | null;
+}
+
+function levelsOf(image: DiffPixels, words: Uint32Array): Levels {
+  return { words, width: image.width, height: image.height, known: null };
+}
 
 /**
  * Whether one pixel sits inside something level: two of the pixels around it
@@ -108,12 +127,20 @@ const ALIKE = 2;
  * almost never equal, and two pixels of a page a renderer filled are equal to
  * the byte.
  */
-function levelAt(words: Uint32Array, width: number, height: number, x: number, y: number): boolean {
+function levelAt(levels: Levels, x: number, y: number): boolean {
+  const { words, width, height } = levels;
+  const known = (levels.known ??= new Uint8Array(width * height));
+  const held = known[y * width + x];
+
+  if (held !== UNKNOWN) {
+    return held === LEVEL;
+  }
+
   const colour = words[y * width + x];
 
   let same = 0;
 
-  for (let dy = -1; dy <= 1; dy += 1) {
+  for (let dy = -1; dy <= 1 && same < ALIKE; dy += 1) {
     const row = y + dy;
 
     if (row < 0 || row >= height) {
@@ -133,13 +160,15 @@ function levelAt(words: Uint32Array, width: number, height: number, x: number, y
         same += 1;
 
         if (same === ALIKE) {
-          return true;
+          break;
         }
       }
     }
   }
 
-  return false;
+  known[y * width + x] = same === ALIKE ? LEVEL : UNEVEN;
+
+  return same === ALIKE;
 }
 
 /**
@@ -153,28 +182,22 @@ function levelAt(words: Uint32Array, width: number, height: number, x: number, y
  * sixteen pixels is thin enough that the darkest pixel beside a blend is often
  * another blend, and the page it is printed on is one pixel further out.
  */
-function levelAround(
-  words: Uint32Array,
-  width: number,
-  height: number,
-  x: number,
-  y: number
-): boolean {
+function levelAround(levels: Levels, x: number, y: number): boolean {
   for (let dy = -1; dy <= 1; dy += 1) {
     const row = y + dy;
 
-    if (row < 0 || row >= height) {
+    if (row < 0 || row >= levels.height) {
       continue;
     }
 
     for (let dx = -1; dx <= 1; dx += 1) {
       const column = x + dx;
 
-      if (column < 0 || column >= width) {
+      if (column < 0 || column >= levels.width) {
         continue;
       }
 
-      if (levelAt(words, width, height, column, row)) {
+      if (levelAt(levels, column, row)) {
         return true;
       }
     }
@@ -190,27 +213,27 @@ function levelAround(
  * pixel is a pair of objects a few million times. The caller reads the first
  * before asking for the second.
  */
-const edge = { range: 0, blend: false };
+const edge = { spread: 0, blend: false };
 
 /**
- * How strong a step the pixel at `x, y` sits on, and whether it is a blend
+ * How strong a step the pixel at `x, y` could sit on, and whether it is a blend
  * across that step.
  *
- * `range` is the spread of brightness across the eight pixels around it, and it
- * is zero unless there is something level within a pixel — two pixels of
+ * `spread` is the spread of brightness across the eight pixels around it. It is
+ * only a step when there is something level within a pixel — two pixels of
  * exactly one colour side by side, which is what says an edge runs here at all
- * rather than a texture happening to be uneven. Nearly every pixel of a
- * photograph lies between the pixels around it and the spread across a texture
- * is most of the scale, so without that test the allowance below is wide enough
- * to swallow a change that really happened.
+ * rather than a texture happening to be uneven — and the caller asks that
+ * first. Nearly every pixel of a photograph lies between the pixels around it
+ * and the spread across a texture is most of the scale, so without that test
+ * the allowance below is wide enough to swallow a change that really happened.
  *
  * `blend` is whether the pixel lies between its neighbours rather than being
  * the brightest or the darkest thing among them, which is what a colour of its
  * own looks like. A mark that arrived in the middle of a flat field is not a
  * blend, and neither is a hole that opened in the middle of a letter.
  */
-function readEdge(image: DiffPixels, words: Uint32Array, x: number, y: number): void {
-  const centre = brightnessAt(image.data, indexIn(image, x, y));
+function readEdge(image: DiffPixels, x: number, y: number): void {
+  const centre = brightnessAt(image.data, (y * image.width + x) * 4);
 
   let low = 256;
   let high = -1;
@@ -237,8 +260,7 @@ function readEdge(image: DiffPixels, words: Uint32Array, x: number, y: number): 
   }
 
   edge.blend = centre > low && centre < high;
-  edge.range =
-    high > low && levelAround(words, image.width, image.height, x, y) ? (high - low) / 255 : 0;
+  edge.spread = high > low ? (high - low) / 255 : 0;
 }
 
 /**
@@ -262,6 +284,13 @@ function readEdge(image: DiffPixels, words: Uint32Array, x: number, y: number): 
  * both, because an edge that moved far enough leaves the pixel flat on one
  * side. A mark that arrived in the middle of a white field is a blend in
  * neither, and so is a hole that opened in the middle of a letter.
+ *
+ * Whether there is something level nearby is asked first. Every test here has
+ * to pass, so the order changes nothing about the answer, only about what it
+ * costs: a photograph has nothing level in it anywhere, and two photographs
+ * with nothing in common differ at every pixel. Asked first, and kept, that is
+ * a few bytes read a pixel; asked after the brightness of both squares, as it
+ * was, it was a second of arithmetic for two pictures of four million pixels.
  */
 function smoothingTest(
   before: DiffPixels,
@@ -269,19 +298,26 @@ function smoothingTest(
   after: DiffPixels,
   afterWords: Uint32Array
 ): (bx: number, by: number, ax: number, ay: number, distance: number) => boolean {
-  return (bx, by, ax, ay, distance) => {
-    readEdge(before, beforeWords, bx, by);
+  const beforeLevels = levelsOf(before, beforeWords);
+  const afterLevels = levelsOf(after, afterWords);
 
-    const beforeRange = edge.range;
+  return (bx, by, ax, ay, distance) => {
+    if (!levelAround(beforeLevels, bx, by) || !levelAround(afterLevels, ax, ay)) {
+      return false;
+    }
+
+    readEdge(before, bx, by);
+
+    const beforeSpread = edge.spread;
     const beforeBlend = edge.blend;
 
-    readEdge(after, afterWords, ax, ay);
+    readEdge(after, ax, ay);
 
     if (!beforeBlend && !edge.blend) {
       return false;
     }
 
-    const step = beforeRange < edge.range ? beforeRange : edge.range;
+    const step = beforeSpread < edge.spread ? beforeSpread : edge.spread;
 
     return step > 0 && distance <= step;
   };

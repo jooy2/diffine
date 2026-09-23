@@ -126,25 +126,32 @@ Uint32List _wordsOf(Uint8List data) {
   return Uint32List.view(Uint8List.fromList(data).buffer);
 }
 
-/// Where a pixel is in a picture, in bytes, with anything outside it clamped
-/// in.
-int _indexIn(DiffPixels image, int x, int y) {
-  final int column = x < 0
-      ? 0
-      : x >= image.width
-      ? image.width - 1
-      : x;
-  final int row = y < 0
-      ? 0
-      : y >= image.height
-      ? image.height - 1
-      : y;
-
-  return (row * image.width + column) * 4;
-}
-
 /// How many of the eight pixels around one have to be exactly its colour.
 const int _alike = 2;
+
+/// What [_Levels] holds for a pixel it has not been asked about yet, and for
+/// the two answers.
+const int _unknown = 0;
+const int _level = 1;
+const int _uneven = 2;
+
+/// One picture, and whether each of its pixels sits inside something level, as
+/// far as anybody has asked.
+///
+/// The answer for a pixel is asked once for every pixel about it that differs,
+/// which is nine times over wherever a change is more than a pixel wide — and a
+/// change as large as the picture is every pixel of it asked nine times, eight
+/// words read each time. Keeping the answers is what turns that into eight
+/// words a pixel. The byte a pixel is only made the first time one is asked
+/// for, so a pair of pictures that hardly differ never pays for it.
+class _Levels {
+  _Levels(DiffPixels image, this.words) : width = image.width, height = image.height;
+
+  final Uint32List words;
+  final int width;
+  final int height;
+  Uint8List? known;
+}
 
 /// Whether one pixel sits inside something level: two of the pixels around it
 /// are exactly the colour it is.
@@ -153,12 +160,22 @@ const int _alike = 2;
 /// Two pixels of a photograph beside each other are almost always close and
 /// almost never equal, and two pixels of a screen a renderer filled are equal
 /// to the byte.
-bool _levelAt(Uint32List words, int width, int height, int x, int y) {
+bool _levelAt(_Levels levels, int x, int y) {
+  final Uint32List words = levels.words;
+  final int width = levels.width;
+  final int height = levels.height;
+  final Uint8List known = levels.known ??= Uint8List(width * height);
+  final int held = known[y * width + x];
+
+  if (held != _unknown) {
+    return held == _level;
+  }
+
   final int colour = words[y * width + x];
 
   int same = 0;
 
-  for (int dy = -1; dy <= 1; dy += 1) {
+  for (int dy = -1; dy <= 1 && same < _alike; dy += 1) {
     final int row = y + dy;
 
     if (row < 0 || row >= height) {
@@ -178,13 +195,15 @@ bool _levelAt(Uint32List words, int width, int height, int x, int y) {
         same += 1;
 
         if (same == _alike) {
-          return true;
+          break;
         }
       }
     }
   }
 
-  return false;
+  known[y * width + x] = same == _alike ? _level : _uneven;
+
+  return same == _alike;
 }
 
 /// Whether there is anything level in reach of one pixel: any of the nine
@@ -196,22 +215,22 @@ bool _levelAt(Uint32List words, int width, int height, int x, int y) {
 /// to be the edge of. Small text is the case that decides the reach: a letter
 /// at sixteen pixels is thin enough that the darkest pixel beside a blend is
 /// often another blend, and the page it is printed on is one pixel further out.
-bool _levelAround(Uint32List words, int width, int height, int x, int y) {
+bool _levelAround(_Levels levels, int x, int y) {
   for (int dy = -1; dy <= 1; dy += 1) {
     final int row = y + dy;
 
-    if (row < 0 || row >= height) {
+    if (row < 0 || row >= levels.height) {
       continue;
     }
 
     for (int dx = -1; dx <= 1; dx += 1) {
       final int column = x + dx;
 
-      if (column < 0 || column >= width) {
+      if (column < 0 || column >= levels.width) {
         continue;
       }
 
-      if (_levelAt(words, width, height, column, row)) {
+      if (_levelAt(levels, column, row)) {
         return true;
       }
     }
@@ -226,29 +245,30 @@ bool _levelAround(Uint32List words, int width, int height, int x, int y) {
 /// pixel is a pair of objects a few million times. The caller reads the first
 /// before asking for the second.
 class _Edge {
-  double range = 0;
+  double spread = 0;
   bool blend = false;
 }
 
 final _Edge _edge = _Edge();
 
-/// How strong a step the pixel at [x], [y] sits on, and whether it is a blend
-/// across that step.
+/// How strong a step the pixel at [x], [y] could sit on, and whether it is a
+/// blend across that step.
 ///
-/// `range` is the spread of brightness across the eight pixels around it, and
-/// it is zero unless there is something level within a pixel — two pixels of
+/// `spread` is the spread of brightness across the eight pixels around it. It
+/// is only a step when there is something level within a pixel — two pixels of
 /// exactly one colour side by side, which is what says an edge runs here at all
-/// rather than a texture happening to be uneven. Nearly every pixel of a
-/// photograph lies between the pixels around it and the spread across a texture
-/// is most of the scale, so without that test the allowance below is wide
-/// enough to swallow a change that really happened.
+/// rather than a texture happening to be uneven — and the caller asks that
+/// first. Nearly every pixel of a photograph lies between the pixels around it
+/// and the spread across a texture is most of the scale, so without that test
+/// the allowance below is wide enough to swallow a change that really
+/// happened.
 ///
 /// `blend` is whether the pixel lies between its neighbours rather than being
 /// the brightest or the darkest thing among them, which is what a colour of its
 /// own looks like. A mark that arrived in the middle of a flat field is not a
 /// blend, and neither is a hole that opened in the middle of a letter.
-void _readEdge(DiffPixels image, Uint32List words, int x, int y) {
-  final double centre = brightnessAt(image.data, _indexIn(image, x, y));
+void _readEdge(DiffPixels image, int x, int y) {
+  final double centre = brightnessAt(image.data, (y * image.width + x) * 4);
 
   double low = 256;
   double high = -1;
@@ -283,9 +303,7 @@ void _readEdge(DiffPixels image, Uint32List words, int x, int y) {
   }
 
   _edge.blend = centre > low && centre < high;
-  _edge.range = high > low && _levelAround(words, image.width, image.height, x, y)
-      ? (high - low) / 255
-      : 0;
+  _edge.spread = high > low ? (high - low) / 255 : 0;
 }
 
 /// The test for a pixel that only differs because an edge was drawn smooth.
@@ -308,29 +326,40 @@ void _readEdge(DiffPixels image, Uint32List words, int x, int y) {
 /// both, because an edge that moved far enough leaves the pixel flat on one
 /// side. A mark that arrived in the middle of a white field is a blend in
 /// neither, and so is a hole that opened in the middle of a letter.
+///
+/// Whether there is something level nearby is asked first. Every test here has
+/// to pass, so the order changes nothing about the answer, only about what it
+/// costs: a photograph has nothing level in it anywhere, and two photographs
+/// with nothing in common differ at every pixel. Asked first, and kept, that is
+/// a few bytes read a pixel; asked after the brightness of both squares, as it
+/// was, it was a second of arithmetic for two pictures of four million pixels.
 bool _isSmoothing(
   DiffPixels before,
-  Uint32List beforeWords,
+  _Levels beforeLevels,
   DiffPixels after,
-  Uint32List afterWords,
+  _Levels afterLevels,
   int bx,
   int by,
   int ax,
   int ay,
   double distance,
 ) {
-  _readEdge(before, beforeWords, bx, by);
+  if (!_levelAround(beforeLevels, bx, by) || !_levelAround(afterLevels, ax, ay)) {
+    return false;
+  }
 
-  final double beforeRange = _edge.range;
+  _readEdge(before, bx, by);
+
+  final double beforeSpread = _edge.spread;
   final bool beforeBlend = _edge.blend;
 
-  _readEdge(after, afterWords, ax, ay);
+  _readEdge(after, ax, ay);
 
   if (!beforeBlend && !_edge.blend) {
     return false;
   }
 
-  final double step = beforeRange < _edge.range ? beforeRange : _edge.range;
+  final double step = beforeSpread < _edge.spread ? beforeSpread : _edge.spread;
 
   return step > 0 && distance <= step;
 }
@@ -345,6 +374,8 @@ DiffImageResult comparePixels(DiffPixels before, DiffPixels after, CompareOption
 
   final Uint32List beforeWords = _wordsOf(before.data);
   final Uint32List afterWords = _wordsOf(after.data);
+  final _Levels beforeLevels = _Levels(before, beforeWords);
+  final _Levels afterLevels = _Levels(after, afterWords);
 
   int changed = 0;
   int added = 0;
@@ -402,9 +433,9 @@ DiffImageResult comparePixels(DiffPixels before, DiffPixels after, CompareOption
         if (options.ignoreAntialiasing &&
             _isSmoothing(
               before,
-              beforeWords,
+              beforeLevels,
               after,
-              afterWords,
+              afterLevels,
               x - frame.before.x,
               beforeRow,
               x - frame.after.x,

@@ -12,6 +12,10 @@
 
 - **`flow` runs the panes down the comparison instead of across it.** `flow="down"` puts one picture to a row, which is the way round a photograph, a banner, or any comparison in a column too narrow to cut in half wants to be read. Each pane carries its own name, because a row of titles over a column of panes names the wrong pictures, and the buttons take a row of their own above them. `across` is the default and is unchanged.
 
+### Changed
+
+- **Two pictures with nothing in common are compared four to five times faster.** Every pixel of such a pair differs, and each one was checked for an edge drawn smooth by looking for something level around it in both pictures before anything cheaper was asked. The page answered nothing while that ran: about a second for two photographs of four million pixels. The check for something level now comes first and its answers are kept, which brings the same pair down to a quarter of a second or less. The result is the same to the pixel.
+
 ## v1.0.0 (2026-09-12)
 
 The first stable release. Each view is its own entry now, so a page carries the comparison it asked for and nothing of the other one. The documents gained folding, patches read and written, marks over the whitespace and arrows for taking a change across; the pictures gained a loupe, a mask that can be written out as a file of its own, and a comparison of several at once rather than a pair.
