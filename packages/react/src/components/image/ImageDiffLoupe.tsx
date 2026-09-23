@@ -25,7 +25,7 @@ import { useIsomorphicLayoutEffect } from '../../internal/layout.js';
 import { colourAt, hexOf, pixelAt, type Sample } from '../../internal/image/loupe.js';
 import { Grip, Move } from '../shared/DiffineIcons.js';
 
-/** How large one magnified pixel is, in the pixels CSS counts in. */
+/** How large one magnified pixel is at the default scale, in the pixels CSS counts in. */
 const TILE = 12;
 
 /** How few and how many of them fit across one square. */
@@ -62,15 +62,26 @@ export interface ImageDiffLoupeProps {
   outline: string;
   marker: string;
   halo: string;
+  /** How large the component's own controls are drawn, which the tiles follow. */
+  scale: number;
   strings: DiffineImageStrings;
 }
 
+/**
+ * How large one magnified pixel is at a scale, in whole pixels.
+ *
+ * Rounded, because the grid is drawn along the edges of the tiles. A tile ten
+ * and a half pixels wide puts every other line of the grid between two of the
+ * screen's pixels, and makes a row of tiles that are not all the same width.
+ */
+const tileAt = (scale: number) => Math.max(1, Math.round(TILE * scale));
+
 /** The size a span comes out as, in the pixels CSS counts in. */
-const sizeOf = (span: number) => span * TILE;
+const sizeOf = (span: number, tile: number) => span * tile;
 
 /** A span a reader dragged to: odd, so that one pixel is the middle one. */
-function spanOf(size: number): number {
-  const tiles = Math.round(size / TILE);
+function spanOf(size: number, tile: number): number {
+  const tiles = Math.round(size / tile);
   const odd = tiles % 2 === 0 ? tiles + 1 : tiles;
 
   return Math.min(Math.max(odd, LEAST_SPAN), MOST_SPAN);
@@ -88,9 +99,11 @@ export function ImageDiffLoupe({
   outline,
   marker,
   halo,
+  scale,
   strings
 }: ImageDiffLoupeProps): React.JSX.Element {
   const panel = React.useRef<HTMLDivElement>(null);
+  const tile = tileAt(scale);
 
   /**
    * A drag of the handle or of the corner, in one place.
@@ -165,7 +178,7 @@ export function ImageDiffLoupe({
     // is shared between them and a pull downwards is not.
     const across = samples.length > 0 ? moved.x / samples.length : moved.x;
 
-    onSpan(spanOf(sizeOf(held.span) + Math.max(across, moved.y)));
+    onSpan(spanOf(sizeOf(held.span, tile) + Math.max(across, moved.y), tile));
   }
 
   function onLetGo(event: React.PointerEvent<HTMLElement>): void {
@@ -212,6 +225,7 @@ export function ImageDiffLoupe({
             sample={sample}
             at={at}
             span={span}
+            tile={tile}
             outline={outline}
             marker={marker}
             halo={halo}
@@ -237,6 +251,7 @@ function Side({
   sample,
   at,
   span,
+  tile,
   outline,
   marker,
   halo
@@ -244,13 +259,14 @@ function Side({
   sample: Sample;
   at: { x: number; y: number };
   span: number;
+  tile: number;
   outline: string;
   marker: string;
   halo: string;
 }): React.JSX.Element {
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
   const colour = colourAt(sample, at.x, at.y);
-  const size = sizeOf(span);
+  const size = sizeOf(span, tile);
 
   useIsomorphicLayoutEffect(() => {
     const canvas = canvasRef.current;
@@ -296,10 +312,10 @@ function Side({
         top,
         right - left,
         bottom - top,
-        (left - from.x) * TILE,
-        (top - from.y) * TILE,
-        (right - left) * TILE,
-        (bottom - top) * TILE
+        (left - from.x) * tile,
+        (top - from.y) * tile,
+        (right - left) * tile,
+        (bottom - top) * tile
       );
     }
 
@@ -311,24 +327,24 @@ function Side({
     context.beginPath();
 
     for (let line = 1; line < span; line += 1) {
-      context.moveTo(line * TILE + 0.5, 0);
-      context.lineTo(line * TILE + 0.5, size);
-      context.moveTo(0, line * TILE + 0.5);
-      context.lineTo(size, line * TILE + 0.5);
+      context.moveTo(line * tile + 0.5, 0);
+      context.lineTo(line * tile + 0.5, size);
+      context.moveTo(0, line * tile + 0.5);
+      context.lineTo(size, line * tile + 0.5);
     }
 
     context.stroke();
     context.globalAlpha = 1;
 
-    const centre = ((span - 1) / 2) * TILE;
+    const centre = ((span - 1) / 2) * tile;
 
     context.strokeStyle = halo;
     context.lineWidth = 3;
-    context.strokeRect(centre - 0.5, centre - 0.5, TILE + 1, TILE + 1);
+    context.strokeRect(centre - 0.5, centre - 0.5, tile + 1, tile + 1);
     context.strokeStyle = marker;
     context.lineWidth = 1.5;
-    context.strokeRect(centre - 0.5, centre - 0.5, TILE + 1, TILE + 1);
-  }, [sample, at.x, at.y, span, size, outline, marker, halo]);
+    context.strokeRect(centre - 0.5, centre - 0.5, tile + 1, tile + 1);
+  }, [sample, at.x, at.y, span, tile, size, outline, marker, halo]);
 
   return (
     <figure className="diffine-image-loupe-side" style={{ width: `${size}px` }}>

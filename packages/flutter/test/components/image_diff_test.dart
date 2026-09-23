@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:diffine/diffine.dart';
+import 'package:diffine/src/components/image/image_diff_loupe.dart';
 import 'package:diffine/src/components/image/image_diff_pane.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/widgets.dart';
@@ -61,6 +62,26 @@ Future<void> pumpPictures(WidgetTester tester, Widget widget) async {
     await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 20)));
     await tester.pump();
   }
+}
+
+/// How large the button that zooms in is.
+Size zoomInOf(WidgetTester tester) {
+  return tester.getSize(find.bySemanticsLabel('Zoom in'));
+}
+
+/// How large one side's square of magnified pixels in the loupe is.
+///
+/// The square is the one thing in the panel painted at a size of its own, and
+/// the box it is drawn in is that size exactly.
+Size loupeSquareOf(WidgetTester tester) {
+  final Finder square = find.descendant(
+    of: find.byType(ImageDiffLoupe),
+    matching: find.byWidgetPredicate(
+      (Widget widget) => widget is CustomPaint && !widget.size.isEmpty,
+    ),
+  );
+
+  return tester.getSize(find.ancestor(of: square.first, matching: find.byType(Container)).first);
 }
 
 void main() {
@@ -595,5 +616,77 @@ void main() {
     expect(reported!.width, 8);
     expect(reported!.height, 8);
     expect(reported!.stats.changed, 64);
+  });
+
+  testWidgets('draws its controls at the scale it was given', (WidgetTester tester) async {
+    await tester.pumpWidget(host(const ImageDiff()));
+
+    final Size button = zoomInOf(tester);
+
+    for (final double scale in <double>[2, 0.875]) {
+      await tester.pumpWidget(host(ImageDiff(scale: scale)));
+
+      expect(zoomInOf(tester), button * scale, reason: 'scale $scale');
+    }
+  });
+
+  testWidgets('leaves the zoom of the pictures to the viewport', (WidgetTester tester) async {
+    const DiffineImageViewport looking = DiffineImageViewport(scale: 3, x: 4, y: 4);
+
+    widen(tester);
+    await pumpPictures(
+      tester,
+      host(
+        ImageDiff(before: white, after: red, viewport: looking, scale: 2),
+        size: kWide,
+      ),
+    );
+
+    for (final ImageDiffPane pane in tester.widgetList<ImageDiffPane>(find.byType(ImageDiffPane))) {
+      expect(pane.viewport, looking);
+    }
+  });
+
+  testWidgets('draws the loupe\'s squares at the scale it was given', (WidgetTester tester) async {
+    final TestPointer mouse = TestPointer(1, PointerDeviceKind.mouse);
+    final List<Size> squares = <Size>[];
+
+    widen(tester);
+
+    for (final double scale in <double>[1, 2]) {
+      await pumpPictures(
+        tester,
+        host(
+          ImageDiff(key: ValueKey<double>(scale), before: white, after: red, scale: scale),
+          size: kWide,
+        ),
+      );
+
+      // Over the middle of the first pane, which is where the panel is not.
+      await tester.sendEventToBinding(
+        mouse.hover(tester.getCenter(find.byType(ImageDiffPane).first)),
+      );
+      await tester.pumpAndSettle();
+
+      squares.add(loupeSquareOf(tester));
+    }
+
+    expect(squares.last, squares.first * 2);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('draws a scale that is not a positive number at the default size', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(host(const ImageDiff()));
+
+    final Size button = zoomInOf(tester);
+
+    for (final double scale in <double>[0, -1, double.nan, double.infinity]) {
+      await tester.pumpWidget(host(ImageDiff(scale: scale)));
+
+      expect(zoomInOf(tester), button, reason: 'scale $scale');
+      expect(tester.takeException(), isNull, reason: 'scale $scale');
+    }
   });
 }

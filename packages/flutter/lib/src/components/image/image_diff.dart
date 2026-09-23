@@ -43,12 +43,13 @@ import 'package:diffine/src/internal/image/loupe.dart';
 import 'package:diffine/src/internal/image/paint.dart';
 import 'package:diffine/src/internal/image/viewport.dart';
 import 'package:diffine/src/internal/measure.dart';
+import 'package:diffine/src/internal/scale.dart';
 import 'package:diffine/src/theme/tokens.dart';
 import 'package:diffine/src/types.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/widgets.dart';
 
-/// How tall the bar above the panes is.
+/// How tall the bar above the panes is, at a scale of 1.
 const double _headerHeight = 34;
 
 /// A side that has no picture at all, as something the engine can be handed.
@@ -103,6 +104,7 @@ class ImageDiff extends StatefulWidget {
     this.colorScheme = DiffineColorScheme.system,
     this.theme,
     this.height,
+    this.scale = 1,
     this.locale = DiffineLocale.en,
     this.strings,
   });
@@ -337,6 +339,26 @@ class ImageDiff extends StatefulWidget {
   /// How tall the whole comparison is.
   final double? height;
 
+  /// How large the widget's own text and controls are drawn, as a multiple of
+  /// the size they are drawn at otherwise.
+  ///
+  /// It is not the zoom of the pictures, which is [viewport]. A picture is
+  /// drawn at whatever size a reader zoomed it to, and what is painted over it
+  /// — the tint, the boxes round the changes, the squares behind a see-through
+  /// part — belongs to the picture and goes with it. This is everything round
+  /// the pictures: the names above the panes, the buttons, the fade slider,
+  /// the handle of the wipe, what an empty pane says, the bar underneath, and
+  /// the loupe, whose squares grow with it so that a magnified pixel stays
+  /// something a reader can count. `1.25` draws all of it a quarter larger and
+  /// `0.875` an eighth smaller.
+  ///
+  /// The box itself is left alone: [height] and the corners of the frame,
+  /// because how much of the screen the comparison takes is the application's
+  /// to decide. The rules and the focus ring stay one line thick.
+  ///
+  /// Anything that is not a positive, finite number is drawn at 1.
+  final double scale;
+
   /// The language of the widget's own words.
   final DiffineLocale locale;
 
@@ -348,6 +370,8 @@ class ImageDiff extends StatefulWidget {
 }
 
 class _ImageDiffState extends State<ImageDiff> {
+  final ScaledTheme _scaledTheme = ScaledTheme();
+
   /*
    * Every picture, in the order the panes draw them.
    *
@@ -845,7 +869,14 @@ class _ImageDiffState extends State<ImageDiff> {
   @override
   Widget build(BuildContext context) {
     final DiffineStrings strings = stringsFor(widget.locale, widget.strings);
-    final DiffineTheme theme = widget.theme ?? DiffineTheme.resolve(context, widget.colorScheme);
+    final double scale = usableScale(widget.scale);
+    // Nothing here draws a line of a document, but the theme is resolved at the
+    // scale all the same, so a token read from it anywhere below is already the
+    // size it is drawn at.
+    final DiffineTheme theme = _scaledTheme.resolve(
+      widget.theme ?? DiffineTheme.resolve(context, widget.colorScheme),
+      scale,
+    );
     final String beforeLabel = widget.beforeLabel ?? strings.before;
     final String afterLabel = widget.afterLabel ?? strings.after;
     final String bothLabel = '$beforeLabel → $afterLabel';
@@ -948,6 +979,7 @@ class _ImageDiffState extends State<ImageDiff> {
               if (bar)
                 _header(
                   theme: theme,
+                  scale: scale,
                   strings: strings,
                   regions: regions,
                   current: current,
@@ -964,11 +996,12 @@ class _ImageDiffState extends State<ImageDiff> {
                     border: Border(bottom: BorderSide(color: theme.border)),
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    padding: EdgeInsets.symmetric(horizontal: 12 * scale, vertical: 4 * scale),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: _tools(
                         theme: theme,
+                        scale: scale,
                         strings: strings,
                         regions: regions,
                         current: current,
@@ -1014,6 +1047,7 @@ class _ImageDiffState extends State<ImageDiff> {
                                                     (editing && widget.onChoose != null))
                                                   _partTitle(
                                                     theme: theme,
+                                                    scale: scale,
                                                     strings: strings,
                                                     label: labels[at],
                                                     side: at == 0
@@ -1050,6 +1084,7 @@ class _ImageDiffState extends State<ImageDiff> {
                       if (looking != null && samples.isNotEmpty && !blank)
                         _placedLoupe(
                           theme: theme,
+                          scale: scale,
                           strings: strings,
                           samples: samples,
                           looking: looking,
@@ -1083,9 +1118,14 @@ class _ImageDiffState extends State<ImageDiff> {
       ),
     );
 
-    return widget.height == double.infinity
-        ? frameBox
-        : SizedBox(height: widget.height ?? theme.height, child: frameBox);
+    // Over everything the widget builds, so that each part reads the same
+    // multiple.
+    return DiffineScale(
+      scale: scale,
+      child: widget.height == double.infinity
+          ? frameBox
+          : SizedBox(height: widget.height ?? theme.height, child: frameBox),
+    );
   }
 
   double get _wipeValue => widget.wipe ?? _wipe;
@@ -1151,17 +1191,21 @@ class _ImageDiffState extends State<ImageDiff> {
 
   Widget _placedLoupe({
     required DiffineTheme theme,
+    required double scale,
     required DiffineStrings strings,
     required List<LoupeSample> samples,
     required _Looking looking,
   }) {
     final Offset? place = _loupePlace;
     final bool left = looking.side != 0;
+    // How far it starts from the corner of the panes. Where a reader has put it
+    // is a place rather than a size, and is left as it is.
+    final double inset = 8 * scale;
 
     return Positioned(
-      left: place?.dx ?? (left ? 8 : null),
-      right: place == null && !left ? 8 : null,
-      top: place?.dy ?? 8,
+      left: place?.dx ?? (left ? inset : null),
+      right: place == null && !left ? inset : null,
+      top: place?.dy ?? inset,
       child: ImageDiffLoupe(
         theme: theme,
         samples: samples,
@@ -1271,6 +1315,7 @@ class _ImageDiffState extends State<ImageDiff> {
 
   Widget _header({
     required DiffineTheme theme,
+    required double scale,
     required DiffineStrings strings,
     required List<DiffImageRegion> regions,
     required int current,
@@ -1283,7 +1328,7 @@ class _ImageDiffState extends State<ImageDiff> {
     final List<String> titles = _laidSplit ? labels : <String>[bothLabel];
 
     return Container(
-      height: _headerHeight,
+      height: _headerHeight * scale,
       decoration: BoxDecoration(
         color: theme.gutter,
         border: Border(bottom: BorderSide(color: theme.border)),
@@ -1300,7 +1345,7 @@ class _ImageDiffState extends State<ImageDiff> {
           for (int at = 0; at < titles.length; at += 1)
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
+                padding: EdgeInsets.symmetric(horizontal: 8 * scale),
                 child: Row(
                   children: <Widget>[
                     if (widget.header)
@@ -1309,7 +1354,7 @@ class _ImageDiffState extends State<ImageDiff> {
                           titles[at],
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: 12 * scale,
                             fontWeight: FontWeight.w600,
                             color: theme.text,
                           ),
@@ -1326,6 +1371,7 @@ class _ImageDiffState extends State<ImageDiff> {
                     if (at == titles.length - 1 && tools)
                       ..._tools(
                         theme: theme,
+                        scale: scale,
                         strings: strings,
                         regions: regions,
                         current: current,
@@ -1356,19 +1402,20 @@ class _ImageDiffState extends State<ImageDiff> {
   /// with the button that puts a picture in this pane.
   Widget _partTitle({
     required DiffineTheme theme,
+    required double scale,
     required DiffineStrings strings,
     required String label,
     required DiffineSide side,
     required bool editing,
   }) {
     return Container(
-      height: _headerHeight,
+      height: _headerHeight * scale,
       decoration: BoxDecoration(
         color: theme.gutter,
         border: Border(bottom: BorderSide(color: theme.border)),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8),
+        padding: EdgeInsets.symmetric(horizontal: 8 * scale),
         child: Row(
           children: <Widget>[
             if (widget.header)
@@ -1376,7 +1423,11 @@ class _ImageDiffState extends State<ImageDiff> {
                 child: Text(
                   label,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: theme.text),
+                  style: TextStyle(
+                    fontSize: 12 * scale,
+                    fontWeight: FontWeight.w600,
+                    color: theme.text,
+                  ),
                 ),
               )
             else
@@ -1395,6 +1446,7 @@ class _ImageDiffState extends State<ImageDiff> {
 
   List<Widget> _tools({
     required DiffineTheme theme,
+    required double scale,
     required DiffineStrings strings,
     required List<DiffImageRegion> regions,
     required int current,
@@ -1406,7 +1458,7 @@ class _ImageDiffState extends State<ImageDiff> {
       ?chooser,
       if (fading)
         SizedBox(
-          width: 96,
+          width: 96 * scale,
           child: _Fade(
             theme: theme,
             value: _fadeValue,
@@ -1436,13 +1488,13 @@ class _ImageDiffState extends State<ImageDiff> {
           child: const DiffineIcons(DiffineIcon.minus),
         ),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 2),
+          padding: EdgeInsets.symmetric(horizontal: 2 * scale),
           child: Text(
             fill(strings.zoomLevel, <String, Object>{
               'percent': formatNumber(viewport.scale * 100, widget.locale, 0),
             }),
             style: TextStyle(
-              fontSize: 11,
+              fontSize: 11 * scale,
               fontWeight: FontWeight.w600,
               color: theme.muted,
               fontFeatures: const <FontFeature>[FontFeature.tabularFigures()],
@@ -1517,6 +1569,9 @@ class _Fade extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final double scale = DiffineScale.of(context);
+    final double knob = 10 * scale;
+
     return Semantics(
       slider: true,
       label: label,
@@ -1534,24 +1589,24 @@ class _Fade extends StatelessWidget {
             onTapDown: (TapDownDetails details) => move(details.localPosition.dx),
             onHorizontalDragUpdate: (DragUpdateDetails details) => move(details.localPosition.dx),
             child: SizedBox(
-              height: kDiffineControlSize,
+              height: kDiffineControlSize * scale,
               child: Center(
                 child: Stack(
                   clipBehavior: Clip.none,
                   children: <Widget>[
                     Container(
-                      height: 3,
+                      height: 3 * scale,
                       decoration: BoxDecoration(
                         color: theme.border,
-                        borderRadius: BorderRadius.circular(2),
+                        borderRadius: BorderRadius.circular(2 * scale),
                       ),
                     ),
                     Positioned(
-                      left: (constraints.maxWidth - 10) * value,
-                      top: -4,
+                      left: (constraints.maxWidth - knob) * value,
+                      top: -4 * scale,
                       child: Container(
-                        width: 10,
-                        height: 10,
+                        width: knob,
+                        height: knob,
                         decoration: BoxDecoration(color: theme.accent, shape: BoxShape.circle),
                       ),
                     ),

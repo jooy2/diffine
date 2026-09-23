@@ -57,6 +57,7 @@ Every part of the view is a prop with a default, so the component goes from a fu
 | `virtualize` | `true` | Whether only the lines a reader can see are drawn. |
 | `showInvisibles` | `false` | Whether the spaces and tabs inside a line are drawn. |
 | `tabSize` | `4` | How wide a tab is drawn. |
+| `scale` | `1` | How large the text and the component's own controls are drawn, as a multiple. |
 | `colorScheme` | `'system'` | `'light'`, `'dark'`, or the reader's own setting. |
 | `locale` | `'en'` | The language of the component's own words. `'ko'` is the other. |
 | `strings` | — | Words to use instead of the locale's, for any of them. |

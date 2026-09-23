@@ -23,6 +23,21 @@ Widget host(Widget child, {Size size = const Size(900, 480)}) {
   );
 }
 
+/// A window wide enough for the bars of a comparison drawn at twice its size.
+///
+/// The test typeface draws every letter a full square wide, so a name and the
+/// buttons beside it take far more room than they would in any real one, and
+/// at twice the size they no longer fit in half of the usual test window.
+const Size kWide = Size(1200, 480);
+
+/// Makes the test window [kWide], until the test is over. Pump the widget with
+/// `host(widget, size: kWide)` to use all of it.
+void widen(WidgetTester tester) {
+  tester.view.physicalSize = kWide;
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
+}
+
 /// Every label in the semantics tree, which is what a screen reader would be
 /// read out.
 ///

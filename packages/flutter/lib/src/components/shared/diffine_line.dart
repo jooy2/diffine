@@ -8,6 +8,7 @@ library;
 
 import 'package:diffine/src/internal/pieces.dart';
 import 'package:diffine/src/internal/rows.dart';
+import 'package:diffine/src/internal/scale.dart';
 import 'package:diffine/src/internal/search.dart';
 import 'package:diffine/src/theme/tokens.dart';
 import 'package:diffine/src/types.dart';
@@ -23,14 +24,24 @@ const Map<DiffineSide, Map<DiffRowKind, String>> _markers = <DiffineSide, Map<Di
 final RegExp _blanks = RegExp(r' +|\t+');
 
 /// How wide the column of numbers is, for one number of `digits` digits.
-double numberColumnWidth(double characterWidth, int digits) {
-  return characterWidth * digits + 20;
+///
+/// The digits are measured in a typeface that is already at the comparison's
+/// scale, and the room either side of them is multiplied here.
+double numberColumnWidth({
+  required double characterWidth,
+  required int digits,
+  required double scale,
+}) {
+  return characterWidth * digits + 20 * scale;
 }
 
-/// How wide the marker column is.
+/// How wide the marker column is, at a scale of 1.
 const double kMarkerWidth = 20;
 
-/// How far in from the gutter the text starts.
+/// How far in from the gutter the text starts, at a scale of 1.
+///
+/// The field an editor lays over its lines is inset by the same multiple of
+/// this, which is what keeps the two on top of each other at any scale.
 const double kTextGap = 8;
 
 /// Which word a screen reader hears in front of the line.
@@ -147,6 +158,7 @@ class DiffineLineWidget extends StatelessWidget {
         : null;
     final String? said = line != null ? _labelFor(strings, drawn.kind, drawn.side) : null;
     final Color? tint = rowTint(theme, drawn.kind, drawn.side, line == null);
+    final double scale = DiffineScale.of(context);
 
     final Widget body = Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -160,10 +172,11 @@ class DiffineLineWidget extends StatelessWidget {
             lineNumbers: lineNumbers,
             markers: markers,
             slot: slot,
+            scale: scale,
           ),
         Expanded(
           child: Padding(
-            padding: const EdgeInsets.only(left: kTextGap, right: kTextGap),
+            padding: EdgeInsets.only(left: kTextGap * scale, right: kTextGap * scale),
             child: line == null
                 ? const SizedBox.shrink()
                 : _LineText(
@@ -175,6 +188,7 @@ class DiffineLineWidget extends StatelessWidget {
                     matches: matches,
                     match: match,
                     invisibles: invisibles,
+                    scale: scale,
                   ),
           ),
         ),
@@ -217,6 +231,7 @@ class _Gutter extends StatelessWidget {
     required this.lineNumbers,
     required this.markers,
     required this.slot,
+    required this.scale,
   });
 
   final DiffineTheme theme;
@@ -226,6 +241,7 @@ class _Gutter extends StatelessWidget {
   final bool lineNumbers;
   final bool markers;
   final Widget? slot;
+  final double scale;
 
   @override
   Widget build(BuildContext context) {
@@ -249,10 +265,14 @@ class _Gutter extends StatelessWidget {
               for (final int? number in drawn.numbers)
                 ExcludeSemantics(
                   child: SizedBox(
-                    width: numberColumnWidth(characterWidth, digits),
+                    width: numberColumnWidth(
+                      characterWidth: characterWidth,
+                      digits: digits,
+                      scale: scale,
+                    ),
                     height: theme.lineHeight,
                     child: Padding(
-                      padding: const EdgeInsets.only(right: 10),
+                      padding: EdgeInsets.only(right: 10 * scale),
                       child: Align(
                         alignment: Alignment.centerRight,
                         child: Text(number == null ? '' : '$number', style: style),
@@ -263,7 +283,7 @@ class _Gutter extends StatelessWidget {
             if (markers)
               ExcludeSemantics(
                 child: SizedBox(
-                  width: kMarkerWidth,
+                  width: kMarkerWidth * scale,
                   height: theme.lineHeight,
                   child: Center(
                     child: Text(
@@ -295,6 +315,7 @@ class _LineText extends StatelessWidget {
     required this.side,
     required this.wrap,
     required this.invisibles,
+    required this.scale,
     this.highlight,
     this.matches,
     this.match,
@@ -305,6 +326,7 @@ class _LineText extends StatelessWidget {
   final DiffineSide side;
   final bool wrap;
   final bool invisibles;
+  final double scale;
   final DiffineHighlight? highlight;
   final List<SearchMatch>? matches;
   final SearchMatch? match;
@@ -343,6 +365,7 @@ class _LineText extends StatelessWidget {
         colour: theme.invisible,
         direction: Directionality.of(context),
         wrap: wrap,
+        scale: scale,
       ),
       child: text,
     );
@@ -378,6 +401,9 @@ class _LineText extends StatelessWidget {
 /// out is the line as it was written rather than a line with dots in it. The
 /// boxes come from laying the same spans out again at the same width, which is
 /// what makes the marks follow a line that wrapped.
+///
+/// The dot and the height of the rule off the bottom of the line are sized to
+/// the text, so they are multiplied with it. The rule itself stays a hairline.
 class _InvisiblesPainter extends CustomPainter {
   const _InvisiblesPainter({
     required this.span,
@@ -385,6 +411,7 @@ class _InvisiblesPainter extends CustomPainter {
     required this.colour,
     required this.direction,
     required this.wrap,
+    required this.scale,
   });
 
   final InlineSpan span;
@@ -392,6 +419,7 @@ class _InvisiblesPainter extends CustomPainter {
   final Color colour;
   final TextDirection direction;
   final bool wrap;
+  final double scale;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -413,7 +441,7 @@ class _InvisiblesPainter extends CustomPainter {
       for (final TextBox box in boxes) {
         if (tab) {
           canvas.drawRect(
-            Rect.fromLTWH(box.left + 1, box.bottom - 3, (box.right - box.left) - 2, 1),
+            Rect.fromLTWH(box.left + 1, box.bottom - 3 * scale, (box.right - box.left) - 2, 1),
             brush,
           );
           continue;
@@ -423,7 +451,7 @@ class _InvisiblesPainter extends CustomPainter {
         final double middle = (box.top + box.bottom) / 2;
 
         for (int at = 0; at < run.end - run.start; at += 1) {
-          canvas.drawCircle(Offset(box.left + step * (at + 0.5), middle), 0.9, brush);
+          canvas.drawCircle(Offset(box.left + step * (at + 0.5), middle), 0.9 * scale, brush);
         }
       }
     }
@@ -433,6 +461,6 @@ class _InvisiblesPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_InvisiblesPainter old) {
-    return old.text != text || old.colour != colour || old.wrap != wrap;
+    return old.text != text || old.colour != colour || old.wrap != wrap || old.scale != scale;
   }
 }

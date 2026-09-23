@@ -16,6 +16,8 @@
 
 - **`flow` runs the panes down the comparison instead of across it.** `DiffineImageFlow.down` puts one picture to a row, which is the way round a photograph, a banner, or any comparison in a column too narrow to cut in half wants to be read. Each pane carries its own name, because a row of titles over a column of panes names the wrong pictures, and the buttons take a row of their own above them. `DiffineImageFlow.across` is the default and is unchanged.
 
+- **`scale` draws the text and the widget's own controls larger or smaller.** One number multiplies the document text, the gutter, the bars above and below, the buttons and their icons, the menus, the search and the loupe, so `1.25` is a quarter larger and `0.875` an eighth smaller without a theme being written out. A `font` is multiplied as well, `height` and the corner radius stay as the theme has them, and the pictures in `ImageDiff` are drawn the same at any scale, because their zoom is `viewport`.
+
 ### Changed
 
 - **Two pictures with nothing in common are compared about five times faster.** Every pixel of such a pair differs, and each one was checked for an edge drawn smooth by looking for something level around it in both pictures before anything cheaper was asked. The screen did not move while that ran: a second and a half for two photographs of four million pixels. The check for something level now comes first and its answers are kept, which brings the same pair down to under a third of a second. The result is the same to the pixel.

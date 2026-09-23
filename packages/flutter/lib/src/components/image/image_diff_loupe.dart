@@ -22,11 +22,12 @@ import 'dart:ui' as ui;
 
 import 'package:diffine/src/components/shared/diffine_icons.dart';
 import 'package:diffine/src/internal/image/loupe.dart';
+import 'package:diffine/src/internal/scale.dart';
 import 'package:diffine/src/theme/tokens.dart';
 import 'package:diffine/src/types.dart';
 import 'package:flutter/widgets.dart';
 
-/// How large one magnified pixel is, in logical pixels.
+/// How large one magnified pixel is, in logical pixels at a scale of 1.
 const double _tile = 12;
 
 /// How few pixels fit across one square.
@@ -35,12 +36,22 @@ const int kLeastLoupeSpan = 3;
 /// And how many.
 const int kMostLoupeSpan = 41;
 
+/// How large one magnified pixel is at a scale.
+///
+/// A whole number of logical pixels, so that the grid between the tiles lands
+/// on the same place in every one of them rather than drifting across the
+/// square — which is also what the React package draws.
+double _tileAt(double scale) => math.max(1, (_tile * scale).roundToDouble());
+
 /// The size a span comes out as, in logical pixels.
-double _sizeOf(int span) => span * _tile;
+double _sizeOf(int span, double scale) => span * _tileAt(scale);
 
 /// A span a reader dragged to: odd, so that one pixel is the middle one.
-int _spanOf(double size) {
-  final int tiles = (size / _tile).round();
+///
+/// Counted in tiles at the scale they are drawn at, so a pull of the corner
+/// adds a pixel for every tile it crosses whatever size the tiles are.
+int _spanOf(double size, double scale) {
+  final int tiles = (size / _tileAt(scale)).round();
   final int odd = tiles.isEven ? tiles + 1 : tiles;
 
   return odd.clamp(kLeastLoupeSpan, kMostLoupeSpan);
@@ -134,8 +145,9 @@ class _ImageDiffLoupeState extends State<ImageDiffLoupe> {
     // The panel is as many squares wide as there are sides, so a pull sideways
     // is shared between them and a pull downwards is not.
     final double across = widget.samples.isEmpty ? moved.dx : moved.dx / widget.samples.length;
+    final double scale = DiffineScale.of(context);
 
-    widget.onSpan(_spanOf(_sizeOf(_span) + math.max(across, moved.dy)));
+    widget.onSpan(_spanOf(_sizeOf(_span, scale) + math.max(across, moved.dy), scale));
   }
 
   void _letGo() => widget.onGrabbed(false);
@@ -143,13 +155,24 @@ class _ImageDiffLoupeState extends State<ImageDiffLoupe> {
   @override
   Widget build(BuildContext context) {
     final DiffineTheme theme = widget.theme;
+    final double scale = DiffineScale.of(context);
+    final TextStyle caption = TextStyle(
+      fontFamily: theme.fontFamily,
+      fontFamilyFallback: theme.fontFamilyFallback,
+      fontSize: 11 * scale,
+      height: 1.2,
+      color: theme.muted,
+    );
 
     return Container(
-      padding: const EdgeInsets.all(6),
+      padding: EdgeInsets.all(6 * scale),
       decoration: BoxDecoration(
         color: theme.surface,
         border: Border.all(color: theme.border),
-        borderRadius: BorderRadius.circular(math.max(0, theme.radius - 2)),
+        // Less round than the frame by a step the panel draws itself. The
+        // frame's radius stays what the theme says, and the step follows the
+        // scale.
+        borderRadius: BorderRadius.circular(math.max(0, theme.radius - 2 * scale)),
         boxShadow: const <BoxShadow>[
           BoxShadow(color: Color(0x29000000), blurRadius: 8, offset: Offset(0, 2)),
         ],
@@ -172,27 +195,28 @@ class _ImageDiffLoupeState extends State<ImageDiffLoupe> {
                     onEnd: _letGo,
                     child: const DiffineIcons(DiffineIcon.move),
                   ),
-                  const SizedBox(width: 4),
+                  SizedBox(width: 4 * scale),
                   Text(
                     '${widget.strings.at} ${widget.at.dx.floor()}, ${widget.at.dy.floor()}',
-                    style: TextStyle(
-                      fontFamily: theme.fontFamily,
-                      fontFamilyFallback: theme.fontFamilyFallback,
-                      fontSize: 11,
-                      height: 1.2,
-                      color: theme.muted,
-                    ),
+                    style: caption,
                   ),
                 ],
               ),
-              const SizedBox(height: 4),
+              SizedBox(height: 4 * scale),
               Row(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
                   for (final LoupeSample sample in widget.samples) ...<Widget>[
-                    _Side(theme: theme, sample: sample, at: widget.at, span: widget.span),
-                    if (sample != widget.samples.last) const SizedBox(width: 6),
+                    _Side(
+                      theme: theme,
+                      sample: sample,
+                      at: widget.at,
+                      span: widget.span,
+                      style: caption,
+                      scale: scale,
+                    ),
+                    if (sample != widget.samples.last) SizedBox(width: 6 * scale),
                   ],
                 ],
               ),
@@ -239,6 +263,8 @@ class _Handle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final double scale = DiffineScale.of(context);
+
     return Semantics(
       label: label,
       child: MouseRegion(
@@ -250,7 +276,7 @@ class _Handle extends StatelessWidget {
           onPanEnd: (DragEndDetails _) => onEnd(),
           onPanCancel: onEnd,
           child: Padding(
-            padding: const EdgeInsets.all(2),
+            padding: EdgeInsets.all(2 * scale),
             child: DefaultTextStyle.merge(
               style: TextStyle(color: colour),
               child: child,
@@ -264,16 +290,27 @@ class _Handle extends StatelessWidget {
 
 /// One picture's square, and the colour of the pixel in the middle of it.
 class _Side extends StatelessWidget {
-  const _Side({required this.theme, required this.sample, required this.at, required this.span});
+  const _Side({
+    required this.theme,
+    required this.sample,
+    required this.at,
+    required this.span,
+    required this.style,
+    required this.scale,
+  });
 
   final DiffineTheme theme;
   final LoupeSample sample;
   final Offset at;
   final int span;
 
+  /// What the panel writes its words in, already at the comparison's scale.
+  final TextStyle style;
+  final double scale;
+
   @override
   Widget build(BuildContext context) {
-    final double size = _sizeOf(span);
+    final double size = _sizeOf(span, scale);
     final ui.Color? colour = colourAt(sample, at.dx, at.dy);
 
     return Column(
@@ -290,54 +327,43 @@ class _Side extends StatelessWidget {
           child: ClipRRect(
             borderRadius: BorderRadius.circular(2),
             child: CustomPaint(
-              painter: _TilesPainter(theme: theme, sample: sample, at: at, span: span),
+              painter: _TilesPainter(
+                theme: theme,
+                sample: sample,
+                at: at,
+                span: span,
+                scale: scale,
+              ),
               size: Size(size, size),
             ),
           ),
         ),
-        const SizedBox(height: 4),
+        SizedBox(height: 4 * scale),
         SizedBox(
           width: size,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Text(
-                sample.label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontFamily: theme.fontFamily,
-                  fontFamilyFallback: theme.fontFamilyFallback,
-                  fontSize: 11,
-                  height: 1.2,
-                  color: theme.muted,
-                ),
-              ),
+              Text(sample.label, maxLines: 1, overflow: TextOverflow.ellipsis, style: style),
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
                   if (colour != null) ...<Widget>[
                     Container(
-                      width: 10,
-                      height: 10,
+                      width: 10 * scale,
+                      height: 10 * scale,
                       decoration: BoxDecoration(
                         color: colour,
                         border: Border.all(color: theme.border),
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
-                    const SizedBox(width: 4),
+                    SizedBox(width: 4 * scale),
                   ],
                   Text(
                     colour == null ? '—' : hexOf(colour),
-                    style: TextStyle(
-                      fontFamily: theme.fontFamily,
-                      fontFamilyFallback: theme.fontFamilyFallback,
-                      fontSize: 11,
-                      height: 1.2,
-                      color: theme.text,
-                    ),
+                    style: style.copyWith(color: theme.text),
                   ),
                 ],
               ),
@@ -350,18 +376,24 @@ class _Side extends StatelessWidget {
 }
 
 /// The square of the picture around the pointer, a tile a pixel.
+///
+/// The tiles are drawn at the comparison's scale, since they are the panel's
+/// own size. The grid and the box round the middle one are lines, and stay as
+/// thick as they are.
 class _TilesPainter extends CustomPainter {
   const _TilesPainter({
     required this.theme,
     required this.sample,
     required this.at,
     required this.span,
+    required this.scale,
   });
 
   final DiffineTheme theme;
   final LoupeSample sample;
   final Offset at;
   final int span;
+  final double scale;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -375,6 +407,7 @@ class _TilesPainter extends CustomPainter {
      * whole destination — sliding every tile off the grid at the one place a
      * reader is most likely to be looking.
      */
+    final double tile = _tileAt(scale);
     final ({int x, int y}) middle = pixelAt(sample, at.dx, at.dy);
     final double fromX = middle.x - (span - 1) / 2;
     final double fromY = middle.y - (span - 1) / 2;
@@ -388,10 +421,10 @@ class _TilesPainter extends CustomPainter {
         sample.picture.drawable,
         Rect.fromLTRB(left, top, right, bottom),
         Rect.fromLTWH(
-          (left - fromX) * _tile,
-          (top - fromY) * _tile,
-          (right - left) * _tile,
-          (bottom - top) * _tile,
+          (left - fromX) * tile,
+          (top - fromY) * tile,
+          (right - left) * tile,
+          (bottom - top) * tile,
         ),
         Paint()..filterQuality = FilterQuality.none,
       );
@@ -406,12 +439,12 @@ class _TilesPainter extends CustomPainter {
 
     for (int line = 1; line < span; line += 1) {
       canvas
-        ..drawLine(Offset(line * _tile + 0.5, 0), Offset(line * _tile + 0.5, size.height), grid)
-        ..drawLine(Offset(0, line * _tile + 0.5), Offset(size.width, line * _tile + 0.5), grid);
+        ..drawLine(Offset(line * tile + 0.5, 0), Offset(line * tile + 0.5, size.height), grid)
+        ..drawLine(Offset(0, line * tile + 0.5), Offset(size.width, line * tile + 0.5), grid);
     }
 
-    final double centre = ((span - 1) / 2) * _tile;
-    final Rect box = Rect.fromLTWH(centre - 0.5, centre - 0.5, _tile + 1, _tile + 1);
+    final double centre = ((span - 1) / 2) * tile;
+    final Rect box = Rect.fromLTWH(centre - 0.5, centre - 0.5, tile + 1, tile + 1);
 
     canvas
       ..drawRect(
@@ -432,5 +465,9 @@ class _TilesPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_TilesPainter old) =>
-      old.sample != sample || old.at != at || old.span != span || old.theme != theme;
+      old.sample != sample ||
+      old.at != at ||
+      old.span != span ||
+      old.theme != theme ||
+      old.scale != scale;
 }

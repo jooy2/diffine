@@ -42,6 +42,7 @@ import 'package:diffine/src/internal/i18n.dart';
 import 'package:diffine/src/internal/metrics.dart';
 import 'package:diffine/src/internal/pane_search.dart';
 import 'package:diffine/src/internal/rows.dart';
+import 'package:diffine/src/internal/scale.dart';
 import 'package:diffine/src/internal/scroll.dart';
 import 'package:diffine/src/internal/search.dart';
 import 'package:diffine/src/theme/tokens.dart';
@@ -49,7 +50,7 @@ import 'package:diffine/src/types.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
-/// How tall the bar above the panes is.
+/// How tall the bar above the panes is, at a scale of 1.
 const double _headerHeight = 34;
 
 /// Two documents, and what happened between them.
@@ -93,6 +94,7 @@ class TextDiff extends StatefulWidget {
     this.font,
     this.theme,
     this.height,
+    this.scale = 1,
     this.locale = DiffineLocale.en,
     this.strings,
     this.language,
@@ -328,6 +330,28 @@ class TextDiff extends StatefulWidget {
   /// given, and `double.infinity` to fill whatever holds it.
   final double? height;
 
+  /// How large the widget's own text and controls are drawn, as a multiple of
+  /// the size they are drawn at otherwise.
+  ///
+  /// A comparison sits inside somebody else's screen, and that screen does not
+  /// always read at the size this one does: a dense panel wants it smaller, a
+  /// screen read from across a room wants it larger. One number moves all of
+  /// it together, so the widget stays in proportion with itself. `1.25` draws
+  /// everything a quarter larger and `0.875` an eighth smaller — the two
+  /// documents, on top of any size given in [font], the numbers and markers
+  /// beside them, the column between the panes, the bands of folded lines, the
+  /// field an editor types into, and every bar, label, button and menu.
+  ///
+  /// What it leaves alone is the box itself: [height] and the corners of the
+  /// frame. How much of the screen the comparison takes is the application's
+  /// layout to decide, so a larger scale shows fewer lines in the same box
+  /// rather than a taller one. The rules and the focus ring stay one line
+  /// thick, and the spacing between letters and the width of a tab stay what
+  /// the theme says.
+  ///
+  /// Anything that is not a positive, finite number is drawn at 1.
+  final double scale;
+
   /// The language of the widget's own words — not of the documents.
   final DiffineLocale locale;
 
@@ -391,6 +415,7 @@ class TextDiff extends StatefulWidget {
 }
 
 class _TextDiffState extends State<TextDiff> {
+  final ScaledTheme _scaledTheme = ScaledTheme();
   final TextEditingController _beforeField = TextEditingController();
   final TextEditingController _afterField = TextEditingController();
   final FocusNode _beforeFocus = FocusNode(debugLabel: 'diffine before');
@@ -796,8 +821,14 @@ class _TextDiffState extends State<TextDiff> {
   @override
   Widget build(BuildContext context) {
     final DiffineStrings strings = stringsFor(widget.locale, widget.strings);
-    final DiffineTheme theme = (widget.theme ?? DiffineTheme.resolve(context, widget.colorScheme))
-        .withFont(widget.font);
+    final double scale = usableScale(widget.scale);
+    // Resolved once, here, and handed to every part of the widget: the size of
+    // a line and the width of the column between the panes are tokens, so
+    // everything measured from them is measured at the scale already.
+    final DiffineTheme theme = _scaledTheme.resolve(
+      (widget.theme ?? DiffineTheme.resolve(context, widget.colorScheme)).withFont(widget.font),
+      scale,
+    );
     final String beforeLabel = widget.beforeLabel ?? strings.before;
     final String afterLabel = widget.afterLabel ?? strings.after;
 
@@ -860,10 +891,14 @@ class _TextDiffState extends State<TextDiff> {
 
     final Widget body = empty
         ? Center(
-            child: Text(strings.empty, style: TextStyle(color: theme.muted, fontSize: 13)),
+            child: Text(
+              strings.empty,
+              style: TextStyle(color: theme.muted, fontSize: 13 * scale),
+            ),
           )
         : _body(
             theme: theme,
+            scale: scale,
             strings: strings,
             comparison: comparison,
             layouts: layouts,
@@ -900,6 +935,7 @@ class _TextDiffState extends State<TextDiff> {
                 if (widget.header || tools)
                   _header(
                     theme: theme,
+                    scale: scale,
                     strings: strings,
                     comparison: comparison,
                     split: split,
@@ -950,10 +986,13 @@ class _TextDiffState extends State<TextDiff> {
         ? frame
         : SizedBox(height: widget.height ?? theme.height, child: frame);
 
-    if (!searchable) {
-      return sized;
-    }
+    // Over everything the widget builds, so that each part reads the same
+    // multiple — the menu in the overlay included.
+    return DiffineScale(scale: scale, child: searchable ? _shortcuts(sized, split) : sized);
+  }
 
+  /// Ctrl+F and Ctrl+H, over a comparison that can be searched.
+  Widget _shortcuts(Widget child, bool split) {
     return Shortcuts(
       shortcuts: <ShortcutActivator, Intent>{
         const SingleActivator(LogicalKeyboardKey.keyF, control: true): const _FindIntent(),
@@ -977,7 +1016,7 @@ class _TextDiffState extends State<TextDiff> {
             },
           ),
         },
-        child: sized,
+        child: child,
       ),
     );
   }
@@ -1064,6 +1103,7 @@ class _TextDiffState extends State<TextDiff> {
   /// would push the buttons in from the edge and a long one would not.
   Widget _header({
     required DiffineTheme theme,
+    required double scale,
     required DiffineStrings strings,
     required DiffResult comparison,
     required bool split,
@@ -1075,9 +1115,15 @@ class _TextDiffState extends State<TextDiff> {
     required String afterLabel,
   }) {
     final String bothLabel = '$beforeLabel → $afterLabel';
+    final EdgeInsets padding = EdgeInsets.symmetric(horizontal: 8 * scale);
+    final TextStyle title = TextStyle(
+      fontSize: 12 * scale,
+      fontWeight: FontWeight.w600,
+      color: theme.text,
+    );
 
     return Container(
-      height: _headerHeight,
+      height: _headerHeight * scale,
       decoration: BoxDecoration(
         color: theme.gutter,
         border: Border(bottom: BorderSide(color: theme.border)),
@@ -1086,7 +1132,7 @@ class _TextDiffState extends State<TextDiff> {
         children: <Widget>[
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
+              padding: padding,
               child: Row(
                 children: <Widget>[
                   if (widget.header)
@@ -1094,11 +1140,7 @@ class _TextDiffState extends State<TextDiff> {
                       child: Text(
                         split ? beforeLabel : bothLabel,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: theme.text,
-                        ),
+                        style: title,
                       ),
                     )
                   else
@@ -1118,20 +1160,12 @@ class _TextDiffState extends State<TextDiff> {
           if (split)
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
+                padding: padding,
                 child: Row(
                   children: <Widget>[
                     if (widget.header)
                       Expanded(
-                        child: Text(
-                          afterLabel,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: theme.text,
-                          ),
-                        ),
+                        child: Text(afterLabel, overflow: TextOverflow.ellipsis, style: title),
                       )
                     else
                       const Spacer(),
@@ -1152,7 +1186,7 @@ class _TextDiffState extends State<TextDiff> {
             )
           else
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
+              padding: padding,
               child: Row(
                 children: _tools(
                   theme: theme,
@@ -1287,6 +1321,7 @@ class _TextDiffState extends State<TextDiff> {
 
   Widget _body({
     required DiffineTheme theme,
+    required double scale,
     required DiffineStrings strings,
     required DiffResult comparison,
     required List<PaneLayout> layouts,
@@ -1313,7 +1348,9 @@ class _TextDiffState extends State<TextDiff> {
           columns: columns,
           lineNumbers: widget.lineNumbers,
           markers: widget.markers,
+          scale: scale,
         );
+        final double gaps = kTextGap * 2 * scale;
 
         final RowHeights first = _heights!;
         final RowHeights second = _secondHeights ?? _heights!;
@@ -1324,6 +1361,7 @@ class _TextDiffState extends State<TextDiff> {
           characterWidth: characterWidth,
           longest: layouts.first.widest?.line?.text.length ?? 0,
           wrap: widget.wrap,
+          scale: scale,
         );
         final double secondContent = layouts.length > 1
             ? contentWidthOf(
@@ -1332,20 +1370,21 @@ class _TextDiffState extends State<TextDiff> {
                 characterWidth: characterWidth,
                 longest: layouts[1].widest?.line?.text.length ?? 0,
                 wrap: widget.wrap,
+                scale: scale,
               )
             : firstContent;
 
         // Both panes are described before either is laid out, so the table they
         // share has heard from both by the time the first row asks how tall it
         // is.
-        first.describe(0, layouts.first, math.max(0, firstContent - gutter - kTextGap * 2));
+        first.describe(0, layouts.first, math.max(0, firstContent - gutter - gaps));
 
         if (identical(first, second)) {
           if (layouts.length > 1) {
-            first.describe(1, layouts[1], math.max(0, secondContent - gutter - kTextGap * 2));
+            first.describe(1, layouts[1], math.max(0, secondContent - gutter - gaps));
           }
         } else {
-          second.describe(0, layouts[1], math.max(0, secondContent - gutter - kTextGap * 2));
+          second.describe(0, layouts[1], math.max(0, secondContent - gutter - gaps));
         }
 
         final Widget firstPane = _pane(

@@ -16,6 +16,7 @@ import 'package:diffine/src/components/shared/diffine_controls.dart';
 import 'package:diffine/src/components/shared/diffine_icons.dart';
 import 'package:diffine/src/internal/i18n.dart';
 import 'package:diffine/src/internal/pane_search.dart';
+import 'package:diffine/src/internal/scale.dart';
 import 'package:diffine/src/theme/tokens.dart';
 import 'package:diffine/src/types.dart';
 import 'package:flutter/services.dart';
@@ -102,6 +103,7 @@ class DiffineFind extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final double scale = DiffineScale.of(context);
     final int total = search.found.matches.length;
     final String counted = search.found.capped ? '$total+' : '$total';
     final bool nothing = search.query.text.isNotEmpty && total == 0;
@@ -110,13 +112,13 @@ class DiffineFind extends StatelessWidget {
       container: true,
       label: fill(strings.searchIn, <String, Object>{'label': label}),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 5),
+        padding: EdgeInsets.symmetric(horizontal: 6 * scale, vertical: 5 * scale),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             if (replaceable)
               Padding(
-                padding: const EdgeInsets.only(right: 4),
+                padding: EdgeInsets.only(right: 4 * scale),
                 child: DiffineIconButton(
                   theme: theme,
                   label: strings.replace,
@@ -135,9 +137,12 @@ class DiffineFind extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
-                  _queryRow(total, counted, nothing),
+                  _queryRow(total: total, counted: counted, nothing: nothing, scale: scale),
                   if (replaceable && search.replacing)
-                    Padding(padding: const EdgeInsets.only(top: 4), child: _replaceRow(total)),
+                    Padding(
+                      padding: EdgeInsets.only(top: 4 * scale),
+                      child: _replaceRow(total: total, scale: scale),
+                    ),
                 ],
               ),
             ),
@@ -147,7 +152,12 @@ class DiffineFind extends StatelessWidget {
     );
   }
 
-  Widget _queryRow(int total, String counted, bool nothing) {
+  Widget _queryRow({
+    required int total,
+    required String counted,
+    required bool nothing,
+    required double scale,
+  }) {
     return Row(
       children: <Widget>[
         Expanded(
@@ -181,7 +191,7 @@ class DiffineFind extends StatelessWidget {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.only(right: 4),
+                padding: EdgeInsets.only(right: 4 * scale),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
@@ -231,11 +241,11 @@ class DiffineFind extends StatelessWidget {
                 }),
           child: ExcludeSemantics(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
+              padding: EdgeInsets.symmetric(horizontal: 8 * scale),
               child: Text(
                 '${total == 0 ? 0 : search.current + 1} / $counted',
                 style: TextStyle(
-                  fontSize: 11,
+                  fontSize: 11 * scale,
                   color: theme.muted,
                   fontFeatures: const <FontFeature>[FontFeature.tabularFigures()],
                 ),
@@ -265,7 +275,7 @@ class DiffineFind extends StatelessWidget {
     );
   }
 
-  Widget _replaceRow(int total) {
+  Widget _replaceRow({required int total, required double scale}) {
     return Row(
       children: <Widget>[
         Expanded(
@@ -295,13 +305,13 @@ class DiffineFind extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(width: 4),
+        SizedBox(width: 4 * scale),
         DiffineTextButton(
           theme: theme,
           label: strings.replace,
           onPressed: total == 0 ? null : onReplace,
         ),
-        const SizedBox(width: 4),
+        SizedBox(width: 4 * scale),
         DiffineTextButton(
           theme: theme,
           label: strings.replaceAll,

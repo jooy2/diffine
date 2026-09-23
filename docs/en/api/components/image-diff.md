@@ -105,11 +105,14 @@ ImageDiff(mode: DiffineMode.editor, view: DiffineImageView.wipe, onChoose: pick)
 | `navigation` | `boolean` | `true` | Whether the buttons for stepping through the changes are drawn. |
 | `zoom` | `boolean` | `true` | Whether the zoom controls are drawn. |
 | `summary` | `boolean` | `true` | Whether the bar under the panes is drawn. |
+| `scale` | `number` | `1` | How large the component's own text and controls are drawn, as a multiple. |
 | `colorScheme` | `'system' \| 'light' \| 'dark'` | `'system'` | Which palette to draw in. |
 | `locale` | `'en' \| 'ko'` | `'en'` | The language of the component's own words. |
 | `strings` | [`Partial<DiffineImageStrings>`](../types/diffine-strings) | — | Words to use instead of the locale's. |
 
 `split` draws two panes; the other three draw one, with both names over it. `flow` is which way those two run — across the comparison, or down it, a picture to a row — so it only has an answer in `split`. What the marks are drawn in is five [custom properties](../theme#colours) rather than props, because a canvas is painted rather than styled.
+
+`scale` is how large the bars, the buttons, the loupe and everything else the component draws around the pictures are, as a multiple. It is not the zoom, which is `viewport`: the pictures are drawn the same at any `scale`.
 
 :::
 
@@ -132,6 +135,7 @@ ImageDiff(mode: DiffineMode.editor, view: DiffineImageView.wipe, onChoose: pick)
 | `navigation` | `bool` | `true` | Whether the buttons for stepping through the changes are drawn. |
 | `zoom` | `bool` | `true` | Whether the zoom controls are drawn. |
 | `summary` | `bool` | `true` | Whether the bar under the panes is drawn. |
+| `scale` | `double` | `1` | How large the widget's own text and controls are drawn, as a multiple. |
 | `colorScheme` | `DiffineColorScheme` | `.system` | Which palette to draw in. |
 | `theme` | [`DiffineTheme?`](../theme) | — | The whole palette, and the measurements with it. |
 | `height` | `double?` | — | How tall the whole comparison is. |
@@ -139,6 +143,8 @@ ImageDiff(mode: DiffineMode.editor, view: DiffineImageView.wipe, onChoose: pick)
 | `strings` | [`DiffineStrings?`](../types/diffine-strings) | — | Words to use instead of the locale's. |
 
 `split` draws two panes; the other three draw one, with both names over it. `flow` is which way those two run — across the comparison, or down it, a picture to a row — so it only has an answer in `split`. What the marks are drawn in is `theme.image`, seven colours of the [palette](../theme#the-palette).
+
+`scale` is how large the bars, the buttons, the loupe and everything else the widget draws around the pictures are, as a multiple. It is not the zoom, which is `viewport`: the pictures are drawn the same at any `scale`.
 
 :::
 

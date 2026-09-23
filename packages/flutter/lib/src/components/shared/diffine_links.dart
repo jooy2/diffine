@@ -21,6 +21,7 @@ import 'package:diffine/src/components/shared/diffine_icons.dart';
 import 'package:diffine/src/internal/i18n.dart';
 import 'package:diffine/src/internal/metrics.dart';
 import 'package:diffine/src/internal/rows.dart';
+import 'package:diffine/src/internal/scale.dart';
 import 'package:diffine/src/theme/tokens.dart';
 import 'package:diffine/src/types.dart';
 import 'package:flutter/widgets.dart';
@@ -221,6 +222,7 @@ class DiffineLinks extends StatelessWidget {
   Widget build(BuildContext context) {
     final bool applying =
         onApply != null && (writableBefore || writableAfter) && changes.isNotEmpty;
+    final double scale = DiffineScale.of(context);
 
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
@@ -241,7 +243,7 @@ class DiffineLinks extends StatelessWidget {
               if (applying)
                 for (final DiffineLink link in links)
                   Positioned(
-                    top: link.middle - 13,
+                    top: link.middle - 13 * scale,
                     left: 0,
                     right: 0,
                     child: Row(

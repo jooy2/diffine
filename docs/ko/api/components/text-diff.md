@@ -131,6 +131,7 @@ TextDiff(mode: DiffineMode.editor, defaultBefore: saved, defaultAfter: draft);
 | `tabSize` | `number` | `4` | 탭을 몇 칸으로 그릴지. |
 | `colorScheme` | `'system' \| 'light' \| 'dark'` | `'system'` | 어떤 팔레트로 그릴지. |
 | `font` | [`DiffineFont`](../types/diffine-font) | — | 문서를 그리는 글꼴. |
+| `scale` | `number` | `1` | 글자와 컴포넌트 자신의 컨트롤을 몇 배 크기로 그릴지. |
 | `locale` | `'en' \| 'ko'` | `'en'` | 컴포넌트 자신이 쓰는 말의 언어. |
 | `strings` | [`Partial<DiffineTextStrings>`](../types/diffine-strings) | — | 로케일 대신 쓸 단어. |
 | `highlight` | [`DiffineHighlight`](../types/diffine-highlight) | — | `language` 대신 쓸, 애플리케이션 자신의 강조기. |
@@ -138,6 +139,8 @@ TextDiff(mode: DiffineMode.editor, defaultBefore: saved, defaultAfter: draft);
 | `renderWidget` | [`DiffineRender`](../types/diffine-render) | — | 줄 아래에 넣을, 애플리케이션 자신의 내용. |
 
 `collapse`와 `context`는 `viewer`의 것입니다. 에디터는 입력란이 문서 전체를 들고 있어서 아무것도 접지 않습니다. `applyChanges`는 `editor`의 것입니다. 변경을 적용한다는 것은 문서를 쓴다는 뜻이고, 버튼은 `connectors`가 그리는 열에 놓입니다. `connectors`와 `syncScroll`은 두 창 사이의 이야기라서 `unified`에서는 무시됩니다. `languageLabel`은 `viewer`에서 언어 이름을, `editor`에서 그 이름을 고르는 메뉴를 그립니다. 그 선택을 누가 관리하는지는 `language`, `defaultLanguage`, `onLanguageChange`가 정합니다.
+
+`scale`은 글자와, 컴포넌트가 그 둘레에 그리는 줄 번호 칸, 막대, 버튼과 아이콘, 메뉴 전부에 곱해집니다. `1.25`면 4분의 1 크게, `0.875`면 8분의 1 작게 그립니다. `font`로 준 크기에도 곱해지므로 둘의 비율은 그대로이고, 상자의 높이는 페이지가 정할 몫이라 바꾸지 않습니다.
 
 그 밖에 넘긴 것은 전부 엘리먼트로 그대로 갑니다. `id`, `className`, `style`, `aria-*`는 `<div>`에서와 똑같이 동작합니다.
 
@@ -169,6 +172,7 @@ TextDiff(mode: DiffineMode.editor, defaultBefore: saved, defaultAfter: draft);
 | `colorScheme` | `DiffineColorScheme` | `.system` | 어떤 팔레트로 그릴지. |
 | `theme` | [`DiffineTheme?`](../theme) | — | 팔레트 전체와 치수. |
 | `font` | [`DiffineFont?`](../types/diffine-font) | — | 문서를 그리는 글꼴. |
+| `scale` | `double` | `1` | 글자와 위젯 자신의 컨트롤을 몇 배 크기로 그릴지. |
 | `height` | `double?` | — | 비교 전체의 높이. `double.infinity`면 감싼 위젯을 채웁니다. |
 | `locale` | `DiffineLocale` | `DiffineLocale.en` | 위젯 자신이 쓰는 말의 언어. |
 | `strings` | [`DiffineStrings?`](../types/diffine-strings) | — | 로케일 대신 쓸 낱말. |
@@ -177,6 +181,8 @@ TextDiff(mode: DiffineMode.editor, defaultBefore: saved, defaultAfter: draft);
 | `renderWidget` | [`DiffineRender?`](../types/diffine-render) | — | 줄 아래에 넣을, 애플리케이션 자신의 내용. |
 
 `collapse`와 `context`는 뷰어의 것입니다. 에디터는 입력란이 문서 전체를 들고 있어서 아무것도 접지 않습니다. `applyChanges`는 에디터의 것입니다. 변경을 적용한다는 것은 문서를 쓴다는 뜻이고, 버튼은 `connectors`가 그리는 열에 놓입니다. `connectors`와 `syncScroll`은 두 창 사이의 이야기라서 `DiffineView.unified`에서는 무시됩니다. `languageLabel`은 뷰어에서 언어 이름을, 에디터에서 그 이름을 고르는 메뉴를 그립니다. 그 선택을 누가 관리하는지는 `language`, `defaultLanguage`, `onLanguageChanged`가 정합니다.
+
+`scale`은 글자와, 위젯이 그 둘레에 그리는 줄 번호 칸, 막대, 버튼과 아이콘, 메뉴 전부에 곱해집니다. `1.25`면 4분의 1 크게, `0.875`면 8분의 1 작게 그립니다. `font`로 준 크기에도 곱해지므로 둘의 비율은 그대로이고, `height`와 모서리 반지름은 화면이 정할 몫이라 바꾸지 않습니다.
 
 `virtualize`는 없습니다. 행은 언제나 닿는 대로 만들어집니다. `ListView`가 원래 그런 것이기 때문입니다. 그것을 끄는 것은 `renderWidget`이고, 인자 없이 스스로 끕니다. 애플리케이션이 줄 아래에 그린 것은 언제든 커질 수 있어서, 그런 행을 대신 세워 두면 엉뚱한 자리에 서기 때문입니다.
 

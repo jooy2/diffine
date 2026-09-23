@@ -20,11 +20,12 @@ library;
 import 'package:diffine/src/components/shared/diffine_icons.dart';
 import 'package:diffine/src/internal/i18n.dart';
 import 'package:diffine/src/internal/measure.dart';
+import 'package:diffine/src/internal/scale.dart';
 import 'package:diffine/src/theme/tokens.dart';
 import 'package:diffine/src/types.dart';
 import 'package:flutter/widgets.dart';
 
-/// How tall the bar is.
+/// How tall the bar is, at a scale of 1.
 const double kSummaryHeight = 28;
 
 /// The bar under a text comparison.
@@ -84,6 +85,7 @@ class DiffineSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final double scale = DiffineScale.of(context);
     final DocumentSize beforeSize = measureText(before);
     final DocumentSize afterSize = measureText(after);
     final String sentence = changes == 0
@@ -113,7 +115,7 @@ class DiffineSummary extends StatelessWidget {
       liveRegion: true,
       label: sentence,
       child: Container(
-        height: kSummaryHeight,
+        height: kSummaryHeight * scale,
         decoration: BoxDecoration(
           color: theme.gutter,
           border: Border(top: BorderSide(color: theme.border)),
@@ -122,7 +124,7 @@ class DiffineSummary extends StatelessWidget {
           children: <Widget>[
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 10),
+                padding: EdgeInsets.symmetric(horizontal: 10 * scale),
                 child: _Metric(
                   theme: theme,
                   icon: DiffineIcon.document,
@@ -141,7 +143,7 @@ class DiffineSummary extends StatelessWidget {
             if (linked) SizedBox(width: theme.linksWidth),
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 10),
+                padding: EdgeInsets.symmetric(horizontal: 10 * scale),
                 child: Row(
                   children: <Widget>[
                     // The size takes whatever the counts leave, so the counts
@@ -170,11 +172,11 @@ class DiffineSummary extends StatelessWidget {
                           if (difference != null)
                             Flexible(
                               child: Padding(
-                                padding: const EdgeInsets.only(left: 10),
+                                padding: EdgeInsets.only(left: 10 * scale),
                                 child: Text(
                                   difference,
                                   overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(fontSize: 11, color: theme.muted),
+                                  style: TextStyle(fontSize: 11 * scale, color: theme.muted),
                                 ),
                               ),
                             ),
@@ -280,17 +282,19 @@ class _TallyItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final double scale = DiffineScale.of(context);
+
     return Padding(
-      padding: const EdgeInsets.only(left: 10),
+      padding: EdgeInsets.only(left: 10 * scale),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           DiffineIcons(icon, size: 13, strokeWidth: 1.5, color: colour),
-          const SizedBox(width: 3),
+          SizedBox(width: 3 * scale),
           Text(
             text,
             style: TextStyle(
-              fontSize: 11,
+              fontSize: 11 * scale,
               fontWeight: FontWeight.w600,
               color: colour,
               fontFeatures: const <FontFeature>[FontFeature.tabularFigures()],
@@ -320,6 +324,8 @@ class _Metric extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final double scale = DiffineScale.of(context);
+
     return Semantics(
       label: said,
       child: ExcludeSemantics(
@@ -327,12 +333,12 @@ class _Metric extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
             DiffineIcons(icon, size: 13, strokeWidth: 1.5, color: theme.muted),
-            const SizedBox(width: 4),
+            SizedBox(width: 4 * scale),
             Flexible(
               child: Text(
                 written,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: 11, color: theme.muted),
+                style: TextStyle(fontSize: 11 * scale, color: theme.muted),
               ),
             ),
           ],

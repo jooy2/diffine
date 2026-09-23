@@ -12,6 +12,7 @@ library;
 import 'package:diffine/src/components/shared/diffine_controls.dart';
 import 'package:diffine/src/components/shared/diffine_icons.dart';
 import 'package:diffine/src/internal/i18n.dart';
+import 'package:diffine/src/internal/scale.dart';
 import 'package:diffine/src/theme/tokens.dart';
 import 'package:diffine/src/types.dart';
 import 'package:flutter/widgets.dart';
@@ -45,6 +46,7 @@ class DiffineNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final double scale = DiffineScale.of(context);
     final bool none = total == 0;
 
     return Row(
@@ -66,11 +68,11 @@ class DiffineNav extends StatelessWidget {
                 }),
           child: ExcludeSemantics(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
+              padding: EdgeInsets.symmetric(horizontal: 4 * scale),
               child: Text(
                 '${current < 0 ? '–' : current + 1} / $total',
                 style: TextStyle(
-                  fontSize: 11,
+                  fontSize: 11 * scale,
                   fontWeight: FontWeight.w600,
                   color: theme.muted,
                   fontFeatures: const <FontFeature>[FontFeature.tabularFigures()],

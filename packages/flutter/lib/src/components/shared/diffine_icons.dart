@@ -8,6 +8,7 @@
 /// screen reader, which is told what the button does by the button.
 library;
 
+import 'package:diffine/src/internal/scale.dart';
 import 'package:flutter/widgets.dart';
 
 /// Which mark to draw.
@@ -75,10 +76,12 @@ class DiffineIcons extends StatelessWidget {
   /// Which mark.
   final DiffineIcon icon;
 
-  /// How large it is drawn, in logical pixels.
+  /// How large it is drawn, in logical pixels at a scale of 1. The
+  /// comparison's scale is applied on top.
   final double size;
 
-  /// How thick its lines are.
+  /// How thick its lines are. Scaled along with [size], so a mark drawn larger
+  /// is the same mark rather than a thinner one.
   final double strokeWidth;
 
   /// What it is drawn in. The surrounding text colour where nothing is given.
@@ -86,14 +89,15 @@ class DiffineIcons extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final double scale = DiffineScale.of(context);
     final Color paint =
         color ?? DefaultTextStyle.of(context).style.color ?? const Color(0xff000000);
 
     return SizedBox(
-      width: size,
-      height: size,
+      width: size * scale,
+      height: size * scale,
       child: CustomPaint(
-        painter: _IconPainter(icon: icon, colour: paint, strokeWidth: strokeWidth),
+        painter: _IconPainter(icon: icon, colour: paint, strokeWidth: strokeWidth * scale),
         isComplex: false,
       ),
     );

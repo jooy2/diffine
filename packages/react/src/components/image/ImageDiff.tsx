@@ -23,6 +23,7 @@ import { fill } from '../../internal/strings/common.js';
 import { imageStrings } from '../../internal/strings/image.js';
 import { useIsomorphicLayoutEffect } from '../../internal/layout.js';
 import { formatNumber } from '../../internal/measure.js';
+import { scaleOf, scaleVariables } from '../../internal/scale.js';
 import type { Layer } from '../../internal/image/paint.js';
 import { SPAN, type Sample } from '../../internal/image/loupe.js';
 import { imageContentOf, imageSourceOf } from '../../internal/image/source.js';
@@ -353,6 +354,28 @@ export interface ImageDiffProps extends Omit<
   colorScheme?: DiffineColorScheme;
 
   /**
+   * How large the component's own text and controls are drawn, as a multiple
+   * of their default size.
+   *
+   * `1.25` draws everything a quarter larger and `0.875` an eighth smaller: the
+   * bars above and below, the buttons, the loupe and the handle of the wipe.
+   * It is not the zoom of the pictures, which is `viewport`. A picture is drawn
+   * at whatever size a reader zoomed it to, and this changes the frame around
+   * it. The box stays the size it was as well — its height and its corners are
+   * the page's layout.
+   *
+   * The same number can be set as `--diffine-scale` in the application's own
+   * CSS, on the element or on one around it. The prop is still the way in that
+   * reaches everything: the loupe draws its magnified pixels on a canvas, at a
+   * size the component works out, and only the prop gets that far.
+   *
+   * Anything that is not a positive number is read as 1.
+   *
+   * @default 1
+   */
+  scale?: number;
+
+  /**
    * The language of the component's own words.
    * @default 'en'
    */
@@ -434,6 +457,7 @@ export function ImageDiff({
   defaultSelected = -1,
   onSelectedChange,
   colorScheme = 'system',
+  scale: scaleProp,
   locale = 'en',
   strings: overrides,
   className,
@@ -452,6 +476,7 @@ export function ImageDiff({
    */
   const many = pictures !== undefined;
   const editing = mode === 'editor' && !many;
+  const scale = scaleOf(scaleProp);
   const strings = React.useMemo(() => imageStrings(locale, overrides), [locale, overrides]);
 
   const beforeSource = imageSourceOf(before ?? defaultBefore, strings.before);
@@ -659,7 +684,7 @@ export function ImageDiff({
     look(viewportOn({ viewport, frame, pane: box, area: changes[next] }));
   }
 
-  function scale(by: number): void {
+  function zoomBy(by: number): void {
     look(
       zoomAbout({
         viewport,
@@ -855,7 +880,11 @@ export function ImageDiff({
       // stylesheet cannot count panes. Panes in a column stand over one bar
       // rather than one part of it each.
       style={
-        { ...style, '--diffine-panes': split && !down ? shown.length : 1 } as React.CSSProperties
+        {
+          ...scaleVariables(scale),
+          ...style,
+          '--diffine-panes': split && !down ? shown.length : 1
+        } as React.CSSProperties
       }
       {...rest}
     >
@@ -891,7 +920,7 @@ export function ImageDiff({
                     changes={changes}
                     selected={current}
                     onStep={step}
-                    onScale={scale}
+                    onScale={zoomBy}
                     onFit={() => look('fit')}
                     viewport={viewport}
                     navigation={navigation}
@@ -927,7 +956,7 @@ export function ImageDiff({
             changes={changes}
             selected={current}
             onStep={step}
-            onScale={scale}
+            onScale={zoomBy}
             onFit={() => look('fit')}
             viewport={viewport}
             navigation={navigation}
@@ -1027,6 +1056,7 @@ export function ImageDiff({
             outline={palette?.outline ?? 'transparent'}
             marker={palette?.marker ?? 'transparent'}
             halo={palette?.halo ?? 'transparent'}
+            scale={scale}
             strings={strings}
           />
         ) : null}

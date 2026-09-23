@@ -17,6 +17,7 @@ import 'package:diffine/src/components/shared/diffine_icons.dart';
 import 'package:diffine/src/components/shared/diffine_summary.dart';
 import 'package:diffine/src/internal/i18n.dart';
 import 'package:diffine/src/internal/measure.dart';
+import 'package:diffine/src/internal/scale.dart';
 import 'package:diffine/src/theme/tokens.dart';
 import 'package:diffine/src/types.dart';
 import 'package:flutter/widgets.dart';
@@ -113,7 +114,10 @@ class ImageDiffSummary extends StatelessWidget {
             'percent': formatNumber(changed * 100, locale),
           });
 
-    final Widget tally = !compared ? const SizedBox.shrink() : ExcludeSemantics(child: _tally());
+    final double scale = DiffineScale.of(context);
+    final Widget tally = !compared
+        ? const SizedBox.shrink()
+        : ExcludeSemantics(child: _tally(scale));
 
     return Semantics(
       container: true,
@@ -121,7 +125,7 @@ class ImageDiffSummary extends StatelessWidget {
       liveRegion: true,
       label: sentence,
       child: Container(
-        height: kSummaryHeight,
+        height: kSummaryHeight * scale,
         decoration: BoxDecoration(
           color: theme.gutter,
           border: Border(top: BorderSide(color: theme.border)),
@@ -139,20 +143,20 @@ class ImageDiffSummary extends StatelessWidget {
                 children: <Widget>[
                   for (int at = 0; at < pictures.length; at += 1)
                     Expanded(
-                      child: _metrics(<Widget>[
-                        Expanded(child: _metric(pictures[at])),
+                      child: _metrics(scale, <Widget>[
+                        Expanded(child: _metric(pictures[at], scale)),
                         if (at == pictures.length - 1) tally,
                       ]),
                     ),
                 ],
               )
-            : _metrics(<Widget>[
+            : _metrics(scale, <Widget>[
                 Expanded(
                   child: Row(
                     children: <Widget>[
                       for (int at = 0; at < pictures.length; at += 1) ...<Widget>[
-                        if (at > 0) const SizedBox(width: 12),
-                        Flexible(child: _metric(pictures[at])),
+                        if (at > 0) SizedBox(width: 12 * scale),
+                        Flexible(child: _metric(pictures[at], scale)),
                       ],
                     ],
                   ),
@@ -163,14 +167,14 @@ class ImageDiffSummary extends StatelessWidget {
     );
   }
 
-  Widget _metrics(List<Widget> children) {
+  Widget _metrics(double scale, List<Widget> children) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 10),
+      padding: EdgeInsets.symmetric(horizontal: 10 * scale),
       child: Row(children: children),
     );
   }
 
-  Widget _tally() {
+  Widget _tally(double scale) {
     /*
      * A picture that arrived or went away is one mark rather than a count. The
      * count is right — every pixel of it changed, over one area — and it is the
@@ -199,27 +203,38 @@ class ImageDiffSummary extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
         _item(
-          DiffineIcon.region,
-          theme.muted,
-          '${formatCount(regions, locale)}${complete ? '' : '+'}',
+          icon: DiffineIcon.region,
+          colour: theme.muted,
+          text: '${formatCount(regions, locale)}${complete ? '' : '+'}',
+          scale: scale,
         ),
-        _item(DiffineIcon.change, theme.muted, '${formatNumber(changed * 100, locale)}%'),
+        _item(
+          icon: DiffineIcon.change,
+          colour: theme.muted,
+          text: '${formatNumber(changed * 100, locale)}%',
+          scale: scale,
+        ),
       ],
     );
   }
 
-  Widget _item(DiffineIcon icon, Color colour, String text) {
+  Widget _item({
+    required DiffineIcon icon,
+    required Color colour,
+    required String text,
+    required double scale,
+  }) {
     return Padding(
-      padding: const EdgeInsets.only(left: 10),
+      padding: EdgeInsets.only(left: 10 * scale),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           DiffineIcons(icon, size: 13, strokeWidth: 1.5, color: colour),
-          const SizedBox(width: 3),
+          SizedBox(width: 3 * scale),
           Text(
             text,
             style: TextStyle(
-              fontSize: 11,
+              fontSize: 11 * scale,
               fontWeight: FontWeight.w600,
               color: colour,
               fontFeatures: const <FontFeature>[FontFeature.tabularFigures()],
@@ -230,7 +245,7 @@ class ImageDiffSummary extends StatelessWidget {
     );
   }
 
-  Widget _metric(ImageMetrics? picture) {
+  Widget _metric(ImageMetrics? picture, double scale) {
     if (picture == null) {
       return const SizedBox.shrink();
     }
@@ -252,7 +267,7 @@ class ImageDiffSummary extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
             DiffineIcons(DiffineIcon.picture, size: 13, strokeWidth: 1.5, color: theme.muted),
-            const SizedBox(width: 4),
+            SizedBox(width: 4 * scale),
             // The size of a picture gives way to the counts beside it, because
             // a count cut in half is a wrong number and a size cut in half is a
             // shorter one.
@@ -261,7 +276,7 @@ class ImageDiffSummary extends StatelessWidget {
                 '$width × $height · $size',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: 11, color: theme.muted),
+                style: TextStyle(fontSize: 11 * scale, color: theme.muted),
               ),
             ),
           ],

@@ -37,20 +37,27 @@ double characterWidthOf(TextStyle style, TextDirection direction) {
   return width;
 }
 
-/// How wide the columns down the side of a pane come to.
+/// How wide the columns down the side of a pane come to, at the comparison's
+/// scale.
 double gutterWidthOf({
   required double characterWidth,
   required int digits,
   required int columns,
   required bool lineNumbers,
   required bool markers,
+  required double scale,
 }) {
   if (!lineNumbers && !markers) {
     return 0;
   }
 
-  return (lineNumbers ? numberColumnWidth(characterWidth, digits) * columns : 0) +
-      (markers ? kMarkerWidth : 0);
+  final double numbers = numberColumnWidth(
+    characterWidth: characterWidth,
+    digits: digits,
+    scale: scale,
+  );
+
+  return (lineNumbers ? numbers * columns : 0) + (markers ? kMarkerWidth * scale : 0);
 }
 
 /// How wide a pane's content is, which is what there is to scroll across.
@@ -60,12 +67,13 @@ double contentWidthOf({
   required double characterWidth,
   required int longest,
   required bool wrap,
+  required double scale,
 }) {
   if (wrap) {
     return paneWidth;
   }
 
-  return math.max(paneWidth, gutter + longest * characterWidth + kTextGap * 2 + 4);
+  return math.max(paneWidth, gutter + longest * characterWidth + (kTextGap * 2 + 4) * scale);
 }
 
 /// One column of drawn lines.

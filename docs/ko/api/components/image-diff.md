@@ -105,11 +105,14 @@ ImageDiff(mode: DiffineMode.editor, view: DiffineImageView.wipe, onChoose: pick)
 | `navigation` | `boolean` | `true` | 변경 사이를 오가는 버튼을 그릴지. |
 | `zoom` | `boolean` | `true` | 확대 버튼을 그릴지. |
 | `summary` | `boolean` | `true` | 창 아래 막대를 그릴지. |
+| `scale` | `number` | `1` | 컴포넌트 자신의 글자와 컨트롤을 몇 배 크기로 그릴지. |
 | `colorScheme` | `'system' \| 'light' \| 'dark'` | `'system'` | 어느 팔레트로 그릴지. |
 | `locale` | `'en' \| 'ko'` | `'en'` | 컴포넌트가 쓰는 말의 언어. |
 | `strings` | [`Partial<DiffineImageStrings>`](../types/diffine-strings) | — | 로케일 대신 쓸 낱말. |
 
 `split`은 창을 둘 그리고 나머지 셋은 하나를 그리며, 그 위에 두 이름을 함께 씁니다. `flow`는 그 두 창이 가로로 늘어설지 세로로 쌓일지를 정하므로 `split`에서만 뜻이 있습니다. 표시하는 색은 prop이 아니라 [커스텀 속성](../theme#색)입니다. 캔버스에는 스타일을 입힐 수 없어서 값을 읽어 직접 칠하기 때문입니다.
+
+`scale`은 막대, 버튼, 돋보기처럼 컴포넌트가 이미지 둘레에 그리는 것을 몇 배 크기로 그릴지 정합니다. 이미지 확대 배율은 `viewport`이고, 이미지는 `scale`과 상관없이 같은 크기로 그립니다.
 
 :::
 
@@ -132,6 +135,7 @@ ImageDiff(mode: DiffineMode.editor, view: DiffineImageView.wipe, onChoose: pick)
 | `navigation` | `bool` | `true` | 변경 사이를 오가는 버튼을 그릴지. |
 | `zoom` | `bool` | `true` | 확대 버튼을 그릴지. |
 | `summary` | `bool` | `true` | 창 아래 막대를 그릴지. |
+| `scale` | `double` | `1` | 위젯 자신의 글자와 컨트롤을 몇 배 크기로 그릴지. |
 | `colorScheme` | `DiffineColorScheme` | `.system` | 어느 팔레트로 그릴지. |
 | `theme` | [`DiffineTheme?`](../theme) | — | 팔레트 전체와 치수. |
 | `height` | `double?` | — | 비교 전체의 높이. |
@@ -139,6 +143,8 @@ ImageDiff(mode: DiffineMode.editor, view: DiffineImageView.wipe, onChoose: pick)
 | `strings` | [`DiffineStrings?`](../types/diffine-strings) | — | 로케일 대신 쓸 낱말. |
 
 `split`은 창을 둘 그리고 나머지 셋은 하나를 그리며, 그 위에 두 이름을 함께 씁니다. `flow`는 그 두 창이 가로로 늘어설지 세로로 쌓일지를 정하므로 `split`에서만 뜻이 있습니다. 표시하는 색은 [팔레트](../theme#팔레트)의 `theme.image` 일곱 개입니다.
+
+`scale`은 막대, 버튼, 돋보기처럼 위젯이 이미지 둘레에 그리는 것을 몇 배 크기로 그릴지 정합니다. 이미지 확대 배율은 `viewport`이고, 이미지는 `scale`과 상관없이 같은 크기로 그립니다.
 
 :::
 

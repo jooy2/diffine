@@ -1,4 +1,5 @@
 import 'package:diffine/diffine.dart';
+import 'package:diffine/src/components/shared/diffine_line.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -13,6 +14,17 @@ List<String> drawn(WidgetTester tester) {
       .widgetList<Text>(find.byType(Text))
       .map((Text text) => text.data ?? text.textSpan?.toPlainText() ?? '')
       .toList();
+}
+
+/// How tall one drawn line of a document is.
+double lineHeightOf(WidgetTester tester) {
+  return tester.getSize(find.byType(DiffineLineWidget).first).height;
+}
+
+/// How large the button in the bar above the panes that moves to the next
+/// change is.
+Size nextButtonOf(WidgetTester tester) {
+  return tester.getSize(find.bySemanticsLabel('Next change'));
 }
 
 void main() {
@@ -292,5 +304,133 @@ void main() {
     await tester.pump();
 
     expect(drawn(tester), contains('line 0'));
+  });
+
+  testWidgets('draws its text and its controls at the scale it was given', (
+    WidgetTester tester,
+  ) async {
+    widen(tester);
+    await tester.pumpWidget(
+      host(
+        const TextDiff(before: _before, after: _after),
+        size: kWide,
+      ),
+    );
+
+    final double line = lineHeightOf(tester);
+    final Size button = nextButtonOf(tester);
+
+    // The default is the size the theme says, and nothing multiplied.
+    expect(line, DiffineTheme.light.lineHeight);
+
+    for (final double scale in <double>[2, 0.875]) {
+      await tester.pumpWidget(
+        host(
+          TextDiff(before: _before, after: _after, scale: scale),
+          size: kWide,
+        ),
+      );
+
+      expect(lineHeightOf(tester), line * scale, reason: 'scale $scale');
+      expect(nextButtonOf(tester), button * scale, reason: 'scale $scale');
+    }
+  });
+
+  testWidgets('multiplies a typeface the application passed rather than replacing it', (
+    WidgetTester tester,
+  ) async {
+    widen(tester);
+    await tester.pumpWidget(
+      host(
+        const TextDiff(
+          before: _before,
+          after: _after,
+          font: DiffineFont(size: 15, lineHeight: 20),
+          scale: 1.5,
+        ),
+        size: kWide,
+      ),
+    );
+
+    expect(lineHeightOf(tester), 30);
+    expect(tester.widget<Text>(find.text('four')).textSpan?.style?.fontSize, 22.5);
+  });
+
+  testWidgets('leaves the box it is drawn in the size it was', (WidgetTester tester) async {
+    widen(tester);
+    await tester.pumpWidget(
+      host(
+        const TextDiff(before: _before, after: _after),
+        size: kWide,
+      ),
+    );
+
+    final Size box = tester.getSize(find.byType(TextDiff));
+
+    await tester.pumpWidget(
+      host(
+        const TextDiff(before: _before, after: _after, scale: 2),
+        size: kWide,
+      ),
+    );
+
+    expect(tester.getSize(find.byType(TextDiff)), box);
+  });
+
+  testWidgets('lays an editor\'s field where a viewer draws its text, at any scale', (
+    WidgetTester tester,
+  ) async {
+    // The field is laid over lines that are painted rather than built, and the
+    // two only read as one if they start at the same place. A viewer's line is
+    // a widget that can be measured, and the painted one is drawn to match it.
+    widen(tester);
+
+    for (final double scale in <double>[1, 2]) {
+      await tester.pumpWidget(
+        host(
+          TextDiff(
+            key: const ValueKey<String>('viewer'),
+            before: 'one\n',
+            after: 'two\n',
+            scale: scale,
+          ),
+          size: kWide,
+        ),
+      );
+
+      final double text = tester.getTopLeft(find.text('one').first).dx;
+
+      await tester.pumpWidget(
+        host(
+          TextDiff(
+            key: const ValueKey<String>('editor'),
+            mode: DiffineMode.editor,
+            before: 'one\n',
+            after: 'two\n',
+            scale: scale,
+          ),
+          size: kWide,
+        ),
+      );
+
+      expect(tester.getTopLeft(find.byType(EditableText).first).dx, text, reason: 'scale $scale');
+    }
+  });
+
+  testWidgets('draws a scale that is not a positive number at the default size', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(host(const TextDiff(before: _before, after: _after)));
+
+    final double line = lineHeightOf(tester);
+    final Size button = nextButtonOf(tester);
+
+    for (final double scale in <double>[0, -1, double.nan, double.infinity]) {
+      await tester.pumpWidget(host(TextDiff(before: _before, after: _after, scale: scale)));
+
+      expect(lineHeightOf(tester), line, reason: 'scale $scale');
+      expect(nextButtonOf(tester), button, reason: 'scale $scale');
+      expect(tester.takeException(), isNull, reason: 'scale $scale');
+    }
   });
 }

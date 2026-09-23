@@ -29,6 +29,7 @@ import 'package:diffine/src/components/shared/diffine_line.dart';
 import 'package:diffine/src/internal/metrics.dart';
 import 'package:diffine/src/internal/pieces.dart';
 import 'package:diffine/src/internal/rows.dart';
+import 'package:diffine/src/internal/scale.dart';
 import 'package:diffine/src/internal/scroll.dart';
 import 'package:diffine/src/internal/search.dart';
 import 'package:diffine/src/theme/tokens.dart';
@@ -154,6 +155,7 @@ class TextDiffField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final TextDirection direction = Directionality.of(context);
+    final double scale = DiffineScale.of(context);
     final double height = math.max(heights.total, theme.lineHeight);
     final Widget body = SizedBox(
       width: contentWidth,
@@ -182,13 +184,16 @@ class TextDiffField extends StatelessWidget {
                     matches: matches,
                     match: match,
                     scroller: vertical,
+                    scale: scale,
                   ),
                 ),
               ),
             ),
           ),
+          // Inset by exactly what the painter below insets a line by, which is
+          // what keeps the caret on the letters it is between at any scale.
           Padding(
-            padding: EdgeInsets.only(left: gutterWidth + kTextGap, right: kTextGap),
+            padding: EdgeInsets.only(left: gutterWidth + kTextGap * scale, right: kTextGap * scale),
             child: _field(context),
           ),
         ],
@@ -343,6 +348,7 @@ class _BackdropPainter extends CustomPainter {
     required this.gutterWidth,
     required this.invisibles,
     required this.scroller,
+    required this.scale,
     this.highlight,
     this.matches,
     this.match,
@@ -362,6 +368,7 @@ class _BackdropPainter extends CustomPainter {
   final double gutterWidth;
   final bool invisibles;
   final ScrollController scroller;
+  final double scale;
   final DiffineHighlight? highlight;
   final Map<int, List<SearchMatch>>? matches;
   final SearchMatch? match;
@@ -410,14 +417,19 @@ class _BackdropPainter extends CustomPainter {
             continue;
           }
 
-          final double width = numberColumnWidth(characterWidth, digits);
+          final double width = numberColumnWidth(
+            characterWidth: characterWidth,
+            digits: digits,
+            scale: scale,
+          );
+          final double gap = 10 * scale;
           final TextPainter painter = TextPainter(
             text: TextSpan(text: '$number', style: numbers),
             textDirection: direction,
             textAlign: TextAlign.right,
-          )..layout(maxWidth: width - 10);
+          )..layout(maxWidth: width - gap);
 
-          painter.paint(canvas, Offset(width * column + width - 10 - painter.width, top));
+          painter.paint(canvas, Offset(width * column + width - gap - painter.width, top));
           painter.dispose();
         }
       }
@@ -433,7 +445,8 @@ class _BackdropPainter extends CustomPainter {
 
         if (mark.isNotEmpty) {
           final double left = lineNumbers
-              ? numberColumnWidth(characterWidth, digits) * drawn.numbers.length
+              ? numberColumnWidth(characterWidth: characterWidth, digits: digits, scale: scale) *
+                    drawn.numbers.length
               : 0;
           final TextPainter painter = TextPainter(
             text: TextSpan(
@@ -449,7 +462,7 @@ class _BackdropPainter extends CustomPainter {
             textDirection: direction,
           )..layout();
 
-          painter.paint(canvas, Offset(left + (kMarkerWidth - painter.width) / 2, top));
+          painter.paint(canvas, Offset(left + (kMarkerWidth * scale - painter.width) / 2, top));
           painter.dispose();
         }
       }
@@ -475,8 +488,8 @@ class _BackdropPainter extends CustomPainter {
   }
 
   void _paintLine(Canvas canvas, Size size, DiffLine line, PaneLine drawn, int row, double top) {
-    final double left = gutterWidth + kTextGap;
-    final double width = math.max(1, size.width - left - kTextGap);
+    final double left = gutterWidth + kTextGap * scale;
+    final double width = math.max(1, size.width - left - kTextGap * scale);
     final List<SearchMatch>? found = matches?[row];
     final List<LineRange>? ranges = found
         ?.map((SearchMatch each) => LineRange(each.start, each.end, current: each == match))
@@ -520,7 +533,12 @@ class _BackdropPainter extends CustomPainter {
       )) {
         if (tab) {
           canvas.drawRect(
-            Rect.fromLTWH(left + box.left + 1, top + box.bottom - 3, (box.right - box.left) - 2, 1),
+            Rect.fromLTWH(
+              left + box.left + 1,
+              top + box.bottom - 3 * scale,
+              (box.right - box.left) - 2,
+              1,
+            ),
             brush,
           );
           continue;
@@ -532,7 +550,7 @@ class _BackdropPainter extends CustomPainter {
         for (int at = 0; at < count; at += 1) {
           canvas.drawCircle(
             Offset(left + box.left + step * (at + 0.5), top + (box.top + box.bottom) / 2),
-            0.9,
+            0.9 * scale,
             brush,
           );
         }

@@ -934,6 +934,14 @@ Anything the component is given beyond its own props goes straight to the elemen
 
 Anything left out keeps the stylesheet's value, so `{ size: 15 }` is a whole answer. A number is pixels and a string is whatever CSS makes of it.
 
+`scale` answers a different question: not what the text is set in, but how large all of it is, the component's own controls included.
+
+```tsx
+<TextDiff before={saved} after={draft} scale={1.25} />
+```
+
+The text, the gutter, the bars, the buttons, their icons and the menus are all multiplied by the same number, a `font` included, and the box stays the height the page gave it. Underneath it is the `--diffine-scale` property, which a stylesheet can also set once on an element around several comparisons. The prop is still the way in that reaches everything: where the language menu opens is worked out by the component, and only the prop gets that far.
+
 :::
 
 ::: fw flutter
@@ -973,6 +981,14 @@ TextDiff(
 ```
 
 Anything left out keeps the theme's value, so `DiffineFont(size: 15)` is a whole answer.
+
+`scale` answers a different question: not what the text is set in, but how large all of it is, the widget's own controls included.
+
+```dart
+TextDiff(before: saved, after: draft, scale: 1.25);
+```
+
+The text, the gutter, the bars, the buttons, their icons and the menus are all multiplied by the same number, a `font` included, and `height` and the corner radius stay as the theme has them.
 
 :::
 

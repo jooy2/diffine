@@ -16,6 +16,7 @@ import 'dart:math' as math;
 
 import 'package:diffine/src/components/shared/diffine_icons.dart';
 import 'package:diffine/src/internal/highlight/catalogue.dart';
+import 'package:diffine/src/internal/scale.dart';
 import 'package:diffine/src/internal/scroll.dart';
 import 'package:diffine/src/theme/tokens.dart';
 import 'package:diffine/src/types.dart';
@@ -23,6 +24,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
 /// How far the menu is held off the control, and off the edge of the screen.
+///
+/// This and the two sizes below it are the ones at a scale of 1, and each is
+/// multiplied by the comparison's scale where it is used.
 const double _gap = 4;
 
 /// The tallest the menu is allowed to be before it scrolls inside itself.
@@ -55,13 +59,15 @@ class DiffineLanguageName extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final double scale = DiffineScale.of(context);
+
     return Semantics(
       label: strings.language,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 6),
+        padding: EdgeInsets.symmetric(horizontal: 6 * scale),
         child: Text(
           languageName(language),
-          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: theme.muted),
+          style: TextStyle(fontSize: 11 * scale, fontWeight: FontWeight.w600, color: theme.muted),
         ),
       ),
     );
@@ -167,12 +173,13 @@ class _DiffineLanguagePickerState extends State<DiffineLanguagePicker> {
   void _reveal() {
     final ScrollPosition? position = scrollPositionOf(_scroller);
 
-    if (position == null) {
+    if (position == null || !mounted) {
       return;
     }
 
-    final double top = _active * _optionHeight;
-    final double bottom = top + _optionHeight;
+    final double optionHeight = _optionHeight * DiffineScale.of(context);
+    final double top = _active * optionHeight;
+    final double bottom = top + optionHeight;
 
     if (top < position.pixels) {
       _scroller.jumpTo(math.min(top, position.maxScrollExtent));
@@ -263,6 +270,7 @@ class _DiffineLanguagePickerState extends State<DiffineLanguagePicker> {
   @override
   Widget build(BuildContext context) {
     final DiffineTheme theme = widget.theme;
+    final double scale = DiffineScale.of(context);
 
     return CompositedTransformTarget(
       link: _link,
@@ -295,10 +303,10 @@ class _DiffineLanguagePickerState extends State<DiffineLanguagePicker> {
                   }
                 },
                 child: Container(
-                  height: 26,
-                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                  height: 26 * scale,
+                  padding: EdgeInsets.symmetric(horizontal: 6 * scale),
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: BorderRadius.circular(6 * scale),
                     border: Border.all(color: _focus.hasFocus ? theme.accent : theme.border),
                   ),
                   child: Row(
@@ -307,12 +315,12 @@ class _DiffineLanguagePickerState extends State<DiffineLanguagePicker> {
                       Text(
                         languageName(widget.language),
                         style: TextStyle(
-                          fontSize: 11,
+                          fontSize: 11 * scale,
                           fontWeight: FontWeight.w600,
                           color: theme.muted,
                         ),
                       ),
-                      const SizedBox(width: 4),
+                      SizedBox(width: 4 * scale),
                       DiffineIcons(DiffineIcon.chevronDown, size: 11, color: theme.muted),
                     ],
                   ),
@@ -327,12 +335,16 @@ class _DiffineLanguagePickerState extends State<DiffineLanguagePicker> {
 
   Widget _buildMenu(BuildContext context) {
     final DiffineTheme theme = widget.theme;
+    // The menu is drawn in the overlay, but it is built under this widget and
+    // inherits from it, so the scale is the comparison's own.
+    final double scale = DiffineScale.of(context);
+    final double optionHeight = _optionHeight * scale;
     final RenderBox? box = context.findRenderObject() as RenderBox?;
     final Size screen = MediaQuery.sizeOf(context);
     final double below = screen.height - (box?.size.height ?? 0);
     final double height = math.min(
-      _tallest,
-      math.max(_optionHeight, math.min(below, kDiffineLanguages.length * _optionHeight)),
+      _tallest * scale,
+      math.max(optionHeight, math.min(below, kDiffineLanguages.length * optionHeight)),
     );
 
     return Stack(
@@ -346,21 +358,21 @@ class _DiffineLanguagePickerState extends State<DiffineLanguagePicker> {
           link: _link,
           targetAnchor: Alignment.bottomRight,
           followerAnchor: Alignment.topRight,
-          offset: const Offset(0, _gap),
+          offset: Offset(0, _gap * scale),
           child: Align(
             alignment: Alignment.topRight,
             child: Container(
-              width: 176,
+              width: 176 * scale,
               height: height,
               decoration: BoxDecoration(
                 color: theme.surface,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(8 * scale),
                 border: Border.all(color: theme.border),
                 boxShadow: <BoxShadow>[
                   BoxShadow(
                     color: const Color(0xff000000).withValues(alpha: 0.18),
-                    blurRadius: 14,
-                    offset: const Offset(0, 6),
+                    blurRadius: 14 * scale,
+                    offset: Offset(0, 6 * scale),
                   ),
                 ],
               ),
@@ -368,7 +380,7 @@ class _DiffineLanguagePickerState extends State<DiffineLanguagePicker> {
               child: ListView.builder(
                 controller: _scroller,
                 itemCount: kDiffineLanguages.length,
-                itemExtent: _optionHeight,
+                itemExtent: optionHeight,
                 padding: EdgeInsets.zero,
                 itemBuilder: (BuildContext context, int index) {
                   final DiffineLanguageOption option = kDiffineLanguages[index];
@@ -387,12 +399,12 @@ class _DiffineLanguagePickerState extends State<DiffineLanguagePicker> {
                         onTap: () => _choose(index),
                         child: Container(
                           alignment: Alignment.centerLeft,
-                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                          padding: EdgeInsets.symmetric(horizontal: 10 * scale),
                           color: active ? theme.accent.withValues(alpha: 0.14) : null,
                           child: Text(
                             option.name,
                             style: TextStyle(
-                              fontSize: 12,
+                              fontSize: 12 * scale,
                               fontWeight: current ? FontWeight.w700 : FontWeight.w400,
                               color: current ? theme.accent : theme.text,
                             ),

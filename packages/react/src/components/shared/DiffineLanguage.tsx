@@ -39,10 +39,22 @@ export function DiffineLanguageName({
 export interface DiffineLanguagePickerProps {
   language: string;
   onLanguageChange: (language: string) => void;
+  /**
+   * How large the component's own controls are drawn, which is what the menu's
+   * distance from the control and its tallest height are multiplied by.
+   * @default 1
+   */
+  scale?: number;
   strings: DiffineTextStrings;
 }
 
-/** How far the menu is held off the control, and off the edge of the window. */
+/**
+ * How far the menu is held off the control, and off the edge of the window.
+ *
+ * Both of these are at the default scale. The options in the menu grow and
+ * shrink with the rest of the component, and a menu that held the same number
+ * of pixels at twice the size would show half as many of them.
+ */
 const GAP = 4;
 
 /** The tallest the menu is allowed to be before it scrolls inside itself. */
@@ -100,6 +112,7 @@ function reveal(menu: HTMLElement): void {
 export function DiffineLanguagePicker({
   language,
   onLanguageChange,
+  scale = 1,
   strings
 }: DiffineLanguagePickerProps): React.JSX.Element {
   const name = React.useId().replace(/[^\w-]/g, '');
@@ -231,24 +244,26 @@ export function DiffineLanguagePicker({
     }
 
     const box = button.getBoundingClientRect();
-    const below = window.innerHeight - box.bottom - GAP * 2;
-    const above = box.top - GAP * 2;
-    const downwards = below >= Math.min(TALLEST, above) || below >= above;
+    const gap = GAP * scale;
+    const tallest = TALLEST * scale;
+    const below = window.innerHeight - box.bottom - gap * 2;
+    const above = box.top - gap * 2;
+    const downwards = below >= Math.min(tallest, above) || below >= above;
 
-    menu.style.right = `${Math.max(GAP, window.innerWidth - box.right)}px`;
+    menu.style.right = `${Math.max(gap, window.innerWidth - box.right)}px`;
     menu.style.minWidth = `${box.width}px`;
-    menu.style.maxHeight = `${Math.max(0, Math.min(TALLEST, downwards ? below : above))}px`;
+    menu.style.maxHeight = `${Math.max(0, Math.min(tallest, downwards ? below : above))}px`;
 
     if (downwards) {
-      menu.style.top = `${box.bottom + GAP}px`;
+      menu.style.top = `${box.bottom + gap}px`;
       menu.style.bottom = '';
     } else {
-      menu.style.bottom = `${window.innerHeight - box.top + GAP}px`;
+      menu.style.bottom = `${window.innerHeight - box.top + gap}px`;
       menu.style.top = '';
     }
 
     reveal(menu);
-  }, [open]);
+  }, [open, scale]);
 
   /** The option under the keyboard, kept in view as it moves. */
   useIsomorphicLayoutEffect(() => {

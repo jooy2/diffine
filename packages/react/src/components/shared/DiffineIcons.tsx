@@ -14,7 +14,13 @@ import * as React from 'react';
  * screen reader, which is told what the button does by the button.
  */
 
-/** The shared attributes, so that every mark is the same weight and size. */
+/**
+ * The shared attributes, so that every mark is the same weight and size.
+ *
+ * The size here is what a mark falls back to without the stylesheet. With it,
+ * `.diffine-icon` sets the size instead, so that the marks grow and shrink with
+ * the `scale` of the component they are in.
+ */
 const LINES = {
   viewBox: '0 0 16 16',
   width: 14,
@@ -31,7 +37,7 @@ const LINES = {
 /** Which way the next thing is, for the buttons that move between them. */
 export function Chevron({ up = false }: { up?: boolean }): React.JSX.Element {
   return (
-    <svg className="diffine-chevron" {...LINES}>
+    <svg className="diffine-icon diffine-chevron" {...LINES}>
       <path d={up ? 'M3.5 10 8 5.5 12.5 10' : 'M3.5 6 8 10.5 12.5 6'} />
     </svg>
   );

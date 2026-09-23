@@ -55,12 +55,15 @@ description: '두 화면이 그리는 데 쓰는 색과 치수 전부, 그리고
 | -------------------------- | ----------- | ------------------------------------------ |
 | `--diffine-height`         | `24rem`     | 뷰어의 높이. `auto`면 내용만큼 늘어납니다. |
 | `--diffine-radius`         | `0.5rem`    | 테두리의 모서리 반지름.                    |
+| `--diffine-scale`          | `1`         | 글자와 컨트롤을 몇 배 크기로 그릴지.       |
 | `--diffine-font`           | 고정폭 스택 | 문서를 그리는 서체.                        |
 | `--diffine-font-size`      | `0.8125rem` | 그 크기.                                   |
 | `--diffine-line-height`    | `1.5rem`    | 접히지 않은 줄 하나의 높이.                |
 | `--diffine-letter-spacing` | `normal`    | 자간.                                      |
 | `--diffine-links-width`    | `3rem`      | 두 창 사이 열의 너비.                      |
 | `--diffine-marker-width`   | `1.25rem`   | `+`, `−`, `~` 열의 너비.                   |
+
+`--diffine-scale`은 `scale` prop이 쓰는 속성입니다. 스타일시트가 그리는 데 쓰는 길이는 페이지 레이아웃에 속하는 높이와 반지름을 빼고 모두 이 값을 곱합니다. `--diffine-font-size`와 `--diffine-line-height`는 쓰이는 곳에서 곱하므로, 여기서 정한 크기나 `font`로 준 크기에도 배율이 적용됩니다. 두 열의 너비는 예외입니다. 기본값만 배율을 곱한 단위로 적혀 있어서, 앱이 둘 중 하나를 직접 정하면 그 값을 그대로 씁니다. 엘리먼트에 선언해 두지 않았으므로 컴포넌트를 감싼 엘리먼트에 지정하면 그대로 이어받습니다. 다만 돋보기의 칸 크기와 언어 메뉴가 열리는 위치는 컴포넌트가 계산하므로 prop으로 줄 때만 따라옵니다.
 
 `--diffine-digits`와 `--diffine-tab-size`는 컴포넌트가 가장 긴 문서와 `tabSize`를 보고 엘리먼트에 직접 씁니다. 손으로 지정해도 다음 렌더에서 덮어씁니다. `--diffine-gutter-width`, `--diffine-gutter-numbers`, `--diffine-gutter-markers`, `--diffine-gutter-rule`은 위의 두 값과 어떤 열을 켰는지를 보고 계산합니다. 왼쪽 열과, 마지막 줄 아래로 그 열을 이어 그리는 띠와, 에디터 입력란의 들여쓰기가 모두 이 값으로 재어집니다.
 

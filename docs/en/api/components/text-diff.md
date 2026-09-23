@@ -131,6 +131,7 @@ A document nobody can type into is read from the widget on every build. An edita
 | `tabSize` | `number` | `4` | How wide a tab is drawn, in characters. |
 | `colorScheme` | `'system' \| 'light' \| 'dark'` | `'system'` | Which palette to draw in. |
 | `font` | [`DiffineFont`](../types/diffine-font) | — | The typeface the documents are drawn in. |
+| `scale` | `number` | `1` | How large the text and the component's own controls are drawn, as a multiple. |
 | `locale` | `'en' \| 'ko'` | `'en'` | The language of the component's own words. |
 | `strings` | [`Partial<DiffineTextStrings>`](../types/diffine-strings) | — | Words to use instead of the locale's. |
 | `highlight` | [`DiffineHighlight`](../types/diffine-highlight) | — | An application's own highlighter, in place of `language`. |
@@ -138,6 +139,8 @@ A document nobody can type into is read from the widget on every build. An edita
 | `renderWidget` | [`DiffineRender`](../types/diffine-render) | — | Something of the application's own, under each line. |
 
 `collapse` and `context` are the viewer's; an editor holds whole documents in its fields and folds nothing. `applyChanges` is the editor's, because applying a change means writing a document, and its buttons live in the column `connectors` draws. `connectors` and `syncScroll` are about the space between two panes, so both are ignored in the unified view. `languageLabel` draws the name of the language in `viewer` mode and the menu it was chosen from in `editor` mode; `language`, `defaultLanguage` and `onLanguageChange` are the usual pair for that choice.
+
+`scale` multiplies the text and everything the component draws around it: the gutter, the bars, the buttons and their icons, and the menus. `1.25` draws them a quarter larger and `0.875` an eighth smaller. It multiplies a `font` as well, so the two stay in proportion, and it leaves the height of the box alone, because that is the page's.
 
 Anything else the component is given goes straight to the element, so `id`, `className`, `style` and the `aria-*` attributes behave as they would on a `<div>`.
 
@@ -169,6 +172,7 @@ Anything else the component is given goes straight to the element, so `id`, `cla
 | `colorScheme` | `DiffineColorScheme` | `.system` | Which palette to draw in. |
 | `theme` | [`DiffineTheme?`](../theme) | — | The whole palette, and the measurements with it. |
 | `font` | [`DiffineFont?`](../types/diffine-font) | — | The typeface the documents are drawn in. |
+| `scale` | `double` | `1` | How large the text and the widget's own controls are drawn, as a multiple. |
 | `height` | `double?` | — | How tall the whole comparison is. `double.infinity` fills what holds it. |
 | `locale` | `DiffineLocale` | `DiffineLocale.en` | The language of the widget's own words. |
 | `strings` | [`DiffineStrings?`](../types/diffine-strings) | — | Words to use instead of the locale's. |
@@ -177,6 +181,8 @@ Anything else the component is given goes straight to the element, so `id`, `cla
 | `renderWidget` | [`DiffineRender?`](../types/diffine-render) | — | Something of the application's own, under each line. |
 
 `collapse` and `context` are the viewer's; an editor holds whole documents in its fields and folds nothing. `applyChanges` is the editor's, because applying a change means writing a document, and its buttons live in the column `connectors` draws. `connectors` and `syncScroll` are about the space between two panes, so both are ignored in the unified view. `languageLabel` draws the name of the language in the viewer and the menu it was chosen from in the editor; `language`, `defaultLanguage` and `onLanguageChanged` are the usual pair for that choice.
+
+`scale` multiplies the text and everything the widget draws around it: the gutter, the bars, the buttons and their icons, and the menus. `1.25` draws them a quarter larger and `0.875` an eighth smaller. It multiplies a `font` as well, so the two stay in proportion, and it leaves `height` and the corner radius alone, because the box is the screen's.
 
 There is no `virtualize`: the rows are built as they are reached, always, because that is what a `ListView` is. `renderWidget` is what turns it off, and it does so on its own — what an application draws under a line can grow at any moment, and a row standing in for one of those would be standing in the wrong place.
 

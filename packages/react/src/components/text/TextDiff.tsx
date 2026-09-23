@@ -24,6 +24,7 @@ import { applyChange } from '../../internal/apply.js';
 import { typeOver } from '../../internal/field.js';
 import { foldPlan, type FoldRun } from '../../internal/fold.js';
 import { fontVariables } from '../../internal/font.js';
+import { scaleOf, scaleVariables } from '../../internal/scale.js';
 import { useSyntaxHighlight } from '../../internal/highlight/useSyntax.js';
 import { textStrings } from '../../internal/strings/text.js';
 import { useIsomorphicLayoutEffect, useRowAlignment } from '../../internal/layout.js';
@@ -406,6 +407,28 @@ export interface TextDiffProps extends Omit<
   font?: DiffineFont;
 
   /**
+   * How large the component's own text and controls are drawn, as a multiple
+   * of their default size.
+   *
+   * `1.25` draws everything a quarter larger and `0.875` an eighth smaller: the
+   * lines and the gutter beside them, the bars above and below, the buttons,
+   * the menu and the search. A `font` of the application's own is multiplied
+   * as well, so a `size` of 15 at `1.2` is drawn at 18. The box itself stays
+   * the size it was — its height and its corners are the page's layout — and
+   * holds more lines or fewer.
+   *
+   * The same number can be set as `--diffine-scale` in the application's own
+   * CSS, on the element or on one around it. The prop is still the way in that
+   * reaches everything: where the language menu opens is worked out by the
+   * component rather than by the stylesheet, and only the prop gets that far.
+   *
+   * Anything that is not a positive number is read as 1.
+   *
+   * @default 1
+   */
+  scale?: number;
+
+  /**
    * The language of the component's own words — not of the documents.
    * @default 'en'
    */
@@ -574,6 +597,7 @@ export function TextDiff({
   spellCheck = false,
   colorScheme = 'system',
   font,
+  scale: scaleProp,
   locale = 'en',
   strings: overrides,
   language: languageProp,
@@ -589,6 +613,7 @@ export function TextDiff({
   ...rest
 }: TextDiffProps): React.JSX.Element {
   const editing = mode === 'editor';
+  const scale = scaleOf(scaleProp);
   const strings = React.useMemo(() => textStrings(locale, overrides), [locale, overrides]);
   const beforeSource = sourceOf(before ?? defaultBefore, strings.before);
   const afterSource = sourceOf(after ?? defaultAfter, strings.after);
@@ -820,6 +845,8 @@ export function TextDiff({
     font?.size,
     font?.lineHeight,
     font?.letterSpacing,
+    // The scale multiplies the size and the line height, and the gutter with them.
+    scale,
     showInvisibles,
     // What the application draws of its own changes how tall a row is, and the
     // two sides are held level by measuring exactly that.
@@ -1105,6 +1132,7 @@ export function TextDiff({
           '--diffine-digits': digits,
           '--diffine-tab-size': tabSize,
           ...fontVariables(font),
+          ...scaleVariables(scale),
           ...style
         } as React.CSSProperties
       }
@@ -1149,6 +1177,7 @@ export function TextDiff({
                   editing ? (
                     <menu.DiffineLanguagePicker
                       language={language}
+                      scale={scale}
                       onLanguageChange={(chosen) => {
                         setLanguage(chosen);
                         onLanguageChange?.(chosen);

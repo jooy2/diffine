@@ -45,6 +45,7 @@ class PlaygroundSettings {
     this.align = true,
     this.connectors = true,
     this.tab = false,
+    this.scale = 1,
     this.view = DiffineImageView.split,
     this.flow = DiffineImageFlow.across,
     this.tolerance = 0.05,
@@ -110,6 +111,10 @@ class PlaygroundSettings {
       align: flag('align', or: fallback.align),
       connectors: flag('connectors', or: fallback.connectors),
       tab: flag('tab', or: fallback.tab),
+      scale: switch (value['scale']) {
+        final num given when given > 0 => given.toDouble(),
+        _ => fallback.scale,
+      },
       view: DiffineImageView.values.asNameMap()[value['view']] ?? fallback.view,
       flow: DiffineImageFlow.values.asNameMap()[value['flow']] ?? fallback.flow,
       tolerance: switch (value['tolerance']) {
@@ -175,6 +180,10 @@ class PlaygroundSettings {
 
   /// Whether Tab types a tab. Editor only.
   final bool tab;
+
+  /// How large the widget's own text and controls are drawn, which the page
+  /// holds for both modes at once.
+  final double scale;
 
   /// How the two pictures are laid out.
   final DiffineImageView view;

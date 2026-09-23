@@ -59,6 +59,7 @@ Every part of the view is an argument with a default, so the widget goes from a 
 | `summary`        | `true`                      | Whether the counts are written under the view.                  |
 | `showInvisibles` | `false`                     | Whether the spaces and tabs inside a line are drawn.            |
 | `height`         | the theme's `384`           | How tall the whole comparison is. `double.infinity` fills its parent. |
+| `scale`          | `1`                         | How large the text and the widget's own controls are drawn, as a multiple. |
 | `colorScheme`    | `DiffineColorScheme.system` | `.light`, `.dark`, or the brightness of the screen around it.   |
 | `locale`         | `DiffineLocale.en`          | The language of the widget's own words. `.ko` is the other.     |
 | `strings`        | —                           | Words to use instead of the locale's.                           |

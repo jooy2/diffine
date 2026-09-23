@@ -13,6 +13,7 @@ library;
 
 import 'package:diffine/src/internal/fold.dart';
 import 'package:diffine/src/internal/i18n.dart';
+import 'package:diffine/src/internal/scale.dart';
 import 'package:diffine/src/theme/tokens.dart';
 import 'package:diffine/src/types.dart';
 import 'package:flutter/gestures.dart';
@@ -51,6 +52,7 @@ class _DiffineFoldBandState extends State<DiffineFoldBand> {
   @override
   Widget build(BuildContext context) {
     final DiffineTheme theme = widget.theme;
+    final double scale = DiffineScale.of(context);
     final String text = fill(widget.strings.folded, <String, Object>{'lines': widget.fold.lines});
     final bool openable = widget.fold.expandable && widget.onExpand != null;
 
@@ -64,9 +66,12 @@ class _DiffineFoldBandState extends State<DiffineFoldBand> {
           bottom: BorderSide(color: theme.border),
         ),
       ),
+      // A pixel smaller than a line, and that pixel is multiplied along with the
+      // line: the theme it is handed is already at the comparison's scale, so a
+      // plain 1 here would make the band's text relatively larger as it grew.
       child: Text(
         text,
-        style: theme.lineStyle.copyWith(color: theme.muted, fontSize: theme.fontSize - 1),
+        style: theme.lineStyle.copyWith(color: theme.muted, fontSize: theme.fontSize - scale),
       ),
     );
 

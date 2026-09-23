@@ -51,16 +51,19 @@ The `-line` pair tints a whole row; the `-piece` pair picks out what moved insid
 
 ### Measurements
 
-| Property                   | Default           | What it is                                    |
-| -------------------------- | ----------------- | --------------------------------------------- |
-| `--diffine-height`         | `24rem`           | How tall the viewer is. `auto` grows with it. |
-| `--diffine-radius`         | `0.5rem`          | The corner radius of the frame.               |
-| `--diffine-font`           | A monospace stack | The typeface the documents are drawn in.      |
-| `--diffine-font-size`      | `0.8125rem`       | Its size.                                     |
-| `--diffine-line-height`    | `1.5rem`          | The height of one unwrapped line.             |
-| `--diffine-letter-spacing` | `normal`          | How far apart the letters are.                |
-| `--diffine-links-width`    | `3rem`            | The width of the column between the panes.    |
-| `--diffine-marker-width`   | `1.25rem`         | The width of the `+`, `−` and `~` column.     |
+| Property | Default | What it is |
+| --- | --- | --- |
+| `--diffine-height` | `24rem` | How tall the viewer is. `auto` grows with it. |
+| `--diffine-radius` | `0.5rem` | The corner radius of the frame. |
+| `--diffine-scale` | `1` | How large the text and the controls are drawn, as a multiple. |
+| `--diffine-font` | A monospace stack | The typeface the documents are drawn in. |
+| `--diffine-font-size` | `0.8125rem` | Its size. |
+| `--diffine-line-height` | `1.5rem` | The height of one unwrapped line. |
+| `--diffine-letter-spacing` | `normal` | How far apart the letters are. |
+| `--diffine-links-width` | `3rem` | The width of the column between the panes. |
+| `--diffine-marker-width` | `1.25rem` | The width of the `+`, `−` and `~` column. |
+
+`--diffine-scale` is what the `scale` prop writes. Every length the stylesheet draws with is multiplied by it except the height and the radius, which are the page's layout; `--diffine-font-size` and `--diffine-line-height` are multiplied where they are used, so a size set here or by `font` is scaled as well. The two column widths are the exception: their defaults are counted in the scaled unit, and a width an application sets for either is used as it is given. It is not declared on the element, so an application can set it on one around the component and have it inherited, but the loupe's squares and where the language menu opens are worked out by the component and follow the prop only.
 
 `--diffine-digits` and `--diffine-tab-size` are written onto the element by the component, from the longest document and from `tabSize`. Setting them by hand is overridden on the next render. `--diffine-gutter-width`, `--diffine-gutter-numbers`, `--diffine-gutter-markers` and `--diffine-gutter-rule` are worked out from the two above and from which columns were asked for; they are what the gutter, the stripe that carries it past the last line, and the editor's field indent are all measured with.
 

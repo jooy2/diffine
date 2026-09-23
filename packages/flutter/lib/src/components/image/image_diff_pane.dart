@@ -15,6 +15,7 @@ import 'package:diffine/src/components/shared/diffine_controls.dart';
 import 'package:diffine/src/internal/i18n.dart';
 import 'package:diffine/src/internal/image/paint.dart';
 import 'package:diffine/src/internal/image/viewport.dart';
+import 'package:diffine/src/internal/scale.dart';
 import 'package:diffine/src/theme/tokens.dart';
 import 'package:diffine/src/types.dart';
 import 'package:flutter/gestures.dart';
@@ -22,6 +23,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
 /// How far an arrow key moves the picture, in the pane's own pixels.
+///
+/// A distance travelled over the picture rather than a size of anything drawn,
+/// so the comparison's scale leaves it alone.
 const double _nudge = 48;
 
 /// One pane.
@@ -303,6 +307,7 @@ class _ImageDiffPaneState extends State<ImageDiffPane> {
   @override
   Widget build(BuildContext context) {
     final DiffineTheme theme = widget.theme;
+    final double scale = DiffineScale.of(context);
 
     return Semantics(
       image: true,
@@ -359,7 +364,7 @@ class _ImageDiffPaneState extends State<ImageDiffPane> {
                           label: widget.strings.wipe,
                           width: size.width,
                         ),
-                      if (widget.blank) Positioned.fill(child: Center(child: _blank(theme))),
+                      if (widget.blank) Positioned.fill(child: Center(child: _blank(theme, scale))),
                     ],
                   ),
                 ),
@@ -377,18 +382,19 @@ class _ImageDiffPaneState extends State<ImageDiffPane> {
   /// waiting and a comparison that has its answer. There is no picture yet, or
   /// there is no picture at all — and the second is what a file that arrived or
   /// went away looks like from this side.
-  Widget _blank(DiffineTheme theme) {
+  Widget _blank(DiffineTheme theme, double scale) {
     final DiffineStrings strings = widget.strings;
+    final TextStyle message = TextStyle(fontSize: 12 * scale, color: theme.muted);
 
     if (widget.loading) {
-      return Text(strings.loading, style: TextStyle(fontSize: 12, color: theme.muted));
+      return Text(strings.loading, style: message);
     }
 
     if (widget.absent) {
       return Text(
         fill(strings.absent, <String, String>{'label': widget.name}),
         textAlign: TextAlign.center,
-        style: TextStyle(fontSize: 12, color: theme.muted),
+        style: message,
       );
     }
 
@@ -397,16 +403,13 @@ class _ImageDiffPaneState extends State<ImageDiffPane> {
       children: <Widget>[
         if (widget.failed)
           Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Text(
-              strings.unsupported,
-              style: TextStyle(fontSize: 12, color: theme.deleteText),
-            ),
+            padding: EdgeInsets.only(bottom: 8 * scale),
+            child: Text(strings.unsupported, style: message.copyWith(color: theme.deleteText)),
           ),
         if (widget.editable && widget.onChoose != null)
           DiffineTextButton(theme: theme, label: strings.choose, onPressed: widget.onChoose)
         else if (!widget.failed)
-          Text(strings.empty, style: TextStyle(fontSize: 12, color: theme.muted)),
+          Text(strings.empty, style: message),
       ],
     );
   }
@@ -491,11 +494,15 @@ class _WipeHandleState extends State<_WipeHandle> {
 
   @override
   Widget build(BuildContext context) {
+    final double scale = DiffineScale.of(context);
+    // The room a pointer has to take hold of the line, centred on it.
+    final double reach = 24 * scale;
+
     return Positioned(
-      left: widget.wipe * widget.width - 12,
+      left: widget.wipe * widget.width - reach / 2,
       top: 0,
       bottom: 0,
-      width: 24,
+      width: reach,
       child: Semantics(
         slider: true,
         label: widget.label,
@@ -515,11 +522,11 @@ class _WipeHandleState extends State<_WipeHandle> {
                   decoration: BoxDecoration(color: widget.theme.image.marker),
                   child: Center(
                     child: Container(
-                      width: 14,
-                      height: 28,
+                      width: 14 * scale,
+                      height: 28 * scale,
                       decoration: BoxDecoration(
                         color: widget.theme.image.marker,
-                        borderRadius: BorderRadius.circular(7),
+                        borderRadius: BorderRadius.circular(7 * scale),
                       ),
                     ),
                   ),

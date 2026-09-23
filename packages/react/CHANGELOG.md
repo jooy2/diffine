@@ -12,6 +12,8 @@
 
 - **`flow` runs the panes down the comparison instead of across it.** `flow="down"` puts one picture to a row, which is the way round a photograph, a banner, or any comparison in a column too narrow to cut in half wants to be read. Each pane carries its own name, because a row of titles over a column of panes names the wrong pictures, and the buttons take a row of their own above them. `across` is the default and is unchanged.
 
+- **`scale` draws the text and the component's own controls larger or smaller.** One number multiplies the document text, the gutter, the bars above and below, the buttons and their icons, the menus, the search and the loupe, so `1.25` is a quarter larger and `0.875` an eighth smaller without a stylesheet being touched. A `font` is multiplied as well, the box keeps the height the page gave it, and the pictures in `ImageDiff` are drawn the same at any scale, because their zoom is `viewport`. Underneath it is the `--diffine-scale` custom property, which a stylesheet can also set on an element around the component.
+
 ### Changed
 
 - **Two pictures with nothing in common are compared four to five times faster.** Every pixel of such a pair differs, and each one was checked for an edge drawn smooth by looking for something level around it in both pictures before anything cheaper was asked. The page answered nothing while that ran: about a second for two photographs of four million pixels. The check for something level now comes first and its answers are kept, which brings the same pair down to a quarter of a second or less. The result is the same to the pixel.

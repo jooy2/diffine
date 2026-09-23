@@ -61,6 +61,7 @@ const WORDS = {
     detail: 'Compare by',
     reset: 'Start over',
     resetTitle: 'Put the chosen documents back as they were',
+    scale: 'Size',
     picks: {
       code: 'Two versions of a file',
       prose: 'A page of prose, edited',
@@ -104,6 +105,7 @@ const WORDS = {
     detail: '비교 단위',
     reset: '처음으로',
     resetTitle: '고른 문서를 원래대로 되돌립니다',
+    scale: '크기',
     picks: {
       code: '한 파일의 두 판본',
       prose: '고쳐 쓴 글 한 쪽',
@@ -172,6 +174,15 @@ const options = ref({
   tab: false,
   detail: 'word' as DiffInlineMode
 });
+
+/**
+ * How large the component's own text and controls are drawn, in percent.
+ *
+ * One value for both modes, because it is a question about the reader's screen
+ * rather than about either comparison, and a reader who made the text larger to
+ * read it does not want it small again on the other side of the switch.
+ */
+const scale = ref(100);
 
 /** How many times the documents have been put back, so the editor is rebuilt. */
 const generation = ref(0);
@@ -325,6 +336,7 @@ function drawPictures() {
     outlines: pictures.value.outlines,
     colorScheme: isDark.value ? ('dark' as const) : ('light' as const),
     locale: locale.value,
+    scale: scale.value / 100,
     style: { height: `${height.value}px` }
   });
 }
@@ -341,6 +353,7 @@ function draw() {
     diff: { inline: options.value.detail },
     colorScheme: isDark.value ? ('dark' as const) : ('light' as const),
     locale: locale.value,
+    scale: scale.value / 100,
     style: { height: `${height.value}px` }
   };
 
@@ -445,7 +458,8 @@ useReactIsland(host, draw, {
     language,
     shot,
     pictures,
-    pair
+    pair,
+    scale
   ]
 });
 
@@ -538,6 +552,7 @@ function tell(): void {
       align: options.value.align,
       connectors: options.value.connectors,
       tab: options.value.tab,
+      scale: scale.value / 100,
       view: pictures.value.view,
       flow: pictures.value.stack ? 'down' : 'across',
       tolerance: pictures.value.tolerance / 100,
@@ -570,7 +585,7 @@ const flutter = useFlutterFrame({
 const { box, frame, embedded, waiting, missing, src } = flutter;
 
 watch(
-  [mode, editing, generation, language, shot, options, pictures, pair, embedded],
+  [mode, editing, generation, language, shot, options, pictures, pair, scale, embedded],
   () => tell(),
   {
     deep: true
@@ -625,6 +640,11 @@ watch(missing, () => void nextTick(measure));
         <span class="play-value">{{ (pictures.tolerance / 100).toFixed(2) }}</span>
       </label>
       <label class="play-field">
+        <span>{{ words.scale }}</span>
+        <input type="range" min="75" max="150" step="12.5" v-model.number="scale" />
+        <span class="play-value">{{ scale }}%</span>
+      </label>
+      <label class="play-field">
         <span>{{ words.unchanged }}</span>
         <select v-model="pictures.unchanged">
           <option v-for="name in RESTS" :key="name" :value="name">{{ words.rests[name] }}</option>
@@ -672,6 +692,11 @@ watch(missing, () => void nextTick(measure));
             {{ words.details[name] }}
           </option>
         </select>
+      </label>
+      <label class="play-field">
+        <span>{{ words.scale }}</span>
+        <input type="range" min="75" max="150" step="12.5" v-model.number="scale" />
+        <span class="play-value">{{ scale }}%</span>
       </label>
       <button type="button" class="play-reset" :title="words.resetTitle" @click="restart(pick)">
         {{ words.reset }}

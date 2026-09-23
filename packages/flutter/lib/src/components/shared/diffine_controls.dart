@@ -7,11 +7,12 @@
 /// it was handed rather than like the toolkit it was built with.
 library;
 
+import 'package:diffine/src/internal/scale.dart';
 import 'package:diffine/src/theme/tokens.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
-/// How large the square a small button occupies is.
+/// How large the square a small button occupies is, at a scale of 1.
 const double kDiffineControlSize = 26;
 
 /// A button with one of the marks in it.
@@ -47,7 +48,8 @@ class DiffineIconButton extends StatefulWidget {
   /// Whether it opens something that is open, for the two that do.
   final bool? expanded;
 
-  /// How large the square it occupies is.
+  /// How large the square it occupies is, at a scale of 1. The comparison's
+  /// scale is applied on top, so a caller writes the size it means.
   final double size;
 
   @override
@@ -61,6 +63,7 @@ class _DiffineIconButtonState extends State<DiffineIconButton> {
   @override
   Widget build(BuildContext context) {
     final DiffineTheme theme = widget.theme;
+    final double scale = DiffineScale.of(context);
     final bool disabled = widget.onPressed == null;
     final bool on = widget.pressed ?? false;
     final Color colour = disabled
@@ -94,11 +97,11 @@ class _DiffineIconButtonState extends State<DiffineIconButton> {
           behavior: HitTestBehavior.opaque,
           onTap: widget.onPressed,
           child: Container(
-            width: widget.size,
-            height: widget.size,
+            width: widget.size * scale,
+            height: widget.size * scale,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(6),
+              borderRadius: BorderRadius.circular(6 * scale),
               color: on
                   ? theme.accent.withValues(alpha: 0.14)
                   : _hovered && !disabled
@@ -111,7 +114,7 @@ class _DiffineIconButtonState extends State<DiffineIconButton> {
             // both would say "Match case Aa".
             child: ExcludeSemantics(
               child: DefaultTextStyle(
-                style: TextStyle(color: colour, fontSize: 11, fontWeight: FontWeight.w600),
+                style: TextStyle(color: colour, fontSize: 11 * scale, fontWeight: FontWeight.w600),
                 child: IconTheme(
                   data: IconThemeData(color: colour),
                   child: widget.child,
@@ -150,6 +153,7 @@ class _DiffineTextButtonState extends State<DiffineTextButton> {
   @override
   Widget build(BuildContext context) {
     final DiffineTheme theme = widget.theme;
+    final double scale = DiffineScale.of(context);
     final bool disabled = widget.onPressed == null;
 
     return Semantics(
@@ -175,11 +179,11 @@ class _DiffineTextButtonState extends State<DiffineTextButton> {
           behavior: HitTestBehavior.opaque,
           onTap: widget.onPressed,
           child: Container(
-            height: kDiffineControlSize,
-            padding: const EdgeInsets.symmetric(horizontal: 10),
+            height: kDiffineControlSize * scale,
+            padding: EdgeInsets.symmetric(horizontal: 10 * scale),
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(6),
+              borderRadius: BorderRadius.circular(6 * scale),
               color: _hovered && !disabled ? theme.border.withValues(alpha: 0.5) : null,
               border: Border.all(
                 color: _focused ? theme.accent : theme.border,
@@ -189,7 +193,7 @@ class _DiffineTextButtonState extends State<DiffineTextButton> {
             child: Text(
               widget.label,
               style: TextStyle(
-                fontSize: 12,
+                fontSize: 12 * scale,
                 fontWeight: FontWeight.w600,
                 color: disabled ? theme.muted.withValues(alpha: 0.45) : theme.muted,
               ),
@@ -310,6 +314,7 @@ class _DiffineFieldState extends State<DiffineField> {
   @override
   Widget build(BuildContext context) {
     final DiffineTheme theme = widget.theme;
+    final double scale = DiffineScale.of(context);
     final bool empty = widget.controller.text.isEmpty;
     final String? placeholder = widget.placeholder;
 
@@ -317,12 +322,12 @@ class _DiffineFieldState extends State<DiffineField> {
       textField: true,
       label: widget.label,
       child: Container(
-        height: kDiffineControlSize,
-        padding: const EdgeInsets.symmetric(horizontal: 8),
+        height: kDiffineControlSize * scale,
+        padding: EdgeInsets.symmetric(horizontal: 8 * scale),
         alignment: Alignment.centerLeft,
         decoration: BoxDecoration(
           color: theme.surface,
-          borderRadius: BorderRadius.circular(6),
+          borderRadius: BorderRadius.circular(6 * scale),
           border: Border.all(
             color: widget.invalid
                 ? theme.deleteText
@@ -340,12 +345,12 @@ class _DiffineFieldState extends State<DiffineField> {
                 placeholder,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: 12, color: theme.muted.withValues(alpha: 0.65)),
+                style: TextStyle(fontSize: 12 * scale, color: theme.muted.withValues(alpha: 0.65)),
               ),
             EditableText(
               controller: widget.controller,
               focusNode: widget.focusNode,
-              style: TextStyle(fontSize: 12, color: theme.text),
+              style: TextStyle(fontSize: 12 * scale, color: theme.text),
               cursorColor: theme.accent,
               backgroundCursorColor: theme.border,
               selectionColor: theme.selection,

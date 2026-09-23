@@ -109,6 +109,7 @@ class _PlaygroundState extends State<Playground> {
         colorScheme: widget.scheme,
         locale: widget.locale,
         height: double.infinity,
+        scale: settings.scale,
       );
     }
 
@@ -128,6 +129,7 @@ class _PlaygroundState extends State<Playground> {
       colorScheme: widget.scheme,
       locale: widget.locale,
       height: double.infinity,
+      scale: settings.scale,
     );
   }
 
@@ -166,6 +168,7 @@ class _PlaygroundState extends State<Playground> {
       colorScheme: widget.scheme,
       locale: widget.locale,
       height: double.infinity,
+      scale: settings.scale,
     );
   }
 }
