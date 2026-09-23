@@ -276,6 +276,26 @@ function restart(chosen: Pick): void {
 
 watch(pick, restart);
 
+/*
+ * A field cannot be a unified column, so the unified view and editing take
+ * turns: asking for one gives up the other, and what was typed stays with the
+ * page either way.
+ */
+watch(
+  () => options.value.unified,
+  (unified) => {
+    if (unified) {
+      editing.value = false;
+    }
+  }
+);
+
+watch(editing, (on) => {
+  if (on) {
+    options.value.unified = false;
+  }
+});
+
 const host = ref<HTMLDivElement>();
 
 /** The picture comparison, on whichever pair has arrived. */
@@ -662,7 +682,12 @@ watch(missing, () => void nextTick(measure));
           <input type="checkbox" v-model="editing" />
           {{ words.editing }}
         </label>
-        <label v-if="!editing">
+        <!--
+          Always there, although the editor has no unified view: hidden while
+          editing, it was a switch nobody found. Turning it on turns editing
+          off instead, which is the one way the two can both be true.
+        -->
+        <label>
           <input type="checkbox" v-model="options.unified" />
           {{ words.unified }}
         </label>
