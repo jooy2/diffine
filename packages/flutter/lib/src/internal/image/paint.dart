@@ -297,31 +297,62 @@ void _look(Canvas canvas, DiffineImageViewport viewport, Size pane) {
     ..translate(-viewport.x, -viewport.y);
 }
 
+/// Two squares of the chequer and two of the ground, as a picture to repeat,
+/// kept for each palette they have been drawn in.
+final Map<(Color, Color), ui.Image> _tiles = <(Color, Color), ui.Image>{};
+
+ui.Image _tileOf(DiffineImageColours colours) {
+  return _tiles.putIfAbsent((colours.ground, colours.chequer), () {
+    final ui.PictureRecorder recorder = ui.PictureRecorder();
+    final Paint square = Paint()..color = colours.chequer;
+
+    Canvas(recorder)
+      ..drawRect(
+        const Rect.fromLTWH(0, 0, _chequer * 2, _chequer * 2),
+        Paint()..color = colours.ground,
+      )
+      ..drawRect(const Rect.fromLTWH(0, 0, _chequer, _chequer), square)
+      ..drawRect(const Rect.fromLTWH(_chequer, _chequer, _chequer, _chequer), square);
+
+    final ui.Picture picture = recorder.endRecording();
+    final ui.Image tile = picture.toImageSync(_chequer.toInt() * 2, _chequer.toInt() * 2);
+
+    picture.dispose();
+
+    return tile;
+  });
+}
+
 /// The squares that say a picture is see-through.
 ///
 /// In the pane's own pixels rather than the frame's, so that the squares stay
 /// the size of squares however far a reader has zoomed in — what they are
 /// saying is "there is nothing here", and nothing does not have a resolution.
-void _paintChequer(Canvas canvas, Rect box, DiffineImageColours colours) {
-  canvas
-    ..save()
-    ..clipRect(box)
-    ..drawRect(box, Paint()..color = colours.ground);
+///
+/// One rectangle filled with a repeated tile, over the part of the frame the
+/// pane shows. It was a rectangle a square over the whole of the frame, which
+/// is a number of draws that grows with the square of the zoom: a frame of a
+/// few thousand pixels at eight times its size was two million of them, and
+/// every one on each frame of a drag. The tile starts at the frame's corner, so
+/// the squares move with the picture rather than with the pane.
+void _paintChequer(Canvas canvas, Rect box, Size pane, DiffineImageColours colours) {
+  final Rect shown = box.intersect(Offset.zero & pane);
 
-  final Paint square = Paint()..color = colours.chequer;
-  final int columns = (box.width / _chequer).ceil() + 1;
-  final int rows = (box.height / _chequer).ceil() + 1;
-
-  for (int row = 0; row < rows; row += 1) {
-    for (int column = row.isEven ? 0 : 1; column < columns; column += 2) {
-      canvas.drawRect(
-        Rect.fromLTWH(box.left + column * _chequer, box.top + row * _chequer, _chequer, _chequer),
-        square,
-      );
-    }
+  if (shown.isEmpty) {
+    return;
   }
 
-  canvas.restore();
+  canvas.drawRect(
+    shown,
+    Paint()
+      ..shader = ImageShader(
+        _tileOf(colours),
+        TileMode.repeated,
+        TileMode.repeated,
+        Matrix4.translationValues(box.left, box.top, 0).storage,
+        filterQuality: FilterQuality.none,
+      ),
+  );
 }
 
 /// One frame of the pane: the pictures, what changed, and where.
@@ -396,7 +427,7 @@ void paintPane(Canvas canvas, Size pane, PaneOptions options) {
     if (plain) {
       canvas.drawRect(box, Paint()..color = options.theme.image.ground);
     } else {
-      _paintChequer(canvas, box, options.theme.image);
+      _paintChequer(canvas, box, pane, options.theme.image);
     }
   }
 
@@ -475,7 +506,16 @@ void paintPane(Canvas canvas, Size pane, PaneOptions options) {
    *
    * The change a reader has stepped to is solid rather than dashed, which is
    * what tells it from the rest without making it heavier.
+   *
+   * The dashes of every box go down in one call at the end, and only the ones
+   * the pane can show are worked out at all. A change as large as the frame is
+   * a box whose sides run far past the pane once a reader zooms in, and a dash
+   * drawn apiece along the whole of them was thousands of calls a frame.
    */
+  final Rect visible = (Offset.zero & pane).inflate(1);
+  final List<double> dashes = <double>[];
+  Paint? dashed;
+
   for (int index = 0; index < options.regions.length; index += 1) {
     final DiffImageRegion region = options.regions[index];
     final Offset start = paneAt(viewport, pane, region.x.toDouble(), region.y.toDouble());
@@ -511,56 +551,92 @@ void paintPane(Canvas canvas, Size pane, PaneOptions options) {
     if (chosen) {
       canvas.drawRect(box, over);
     } else {
-      _dashedRect(canvas, box, over);
+      dashed ??= over;
+      _dashesOf(box, visible, dashes);
     }
+  }
+
+  if (dashed != null && dashes.isNotEmpty) {
+    canvas.drawRawPoints(ui.PointMode.lines, Float32List.fromList(dashes), dashed);
   }
 }
 
 /// How long a dash is, and the gap after it.
 const double _dash = 4;
 
-/// A rectangle stroked in dashes, which a canvas has no setting for.
+/// The dashes of a rectangle that fall inside [visible], added to [into] as the
+/// two ends of each, which is what [Canvas.drawRawPoints] draws lines between.
 ///
-/// The phase carries from one side to the next, so the four corners are not
-/// four places where the pattern starts again.
-void _dashedRect(Canvas canvas, Rect box, Paint paint) {
-  final List<Offset> corners = <Offset>[
-    box.topLeft,
-    box.topRight,
-    box.bottomRight,
-    box.bottomLeft,
-    box.topLeft,
+/// A canvas has no setting for a dashed stroke, so the pattern is worked out
+/// here, and worked out from the rectangle's own corner rather than from
+/// wherever the pane cuts it: a side that runs off the edge keeps its dashes
+/// where they were, so they move with the picture instead of crawling along
+/// the box as it is dragged. The phase carries from one side to the next, so
+/// the four corners are not four places where the pattern starts again.
+void _dashesOf(Rect box, Rect visible, List<double> into) {
+  // Each side as where it starts, which way it runs, and how long it is.
+  final List<(Offset, Offset, double)> sides = <(Offset, Offset, double)>[
+    (box.topLeft, const Offset(1, 0), box.width),
+    (box.topRight, const Offset(0, 1), box.height),
+    (box.bottomRight, const Offset(-1, 0), box.width),
+    (box.bottomLeft, const Offset(0, -1), box.height),
   ];
+  double travelled = 0;
 
-  double carried = 0;
-  bool drawing = true;
+  for (final (Offset from, Offset step, double length) in sides) {
+    final (double, double)? span = _spanWithin(from, step, length, visible);
 
-  for (int side = 0; side < 4; side += 1) {
-    final Offset from = corners[side];
-    final double length = (corners[side + 1] - from).distance;
+    if (span != null) {
+      final (double first, double last) = span;
+      // The dash this stretch of the side starts in, counted round the box.
+      double at = ((travelled + first) / (_dash * 2)).floorToDouble() * _dash * 2 - travelled;
 
-    if (length == 0) {
-      continue;
-    }
+      while (at <= last) {
+        final double start = math.max(at, first);
+        final double end = math.min(at + _dash, last);
 
-    final Offset step = (corners[side + 1] - from) / length;
+        if (end > start) {
+          final Offset a = from + step * start;
+          final Offset b = from + step * end;
 
-    double at = 0;
+          into.addAll(<double>[a.dx, a.dy, b.dx, b.dy]);
+        }
 
-    while (at < length) {
-      final double run = math.min(_dash - carried, length - at);
-
-      if (drawing) {
-        canvas.drawLine(from + step * at, from + step * (at + run), paint);
-      }
-
-      at += run;
-      carried += run;
-
-      if (carried >= _dash) {
-        carried = 0;
-        drawing = !drawing;
+        at += _dash * 2;
       }
     }
+
+    travelled += length;
   }
+}
+
+/// How far along a side it enters [visible] and how far along it leaves, or
+/// `null` where it never does.
+///
+/// The sides of a box are level or upright, so one of the two directions
+/// decides whether the side is in view at all and the other how much of it is.
+(double, double)? _spanWithin(Offset from, Offset step, double length, Rect visible) {
+  if (length <= 0) {
+    return null;
+  }
+
+  final bool level = step.dy == 0;
+  final double across = level ? from.dy : from.dx;
+
+  if (across < (level ? visible.top : visible.left) ||
+      across > (level ? visible.bottom : visible.right)) {
+    return null;
+  }
+
+  final double start = level ? from.dx : from.dy;
+  final double direction = level ? step.dx : step.dy;
+  final double least = level ? visible.left : visible.top;
+  final double most = level ? visible.right : visible.bottom;
+  // Where the side crosses the two edges, as distances along it.
+  final double one = (least - start) / direction;
+  final double other = (most - start) / direction;
+  final double first = math.max(0, math.min(one, other));
+  final double last = math.min(length, math.max(one, other));
+
+  return last > first ? (first, last) : null;
 }
