@@ -561,6 +561,32 @@ void main() {
     expect(wiped, greaterThan(0.5));
   });
 
+  testWidgets('draws the grip of the wipe as a round handle beside its line', (
+    WidgetTester tester,
+  ) async {
+    await pumpPictures(
+      tester,
+      host(ImageDiff(before: white, after: red, view: DiffineImageView.wipe)),
+    );
+
+    final Finder handle = find.bySemanticsLabel('Drag to wipe between the two');
+    final Finder grip = find.descendant(
+      of: handle,
+      matching: find.byWidgetPredicate(
+        (Widget widget) =>
+            widget is Container &&
+            widget.decoration is BoxDecoration &&
+            (widget.decoration! as BoxDecoration).shape == BoxShape.circle,
+      ),
+    );
+    final Finder line = find.descendant(of: handle, matching: find.byType(ColoredBox));
+
+    // It was a child of the line, and came out as wide as the line was.
+    expect(tester.getSize(grip), const Size(20, 20));
+    expect(tester.getSize(line).width, 1);
+    expect(tester.getCenter(grip).dx, closeTo(tester.getCenter(line).dx, 0.5));
+  });
+
   testWidgets('keeps a wheel it zooms with from scrolling what it sits in', (
     WidgetTester tester,
   ) async {

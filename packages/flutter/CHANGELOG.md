@@ -30,6 +30,8 @@
 
 - **The wheel no longer scrolls what a picture comparison sits in while it zooms the picture.** The pane acted on the wheel without claiming it, and a signal nobody claims goes on to the platform: a list around the comparison scrolled, and in a browser so did the page. The pane now claims what it acts on. `DiffineImageWheel.pan` still leaves the wheel to the page once the whole frame is in view.
 
+- **The wipe has a grip.** The grip was drawn inside the line, and took the line's width of two pixels, so the handle was a slightly thicker stretch of the line. It is now a round grip on a one-pixel line, as in the React package, with a ring round it when the keyboard is on it.
+
 - **Zooming in on a picture no longer slows every frame down.** The squares behind a see-through picture were drawn one at a time over the whole frame, and the box round a change a dash at a time along the whole of its sides, the parts outside the pane included. The work grew with the square of the zoom: a frame took a quarter of a second at seven times and nearly two at twenty. Both now draw only what the pane shows, the squares as one repeated tile and the dashes in one call, and a frame costs the same at any zoom.
 
 - **A comparison is worked out again when the question changes, not only when a picture does.** The only thing that started one was a decode, so an `ImageDiff` whose pictures stayed where they were went on drawing the answer to the question before it: a different `diff`, a different `baseline`, or a `result` the application worked out somewhere else and handed over changed nothing on the screen. All four are now looked at when the widget is rebuilt.

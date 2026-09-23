@@ -498,10 +498,27 @@ class _WipeHandle extends StatefulWidget {
 class _WipeHandleState extends State<_WipeHandle> {
   final FocusNode _focus = FocusNode(debugLabel: 'diffine wipe');
 
+  /// Whether the handle has the focus, and whether the keyboard is what is
+  /// being used — a ring round the grip is for a reader tabbing to it, not for
+  /// one who has just let go of it.
+  bool _focused = false;
+  bool _keyboard = FocusManager.instance.highlightMode == FocusHighlightMode.traditional;
+
+  @override
+  void initState() {
+    super.initState();
+    FocusManager.instance.addHighlightModeListener(_onHighlightMode);
+  }
+
   @override
   void dispose() {
+    FocusManager.instance.removeHighlightModeListener(_onHighlightMode);
     _focus.dispose();
     super.dispose();
+  }
+
+  void _onHighlightMode(FocusHighlightMode mode) {
+    setState(() => _keyboard = mode == FocusHighlightMode.traditional);
   }
 
   void _move(double dx) {
@@ -537,8 +554,10 @@ class _WipeHandleState extends State<_WipeHandle> {
   @override
   Widget build(BuildContext context) {
     final double scale = DiffineScale.of(context);
-    // The room a pointer has to take hold of the line, centred on it.
+    // The room a pointer has to take hold of the line, centred on it, and the
+    // round grip in the middle of it.
     final double reach = 24 * scale;
+    final double grip = 20 * scale;
 
     return Positioned(
       left: widget.wipe * widget.width - reach / 2,
@@ -552,27 +571,51 @@ class _WipeHandleState extends State<_WipeHandle> {
         child: Focus(
           focusNode: _focus,
           onKeyEvent: _onKey,
+          onFocusChange: (bool focused) => setState(() => _focused = focused),
           child: MouseRegion(
             cursor: SystemMouseCursors.resizeLeftRight,
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
               onHorizontalDragStart: (DragStartDetails _) => _focus.requestFocus(),
               onHorizontalDragUpdate: (DragUpdateDetails details) => _move(details.delta.dx),
-              child: Center(
-                child: Container(
-                  width: 2,
-                  decoration: BoxDecoration(color: widget.theme.image.marker),
-                  child: Center(
-                    child: Container(
-                      width: 14 * scale,
-                      height: 28 * scale,
-                      decoration: BoxDecoration(
-                        color: widget.theme.image.marker,
-                        borderRadius: BorderRadius.circular(7 * scale),
-                      ),
+              // The line and the grip side by side rather than one inside the
+              // other. The grip was a child of the line, and a child of a box
+              // two pixels wide is two pixels wide: what was meant to be a
+              // handle drew as a slightly thicker stretch of the line.
+              child: Stack(
+                alignment: Alignment.center,
+                clipBehavior: Clip.none,
+                children: <Widget>[
+                  SizedBox(
+                    width: 1,
+                    height: double.infinity,
+                    child: ColoredBox(color: widget.theme.image.marker),
+                  ),
+                  Container(
+                    width: grip,
+                    height: grip,
+                    decoration: BoxDecoration(
+                      color: widget.theme.image.marker,
+                      shape: BoxShape.circle,
+                      boxShadow: const <BoxShadow>[
+                        BoxShadow(color: Color(0x59000000), offset: Offset(0, 1), blurRadius: 3),
+                      ],
                     ),
                   ),
-                ),
+                  // The ring a keyboard gets, two pixels off the grip and two
+                  // pixels wide, drawn over the handle rather than in its way.
+                  if (_focused && _keyboard)
+                    IgnorePointer(
+                      child: Container(
+                        width: grip + 8,
+                        height: grip + 8,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: widget.theme.accent, width: 2),
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
           ),
