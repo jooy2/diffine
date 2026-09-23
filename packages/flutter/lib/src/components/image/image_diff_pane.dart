@@ -214,6 +214,17 @@ class _ImageDiffPaneState extends State<ImageDiffPane> {
     );
   }
 
+  /// Takes `event` for this pane, and does `act` with it.
+  ///
+  /// A signal nothing claims is handed back to the platform, and in a browser
+  /// that is the page: a wheel that zoomed the picture scrolled the article
+  /// around it as well. Claiming it is what tells the page to leave it alone —
+  /// and a list inside the pane, if there were one, would still come first,
+  /// because the first to claim a signal is the widget nearest the pointer.
+  void _claim(PointerSignalEvent event, VoidCallback act) {
+    GestureBinding.instance.pointerSignalResolver.register(event, (PointerSignalEvent _) => act());
+  }
+
   /// The wheel, and a pinch on a trackpad in a browser.
   ///
   /// What the wheel does is [ImageDiffPane.wheel]: zoom about the pointer,
@@ -229,7 +240,7 @@ class _ImageDiffPaneState extends State<ImageDiffPane> {
     _onHover(event);
 
     if (event is PointerScaleEvent) {
-      _zoomAt(pinchStep(event.scale), event.localPosition);
+      _claim(event, () => _zoomAt(pinchStep(event.scale), event.localPosition));
 
       return;
     }
@@ -249,12 +260,15 @@ class _ImageDiffPaneState extends State<ImageDiffPane> {
     }
 
     if (zooming) {
-      _zoomAt(wheelStep(event.scrollDelta.dy), event.localPosition);
+      _claim(event, () => _zoomAt(wheelStep(event.scrollDelta.dy), event.localPosition));
 
       return;
     }
 
-    _move(panBy(_viewport, widget.frame, -event.scrollDelta.dx, -event.scrollDelta.dy));
+    _claim(
+      event,
+      () => _move(panBy(_viewport, widget.frame, -event.scrollDelta.dx, -event.scrollDelta.dy)),
+    );
   }
 
   /// How far apart the fingers of a pinch had moved at its last update, as a

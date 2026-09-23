@@ -561,6 +561,53 @@ void main() {
     expect(wiped, greaterThan(0.5));
   });
 
+  testWidgets('keeps a wheel it zooms with from scrolling what it sits in', (
+    WidgetTester tester,
+  ) async {
+    DiffineImageViewport? looked;
+    final ScrollController page = ScrollController();
+
+    Widget inList(DiffineImageWheel wheel) => host(
+      ListView(
+        controller: page,
+        children: <Widget>[
+          SizedBox(
+            height: 400,
+            child: ImageDiff(
+              before: white,
+              after: red,
+              wheel: wheel,
+              onViewportChanged: (DiffineImageViewport viewport) => looked = viewport,
+            ),
+          ),
+          const SizedBox(height: 2000),
+        ],
+      ),
+    );
+
+    await pumpPictures(tester, inList(DiffineImageWheel.zoom));
+
+    final TestPointer mouse = TestPointer(1, PointerDeviceKind.mouse);
+
+    await tester.sendEventToBinding(
+      mouse.hover(tester.getCenter(find.byType(ImageDiffPane).first)),
+    );
+    await tester.sendEventToBinding(mouse.scroll(const Offset(0, 40)));
+    await tester.pump();
+
+    expect(looked, isNotNull);
+    expect(page.offset, 0);
+
+    // Where the wheel is left to the page, the page has it.
+    await pumpPictures(tester, inList(DiffineImageWheel.pan));
+    await tester.sendEventToBinding(mouse.scroll(const Offset(0, 40)));
+    await tester.pump();
+
+    expect(page.offset, greaterThan(0));
+
+    page.dispose();
+  });
+
   testWidgets('zooms with a pinch on a trackpad in a browser', (WidgetTester tester) async {
     DiffineImageViewport? looked;
 
