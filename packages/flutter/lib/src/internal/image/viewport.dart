@@ -31,6 +31,27 @@ double _clamp(double value, double least, double most) {
   return math.min(math.max(value, least), most);
 }
 
+/// How much one turn of the wheel zooms by, as a multiple of the scale.
+///
+/// A wheel notch is not a step of a button, and it is not the same size on two
+/// devices. Reading it as an exponent is what keeps a trackpad's hundred small
+/// deltas smooth and a mouse's three large ones from crossing the whole range.
+double wheelStep(double delta) => math.exp(-delta / 400);
+
+/// How much one event of a pinch zooms by: what the platform measured, held to
+/// one notch of the wheel either way.
+///
+/// A pinch arrives as a stream of small changes, and read as it is, the picture
+/// follows the fingers. On the web the same event is what holding Control and
+/// turning a mouse wheel sends, and a notch of that is a jump no pair of
+/// fingers makes in one frame — so no one event zooms further than a notch of
+/// the wheel on its own does, and a pinch never comes near that.
+double pinchStep(double scale) {
+  final double most = wheelStep(-100);
+
+  return _clamp(scale, 1 / most, most);
+}
+
 /// The scale at which the whole frame is in the pane, with a little room round
 /// it.
 double fitScale(Size frame, Size pane) {

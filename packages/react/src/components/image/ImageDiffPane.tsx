@@ -30,6 +30,7 @@ import {
   fitScale,
   frameAt,
   panBy,
+  wheelStep,
   zoomAbout,
   ZOOM_STEP,
   type Box
@@ -285,11 +286,9 @@ export function ImageDiffPane({
             viewport: held.viewport,
             frame: held.frame,
             pane: held.box,
-            // A wheel notch is not a step of a button, and it is not the same
-            // size on two devices. Reading it as an exponent is what keeps a
-            // trackpad's hundred small deltas smooth and a mouse's three large
-            // ones from crossing the whole range.
-            scale: held.viewport.scale * Math.exp((-event.deltaY * step) / 400),
+            // Control is what a browser holds down for a pinch on a trackpad,
+            // which zooms at the rate of the fingers rather than of the wheel.
+            scale: held.viewport.scale * wheelStep(event.deltaY * step, event.ctrlKey),
             paneX: event.clientX - bounds.left,
             paneY: event.clientY - bounds.top
           })

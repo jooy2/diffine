@@ -561,6 +561,84 @@ void main() {
     expect(wiped, greaterThan(0.5));
   });
 
+  testWidgets('zooms with a pinch on a trackpad in a browser', (WidgetTester tester) async {
+    DiffineImageViewport? looked;
+
+    await pumpPictures(
+      tester,
+      host(
+        ImageDiff(
+          before: white,
+          after: red,
+          onViewportChanged: (DiffineImageViewport viewport) => looked = viewport,
+        ),
+      ),
+    );
+
+    final TestPointer mouse = TestPointer(1, PointerDeviceKind.mouse);
+
+    await tester.sendEventToBinding(
+      mouse.hover(tester.getCenter(find.byType(ImageDiffPane).first)),
+    );
+    // Out rather than in, as with the wheel: the picture already fills the pane
+    // at close to the most it can be zoomed. Once on its own first, so the view
+    // being measured from is a number rather than a fitted one.
+    await tester.sendEventToBinding(mouse.scale(0.9));
+    await tester.pump();
+
+    final double from = looked!.scale;
+
+    await tester.sendEventToBinding(mouse.scale(0.8));
+    await tester.pump();
+
+    final double pinched = looked!.scale;
+
+    expect(pinched, closeTo(from * 0.8, 1e-9));
+
+    // Control and a notch of a mouse wheel is the same event with a far larger
+    // change in it, and zooms no further than a notch of the wheel does.
+    await tester.sendEventToBinding(mouse.scale(0.1));
+    await tester.pump();
+
+    expect(looked!.scale, closeTo(pinched * math.exp(-0.25), 1e-9));
+  });
+
+  testWidgets('zooms with a pinch on a trackpad on a desktop', (WidgetTester tester) async {
+    DiffineImageViewport? looked;
+
+    await pumpPictures(
+      tester,
+      host(
+        ImageDiff(
+          before: white,
+          after: red,
+          onViewportChanged: (DiffineImageViewport viewport) => looked = viewport,
+        ),
+      ),
+    );
+
+    // Zoomed once from the keyboard first, so the view measured from is a
+    // number rather than a fitted one.
+    await tester.tap(find.bySemanticsLabel('Zoom out'));
+    await tester.pump();
+
+    final double from = looked!.scale;
+    final TestPointer trackpad = TestPointer(2, PointerDeviceKind.trackpad);
+    final Offset over = tester.getCenter(find.byType(ImageDiffPane).first);
+
+    await tester.sendEventToBinding(trackpad.panZoomStart(over));
+    await tester.sendEventToBinding(trackpad.panZoomUpdate(over, scale: 0.9));
+    await tester.pump();
+    await tester.sendEventToBinding(trackpad.panZoomUpdate(over, scale: 0.6));
+    await tester.pump();
+    await tester.sendEventToBinding(trackpad.panZoomEnd());
+    await tester.pump();
+
+    // The scale of the gesture runs from its start, so the picture ends where
+    // the fingers did, not at the product of every update.
+    expect(looked!.scale, closeTo(from * 0.6, 1e-9));
+  });
+
   testWidgets('asks the application for a picture rather than opening a file', (
     WidgetTester tester,
   ) async {

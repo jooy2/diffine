@@ -8,7 +8,6 @@
 /// synchronise.
 library;
 
-import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:diffine/src/components/shared/diffine_controls.dart';
@@ -200,15 +199,40 @@ class _ImageDiffPaneState extends State<ImageDiffPane> {
     });
   }
 
-  /// The wheel.
+  /// The same view at a scale `by` times this one, with the point of the pane
+  /// at `at` left where it was.
+  void _zoomAt(double by, Offset at) {
+    _move(
+      zoomAbout(
+        viewport: _viewport,
+        frame: widget.frame,
+        pane: _box,
+        scale: _viewport.scale * by,
+        paneX: at.dx,
+        paneY: at.dy,
+      ),
+    );
+  }
+
+  /// The wheel, and a pinch on a trackpad in a browser.
   ///
-  /// What it does is [ImageDiffPane.wheel]: zoom about the pointer, which is
-  /// what a picture viewer does, or move a picture larger than its pane and
-  /// leave the screen to scroll when the whole frame is already in view. Shift
-  /// moves it in the first, the modifier zooms in the second, so either way
-  /// both are within reach.
+  /// What the wheel does is [ImageDiffPane.wheel]: zoom about the pointer,
+  /// which is what a picture viewer does, or move a picture larger than its
+  /// pane and leave the screen to scroll when the whole frame is already in
+  /// view. Shift moves it in the first, the modifier zooms in the second, so
+  /// either way both are within reach.
+  ///
+  /// A pinch zooms whichever of the two it is. A browser hands one over as the
+  /// wheel with Control held, and the engine turns that into a change of scale
+  /// rather than a scroll — which this ignored, so the fingers did nothing.
   void _onPointerSignal(PointerSignalEvent event) {
     _onHover(event);
+
+    if (event is PointerScaleEvent) {
+      _zoomAt(pinchStep(event.scale), event.localPosition);
+
+      return;
+    }
 
     if (event is! PointerScrollEvent) {
       return;
@@ -225,25 +249,36 @@ class _ImageDiffPaneState extends State<ImageDiffPane> {
     }
 
     if (zooming) {
-      _move(
-        zoomAbout(
-          viewport: _viewport,
-          frame: widget.frame,
-          pane: _box,
-          // A wheel notch is not a step of a button, and it is not the same
-          // size on two devices. Reading it as an exponent is what keeps a
-          // trackpad's hundred small deltas smooth and a mouse's three large
-          // ones from crossing the whole range.
-          scale: _viewport.scale * math.exp(-event.scrollDelta.dy / 400),
-          paneX: event.localPosition.dx,
-          paneY: event.localPosition.dy,
-        ),
-      );
+      _zoomAt(wheelStep(event.scrollDelta.dy), event.localPosition);
 
       return;
     }
 
     _move(panBy(_viewport, widget.frame, -event.scrollDelta.dx, -event.scrollDelta.dy));
+  }
+
+  /// How far apart the fingers of a pinch had moved at its last update, as a
+  /// multiple of where they started.
+  double _pinched = 1;
+
+  /// A trackpad gesture began, on a desktop.
+  ///
+  /// There the platform hands a pinch over as a gesture with a scale that runs
+  /// from its start, rather than as the wheel. The movement of the same two
+  /// fingers is the drag below, so this only has the scale to answer.
+  void _onPanZoomStart(PointerPanZoomStartEvent event) {
+    _pinched = 1;
+  }
+
+  void _onPanZoomUpdate(PointerPanZoomUpdateEvent event) {
+    if (event.scale <= 0 || event.scale == _pinched) {
+      return;
+    }
+
+    final double by = event.scale / _pinched;
+
+    _pinched = event.scale;
+    _zoomAt(by, event.localPosition);
   }
 
   /// Where the pointer is in the pane, for the loupe, or `null` when it has
@@ -287,16 +322,7 @@ class _ImageDiffPaneState extends State<ImageDiffPane> {
         : 0;
 
     if (zooming != 0) {
-      _move(
-        zoomAbout(
-          viewport: _viewport,
-          frame: widget.frame,
-          pane: _box,
-          scale: _viewport.scale * zooming,
-          paneX: _box.width / 2,
-          paneY: _box.height / 2,
-        ),
-      );
+      _zoomAt(zooming, _box.center(Offset.zero));
 
       return KeyEventResult.handled;
     }
@@ -325,6 +351,8 @@ class _ImageDiffPaneState extends State<ImageDiffPane> {
               onExit: (PointerExitEvent _) => widget.onLook?.call(null),
               child: Listener(
                 onPointerSignal: _onPointerSignal,
+                onPointerPanZoomStart: _onPanZoomStart,
+                onPointerPanZoomUpdate: _onPanZoomUpdate,
                 onPointerHover: _onHover,
                 onPointerMove: _onHover,
                 child: GestureDetector(

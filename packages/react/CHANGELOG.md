@@ -18,6 +18,10 @@
 
 - **Two pictures with nothing in common are compared four to five times faster.** Every pixel of such a pair differs, and each one was checked for an edge drawn smooth by looking for something level around it in both pictures before anything cheaper was asked. The page answered nothing while that ran: about a second for two photographs of four million pixels. The check for something level now comes first and its answers are kept, which brings the same pair down to a quarter of a second or less. The result is the same to the pixel.
 
+### Fixed
+
+- **A pinch on a trackpad zooms as far as the fingers moved.** A browser hands a pinch over as the wheel with Control held, and it was read at the rate of the wheel, so fingers that doubled their distance zoomed a picture by a fifth. It is now read at the rate the browser writes it in, and a pinch that doubles the distance doubles the zoom. Control and a mouse wheel is the same event, and no single one of those zooms further than a notch of the wheel does.
+
 ## v1.0.0 (2026-09-12)
 
 The first stable release. Each view is its own entry now, so a page carries the comparison it asked for and nothing of the other one. The documents gained folding, patches read and written, marks over the whitespace and arrows for taking a change across; the pictures gained a loupe, a mask that can be written out as a file of its own, and a comparison of several at once rather than a pair.

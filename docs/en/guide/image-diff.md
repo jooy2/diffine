@@ -316,6 +316,7 @@ Both panes share one viewport, so there is nothing to keep in step: a drag, a wh
 
 - Drag to move, anywhere in a pane.
 - The wheel zooms about the pointer, a notch at a time. Shift with it moves the picture instead.
+- A pinch on a trackpad zooms about the fingers, as far as they moved, whatever `wheel` is set to.
 - The buttons in the bar zoom about the middle, and the last of them fits the frame back into the pane.
 - With the keyboard: the arrows move, `+` and `−` zoom, and Shift makes the arrows move further.
 

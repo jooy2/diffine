@@ -32,6 +32,27 @@ export const MAX_SCALE = 64;
 const clamp = (value: number, least: number, most: number) =>
   Math.min(Math.max(value, least), most);
 
+/**
+ * How much one event of the wheel zooms by, as a multiple of the scale.
+ *
+ * A wheel notch is not a step of a button, and it is not the same size on two
+ * devices. Reading it as an exponent is what keeps a trackpad's hundred small
+ * deltas smooth and a mouse's three large ones from crossing the whole range.
+ *
+ * A pinch on a trackpad arrives as the wheel with Control held, and a browser
+ * writes it as a hundred times the natural log of how far the fingers moved
+ * apart. Read back at that rate the picture follows the fingers; read at the
+ * rate of the wheel, fingers that doubled their distance zoomed by a fifth.
+ * Control held over a mouse wheel is the same event with notches in it, and a
+ * notch is a jump no pair of fingers makes in one frame — so no one event of
+ * either zooms further than a notch of the wheel on its own does.
+ */
+export function wheelStep(delta: number, pinch: boolean): number {
+  const notch = Math.exp(100 / 400);
+
+  return pinch ? clamp(Math.exp(-delta / 100), 1 / notch, notch) : Math.exp(-delta / 400);
+}
+
 /** The scale at which the whole frame is in the pane, with a little room round it. */
 export function fitScale(frame: Box, pane: Box): number {
   if (frame.width <= 0 || frame.height <= 0 || pane.width <= 0 || pane.height <= 0) {
