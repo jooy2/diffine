@@ -612,6 +612,22 @@ The search built into the panes reads the document rather than the screen, so it
 
 What a reader copies out of a pane is the document rather than the surface it is drawn on. The numbers and the marks down the side are left out of a selection, and so are the blanks that hold the two sides level: a document copied through them would otherwise arrive with a gap wherever the other side was longer.
 
+::: fw flutter
+
+On the web, a selection can also be copied from the browser's own menu. The framework hands the text to that menu through an element of the page, and that element drops the spaces at the start of each line. A web app that wants the indentation kept adds one rule to the `<head>` of its `web/index.html`:
+
+```html
+<style>
+  .web-selectable-region-context-menu {
+    white-space: pre;
+  }
+</style>
+```
+
+Ctrl+C and Cmd+C keep the indentation without it.
+
+:::
+
 Going the other way, `formatPatch` writes the comparison as a unified diff — see [the comparison](diff#patches) — which is the form a build, a review tool or an attachment on a CI run can read.
 
 ::: fw react

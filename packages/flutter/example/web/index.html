@@ -31,6 +31,17 @@
 
   <title>diffine_example</title>
   <link rel="manifest" href="manifest.json">
+
+  <!--
+    A selection copied from the browser's own menu is handed to the menu
+    through an element of the page, and without this the spaces at the start
+    of each line are dropped on the way.
+  -->
+  <style>
+    .web-selectable-region-context-menu {
+      white-space: pre;
+    }
+  </style>
 </head>
 <body>
   <!--

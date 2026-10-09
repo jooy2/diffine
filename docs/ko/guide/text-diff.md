@@ -609,6 +609,22 @@ TextDiff(before: saved, after: draft, showInvisibles: true);
 
 창에서 복사하면 화면이 아니라 문서가 나옵니다. 옆의 줄 번호와 기호는 선택에서 빠지고, 양쪽 높이를 맞추려고 넣은 빈 칸도 빠집니다. 그러지 않으면 반대쪽이 더 긴 자리마다 빈 줄이 섞여 나옵니다.
 
+::: fw flutter
+
+웹에서는 브라우저의 우클릭 메뉴로도 복사할 수 있습니다. 이때 Flutter는 페이지 안의 요소에 텍스트를 넣어 메뉴에 넘기는데, 이 요소가 줄 앞의 공백을 지웁니다. 들여쓰기를 지키려면 웹 앱의 `web/index.html` `<head>`에 규칙 하나를 넣습니다.
+
+```html
+<style>
+  .web-selectable-region-context-menu {
+    white-space: pre;
+  }
+</style>
+```
+
+Ctrl+C나 Cmd+C로 복사하면 이 규칙이 없어도 들여쓰기가 남습니다.
+
+:::
+
 반대 방향으로는 `formatPatch`가 비교 결과를 유니파이드 패치로 씁니다. [비교 결과](diff#패치) 문서를 보세요. 빌드나 리뷰 도구, CI 실행에 첨부하는 파일이 읽는 형식입니다.
 
 ::: fw react
