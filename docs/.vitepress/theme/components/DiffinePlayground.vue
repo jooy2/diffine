@@ -55,7 +55,8 @@ const SHOTS: readonly Shot[] = ['retouched', 'moved', 'saved', 'badge', 'blank']
 const VIEWS: readonly DiffineImageView[] = ['split', 'overlay', 'wipe', 'mask'];
 const RESTS: readonly DiffineImageUnchanged[] = ['keep', 'dim', 'hide'];
 const DETAILS: readonly DiffInlineMode[] = ['word', 'character', 'none'];
-const LAYOUTS: readonly DiffineView[] = ['split', 'unified', 'merged'];
+/** The views with one column, which the menu groups under one heading. */
+const COLUMNS: readonly DiffineView[] = ['unified', 'merged'];
 
 const WORDS = {
   en: {
@@ -77,6 +78,7 @@ const WORDS = {
     },
     details: { word: 'Words', character: 'Characters', none: 'Whole lines' },
     layout: 'Lay them out',
+    column: 'In one column',
     layouts: { split: 'Side by side', unified: 'Unified', merged: 'Merged' },
     wrap: 'Wrap',
     numbers: 'Numbers',
@@ -122,6 +124,7 @@ const WORDS = {
     },
     details: { word: '단어', character: '글자', none: '줄만' },
     layout: '배치',
+    column: '한 열로',
     layouts: { split: '나란히', unified: '위아래로', merged: '한 줄로 합쳐서' },
     wrap: '줄 바꿈',
     numbers: '줄 번호',
@@ -709,9 +712,12 @@ watch(missing, () => void nextTick(measure));
       <label class="play-field">
         <span>{{ words.layout }}</span>
         <select v-model="options.layout">
-          <option v-for="name in LAYOUTS" :key="name" :value="name">
-            {{ words.layouts[name] }}
-          </option>
+          <option value="split">{{ words.layouts.split }}</option>
+          <optgroup :label="words.column">
+            <option v-for="name in COLUMNS" :key="name" :value="name">
+              {{ words.layouts[name] }}
+            </option>
+          </optgroup>
         </select>
       </label>
       <label class="play-field">
