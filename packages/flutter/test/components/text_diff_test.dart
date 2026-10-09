@@ -1,5 +1,8 @@
 import 'package:diffine/diffine.dart';
 import 'package:diffine/src/components/shared/diffine_line.dart';
+import 'package:flutter/gestures.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -14,6 +17,45 @@ List<String> drawn(WidgetTester tester) {
       .widgetList<Text>(find.byType(Text))
       .map((Text text) => text.data ?? text.textSpan?.toPlainText() ?? '')
       .toList();
+}
+
+/// What Ctrl+A and Ctrl+C put on the clipboard, in one pane of [widget].
+///
+/// The keys rather than the region's own methods, because it is the keys that
+/// reach the actions a reader's copy goes through.
+Future<String?> copyAll(WidgetTester tester, Widget widget, {int pane = 0}) async {
+  String? copied;
+
+  tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (
+    MethodCall call,
+  ) async {
+    if (call.method == 'Clipboard.setData') {
+      copied = (call.arguments as Map<Object?, Object?>)['text']! as String;
+    }
+
+    return null;
+  });
+  addTearDown(
+    () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      null,
+    ),
+  );
+
+  await tester.pumpWidget(host(widget));
+  tester
+      .widgetList<SelectableRegion>(find.byType(SelectableRegion))
+      .elementAt(pane)
+      .focusNode!
+      .requestFocus();
+  await tester.pump();
+  await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+  await tester.sendKeyEvent(LogicalKeyboardKey.keyA);
+  await tester.sendKeyEvent(LogicalKeyboardKey.keyC);
+  await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+  await tester.pump();
+
+  return copied;
 }
 
 /// How tall one drawn line of a document is.
@@ -97,6 +139,101 @@ void main() {
 
     // Everything that went out above everything that came in, in one column.
     expect(lines.indexOf('bravo'), lessThan(lines.indexOf('BRAVO')));
+  });
+
+  testWidgets('copies several lines with a line break between each', (WidgetTester tester) async {
+    final String? copied = await copyAll(
+      tester,
+      const TextDiff(
+        before: 'one\nthe quick fox',
+        after: 'one\nthe slow fox',
+        view: DiffineView.unified,
+      ),
+    );
+
+    expect(copied, 'one\nthe quick fox\nthe slow fox');
+  });
+
+  testWidgets('copies each side of a split view as its own document', (WidgetTester tester) async {
+    const TextDiff comparison = TextDiff(before: 'one\ntwo', after: 'one\ntwo\nthree');
+
+    // The left pane has a blank opposite `three`, which is in neither document.
+    expect(await copyAll(tester, comparison), 'one\ntwo');
+    expect(await copyAll(tester, comparison, pane: 1), 'one\ntwo\nthree');
+  });
+
+  testWidgets('copies a selection dragged across lines from where it starts to where it ends', (
+    WidgetTester tester,
+  ) async {
+    String? copied;
+
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (
+      MethodCall call,
+    ) async {
+      if (call.method == 'Clipboard.setData') {
+        copied = (call.arguments as Map<Object?, Object?>)['text']! as String;
+      }
+
+      return null;
+    });
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        null,
+      ),
+    );
+
+    await tester.pumpWidget(
+      host(
+        const TextDiff(
+          before: 'alpha\nthe quick fox',
+          after: 'alpha\nthe slow fox',
+          view: DiffineView.unified,
+        ),
+      ),
+    );
+
+    /// Where a character of a drawn line is on the screen, halfway down it.
+    Offset at(String shown, int offset) {
+      final RenderParagraph paragraph = tester.renderObject<RenderParagraph>(
+        find.byWidgetPredicate(
+          (Widget widget) =>
+              widget is RichText && widget.text.toPlainText(includeSemanticsLabels: false) == shown,
+        ),
+      );
+      final Offset caret = paragraph.getOffsetForCaret(TextPosition(offset: offset), Rect.zero);
+
+      return paragraph.localToGlobal(caret + Offset(0, paragraph.size.height / 2));
+    }
+
+    final TestGesture gesture = await tester.startGesture(
+      at('alpha', 2),
+      kind: PointerDeviceKind.mouse,
+    );
+
+    await tester.pump();
+    await gesture.moveTo(at('the quick fox', 6));
+    await tester.pump();
+    await gesture.up();
+    await tester.pump();
+
+    tester.widget<SelectableRegion>(find.byType(SelectableRegion)).focusNode!.requestFocus();
+    await tester.pump();
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyC);
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+    await tester.pump();
+
+    expect(copied, 'pha\nthe qu');
+  });
+
+  testWidgets('keeps an empty line of the document in what it copies', (WidgetTester tester) async {
+    final String? copied = await copyAll(
+      tester,
+      const TextDiff(before: 'a\n\nb', after: 'a\n\nc', view: DiffineView.unified),
+    );
+
+    expect(copied, 'a\n\nb\nc');
   });
 
   testWidgets('counts the changes in the bar under the panes', (WidgetTester tester) async {

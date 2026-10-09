@@ -6,6 +6,7 @@
 /// which of the two a reader is looking at.
 library;
 
+import 'package:diffine/src/internal/copy.dart';
 import 'package:diffine/src/internal/pieces.dart';
 import 'package:diffine/src/internal/rows.dart';
 import 'package:diffine/src/internal/scale.dart';
@@ -99,6 +100,8 @@ class DiffineLineWidget extends StatelessWidget {
     this.renderGutter,
     this.renderWidget,
     this.invisibles = false,
+    this.row = -1,
+    this.selection,
   });
 
   /// The palette it is drawn in.
@@ -147,6 +150,13 @@ class DiffineLineWidget extends StatelessWidget {
   /// Whether the spaces and tabs inside the line are drawn.
   final bool invisibles;
 
+  /// Where the line sits in its pane's own list.
+  final int row;
+
+  /// The pane's record of which lines a selection has reached, which this line
+  /// joins. Left out where nothing is copied out of the line this way.
+  final PaneSelection? selection;
+
   @override
   Widget build(BuildContext context) {
     final DiffLine? line = drawn.line;
@@ -159,6 +169,23 @@ class DiffineLineWidget extends StatelessWidget {
     final String? said = line != null ? _labelFor(strings, drawn.kind, drawn.side) : null;
     final Color? tint = rowTint(theme, drawn.kind, drawn.side, line == null);
     final double scale = DiffineScale.of(context);
+    final Widget? drawnText = line == null
+        ? null
+        : _LineText(
+            theme: theme,
+            line: line,
+            side: drawn.side,
+            wrap: wrap,
+            highlight: highlight,
+            matches: matches,
+            match: match,
+            invisibles: invisibles,
+            scale: scale,
+          );
+    final PaneSelection? pane = selection;
+    final Widget? text = drawnText == null || pane == null
+        ? drawnText
+        : _SelectableLine(row: row, selection: pane, child: drawnText);
 
     final Widget body = Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -177,19 +204,7 @@ class DiffineLineWidget extends StatelessWidget {
         Expanded(
           child: Padding(
             padding: EdgeInsets.only(left: kTextGap * scale, right: kTextGap * scale),
-            child: line == null
-                ? const SizedBox.shrink()
-                : _LineText(
-                    theme: theme,
-                    line: line,
-                    side: drawn.side,
-                    wrap: wrap,
-                    highlight: highlight,
-                    matches: matches,
-                    match: match,
-                    invisibles: invisibles,
-                    scale: scale,
-                  ),
+            child: text ?? const SizedBox.shrink(),
           ),
         ),
       ],
@@ -392,6 +407,60 @@ class _LineText extends StatelessWidget {
         own ?? (kind == null ? base : base.copyWith(color: theme.code.of(kind)));
 
     return background == null ? style : style.copyWith(backgroundColor: background);
+  }
+}
+
+/// A line's text, registered with the pane's record of what is selected.
+class _SelectableLine extends StatefulWidget {
+  const _SelectableLine({required this.row, required this.selection, required this.child});
+
+  final int row;
+  final PaneSelection selection;
+  final Widget child;
+
+  @override
+  State<_SelectableLine> createState() => _SelectableLineState();
+}
+
+class _SelectableLineState extends State<_SelectableLine> {
+  late final LineSelection _line = LineSelection(row: widget.row, pane: widget.selection);
+
+  @override
+  void initState() {
+    super.initState();
+    widget.selection.attach(widget.row, _line);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _line.parent = SelectionContainer.maybeOf(context);
+  }
+
+  @override
+  void didUpdateWidget(_SelectableLine old) {
+    super.didUpdateWidget(old);
+
+    if (old.row != widget.row || !identical(old.selection, widget.selection)) {
+      old.selection.detach(old.row, _line);
+      widget.selection.attach(widget.row, _line);
+    }
+
+    _line
+      ..row = widget.row
+      ..pane = widget.selection;
+  }
+
+  @override
+  void dispose() {
+    widget.selection.detach(widget.row, _line);
+    _line.parent = null;
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SelectionRegistrarScope(registrar: _line, child: widget.child);
   }
 }
 

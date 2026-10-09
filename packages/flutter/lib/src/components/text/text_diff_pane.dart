@@ -11,6 +11,7 @@ import 'dart:math' as math;
 
 import 'package:diffine/src/components/shared/diffine_fold.dart';
 import 'package:diffine/src/components/shared/diffine_line.dart';
+import 'package:diffine/src/internal/copy.dart';
 import 'package:diffine/src/internal/fold.dart';
 import 'package:diffine/src/internal/metrics.dart';
 import 'package:diffine/src/internal/rows.dart';
@@ -104,6 +105,7 @@ class TextDiffPane extends StatelessWidget {
     this.renderGutter,
     this.renderWidget,
     this.invisibles = false,
+    this.selection,
   });
 
   /// The palette it is drawn in.
@@ -176,6 +178,10 @@ class TextDiffPane extends StatelessWidget {
   /// Whether the spaces and tabs inside each line are drawn.
   final bool invisibles;
 
+  /// The record of which lines a selection has reached, which is what a
+  /// reader's copy is built from. See `copy.dart`.
+  final PaneSelection? selection;
+
   @override
   Widget build(BuildContext context) {
     final Widget list = CustomPaint(
@@ -236,6 +242,8 @@ class TextDiffPane extends StatelessWidget {
       renderGutter: renderGutter,
       renderWidget: renderWidget == null ? null : _widgetFor(index),
       invisibles: invisibles,
+      row: index,
+      selection: selection,
     );
   }
 

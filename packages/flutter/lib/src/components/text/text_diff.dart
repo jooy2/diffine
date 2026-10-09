@@ -36,6 +36,7 @@ import 'package:diffine/src/components/text/text_diff_field.dart';
 import 'package:diffine/src/components/text/text_diff_pane.dart';
 import 'package:diffine/src/diff.dart';
 import 'package:diffine/src/internal/apply.dart';
+import 'package:diffine/src/internal/copy.dart';
 import 'package:diffine/src/internal/fold.dart';
 import 'package:diffine/src/internal/highlight/catalogue.dart';
 import 'package:diffine/src/internal/i18n.dart';
@@ -427,6 +428,9 @@ class _TextDiffState extends State<TextDiff> {
     FocusNode(debugLabel: 'diffine selection 0'),
     FocusNode(debugLabel: 'diffine selection 1'),
   ];
+  // Which lines of each pane are built, which is what a line asks when it is
+  // copied how far the selection goes on past it. See `copy.dart`.
+  final List<PaneSelection> _selections = <PaneSelection>[PaneSelection(), PaneSelection()];
 
   final ScrollController _firstVertical = ScrollController();
   final ScrollController _secondVertical = ScrollController();
@@ -1528,6 +1532,9 @@ class _TextDiffState extends State<TextDiff> {
       );
     }
 
+    final PaneSelection selected = _selections[pane.clamp(0, _selections.length - 1)]
+      ..layout = layout;
+
     return SelectableRegion(
       focusNode: _selecting[pane.clamp(0, _selecting.length - 1)],
       selectionControls: emptyTextSelectionControls,
@@ -1554,6 +1561,7 @@ class _TextDiffState extends State<TextDiff> {
         invisibles: widget.showInvisibles,
         renderGutter: widget.renderGutter,
         renderWidget: widget.renderWidget,
+        selection: selected,
         onExpand: (FoldRun fold) {
           setState(() {
             final DiffResult? comparison = _comparison;
