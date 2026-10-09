@@ -32,6 +32,8 @@
 
 ### Fixed
 
+- **A selection made on a page that did not have the keyboard can be copied straight away.** On the web, the first click in a pane gave the keyboard to the page, and the page handed it on to the first thing in reading order, the button for the previous change. Ctrl+C after that first selection went to the button and copied nothing until the pane was clicked again. The pane now takes the keyboard back.
+
 - **Copying several lines keeps the line breaks between them.** The framework hands a selection over as the text of every line it covers run together, so three lines copied out of a pane arrived as one. Each line now hands over its own text with the breaks that follow it, empty lines of the document included, while a blank opposite a line and a folded band add nothing: what is copied is the document, as it is in the React package. It is the same for a key on the desktop and on the web.
 
 - **A picture follows the pointer the whole way it is dragged, and the wheel zooms by every notch.** On the web, a browser hands over every move since the last frame at once, and a mouse that reports more often than the screen draws makes several of them a frame. Each was worked out from where the view stood when the frame began, so only the last one counted and the picture travelled a fraction of the distance the mouse did. The wheel lost notches the same way. Each move now starts where the one before it ended.

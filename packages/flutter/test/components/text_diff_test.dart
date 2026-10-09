@@ -1,3 +1,5 @@
+import 'dart:ui' show ViewFocusDirection, ViewFocusEvent, ViewFocusState;
+
 import 'package:diffine/diffine.dart';
 import 'package:diffine/src/components/shared/diffine_line.dart';
 import 'package:flutter/gestures.dart';
@@ -358,6 +360,32 @@ void main() {
     );
 
     expect(copied, 'a\n\nb\nc');
+  });
+
+  testWidgets('keeps the focus in the pane when the window gains it from a click there', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(host(const TextDiff(before: _before, after: _after)));
+
+    final FocusNode pane = tester
+        .widget<SelectableRegion>(find.byType(SelectableRegion).first)
+        .focusNode!;
+
+    // A click in a pane of a page that did not have the keyboard: the pane
+    // asks for the focus, and the window, gaining it as a result, hands it to
+    // whatever comes first, which is the button for the previous change.
+    pane.requestFocus();
+    await tester.pump();
+    tester.binding.handleViewFocusChanged(
+      ViewFocusEvent(
+        viewId: tester.view.viewId,
+        state: ViewFocusState.focused,
+        direction: ViewFocusDirection.forward,
+      ),
+    );
+    await tester.pump();
+
+    expect(pane.hasPrimaryFocus, isTrue);
   });
 
   testWidgets('counts the changes in the bar under the panes', (WidgetTester tester) async {

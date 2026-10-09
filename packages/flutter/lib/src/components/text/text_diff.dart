@@ -24,6 +24,7 @@ library;
 
 import 'dart:math' as math;
 import 'dart:typed_data';
+import 'dart:ui' show ViewFocusDirection, ViewFocusEvent, ViewFocusState;
 
 import 'package:diffine/src/components/shared/diffine_find.dart';
 import 'package:diffine/src/components/shared/diffine_language.dart';
@@ -418,7 +419,7 @@ class TextDiff extends StatefulWidget {
   State<TextDiff> createState() => _TextDiffState();
 }
 
-class _TextDiffState extends State<TextDiff> {
+class _TextDiffState extends State<TextDiff> with WidgetsBindingObserver {
   final ScaledTheme _scaledTheme = ScaledTheme();
   final TextEditingController _beforeField = TextEditingController();
   final TextEditingController _afterField = TextEditingController();
@@ -489,6 +490,7 @@ class _TextDiffState extends State<TextDiff> {
     _secondVertical.addListener(_onSecondScroll);
     _beforeField.addListener(_onBeforeTyped);
     _afterField.addListener(_onAfterTyped);
+    WidgetsBinding.instance.addObserver(this);
   }
 
   @override
@@ -519,6 +521,7 @@ class _TextDiffState extends State<TextDiff> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _firstVertical
       ..removeListener(_onFirstScroll)
       ..dispose();
@@ -545,6 +548,32 @@ class _TextDiffState extends State<TextDiff> {
     _heights?.dispose();
     _secondHeights?.dispose();
     super.dispose();
+  }
+
+  /// Keeps the keyboard on a pane that was clicked while the window did not
+  /// have it.
+  ///
+  /// The click asks for the focus for the pane, and a window gaining the focus
+  /// as a result hands it to whatever is first in reading order — the button
+  /// for the previous change — on the way in. Ctrl+C then went to the button,
+  /// and the selection the reader had just made could not be copied until they
+  /// clicked again. This runs after the window has done that, and asks for the
+  /// focus back for the pane that had it.
+  @override
+  void didChangeViewFocus(ViewFocusEvent event) {
+    if (event.state != ViewFocusState.focused ||
+        event.direction != ViewFocusDirection.forward ||
+        event.viewId != View.maybeOf(context)?.viewId) {
+      return;
+    }
+
+    for (final FocusNode node in _selecting) {
+      if (node.hasPrimaryFocus) {
+        node.requestFocus();
+
+        return;
+      }
+    }
   }
 
   TextSelection _clampSelection(TextSelection selection, int length) {
