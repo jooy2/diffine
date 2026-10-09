@@ -71,10 +71,41 @@ Future<String?> copyAll(WidgetTester tester, Widget widget, {int pane = 0}) asyn
   return copied;
 }
 
+/// Where a character of a drawn line is on the screen, halfway down it.
+///
+/// The point is the text of the line as it is drawn and an offset into it.
+Offset characterAt(WidgetTester tester, (String, int) point) {
+  final RenderParagraph paragraph = tester.renderObject<RenderParagraph>(
+    find.byWidgetPredicate(
+      (Widget widget) =>
+          widget is RichText && widget.text.toPlainText(includeSemanticsLabels: false) == point.$1,
+    ),
+  );
+  final Offset caret = paragraph.getOffsetForCaret(TextPosition(offset: point.$2), Rect.zero);
+
+  return paragraph.localToGlobal(caret + Offset(0, paragraph.size.height / 2));
+}
+
+/// Drags a mouse from one character of a drawn line to another.
+Future<void> dragAcross(
+  WidgetTester tester, {
+  required (String, int) from,
+  required (String, int) to,
+}) async {
+  final TestGesture gesture = await tester.startGesture(
+    characterAt(tester, from),
+    kind: PointerDeviceKind.mouse,
+  );
+
+  await tester.pump();
+  await gesture.moveTo(characterAt(tester, to));
+  await tester.pump();
+  await gesture.up();
+  await tester.pump();
+}
+
 /// What Ctrl+C puts on the clipboard after a mouse drags from one character of
 /// a drawn line to another.
-///
-/// Each end is the text of the line as it is drawn and an offset into it.
 Future<String?> copyDragged(
   WidgetTester tester,
   Widget widget, {
@@ -100,28 +131,7 @@ Future<String?> copyDragged(
   );
 
   await tester.pumpWidget(host(widget));
-
-  /// Where a character of a drawn line is on the screen, halfway down it.
-  Offset at((String, int) point) {
-    final RenderParagraph paragraph = tester.renderObject<RenderParagraph>(
-      find.byWidgetPredicate(
-        (Widget widget) =>
-            widget is RichText &&
-            widget.text.toPlainText(includeSemanticsLabels: false) == point.$1,
-      ),
-    );
-    final Offset caret = paragraph.getOffsetForCaret(TextPosition(offset: point.$2), Rect.zero);
-
-    return paragraph.localToGlobal(caret + Offset(0, paragraph.size.height / 2));
-  }
-
-  final TestGesture gesture = await tester.startGesture(at(from), kind: PointerDeviceKind.mouse);
-
-  await tester.pump();
-  await gesture.moveTo(at(to));
-  await tester.pump();
-  await gesture.up();
-  await tester.pump();
+  await dragAcross(tester, from: from, to: to);
 
   tester.widget<SelectableRegion>(find.byType(SelectableRegion)).focusNode!.requestFocus();
   await tester.pump();
@@ -131,6 +141,26 @@ Future<String?> copyDragged(
   await tester.pump();
 
   return copied;
+}
+
+/// What the browser's own menu copies on the web when a pane is right clicked
+/// at [point]: it asks the pane for the word there, then reads back whatever is
+/// selected.
+String? rightClickCopy(WidgetTester tester, (String, int) point) {
+  final SelectionContainerDelegate pane = tester
+      .widget<SelectionContainer>(
+        find
+            .descendant(
+              of: find.byType(SelectableRegion),
+              matching: find.byType(SelectionContainer),
+            )
+            .first,
+      )
+      .delegate!;
+
+  pane.dispatchSelectionEvent(SelectWordSelectionEvent(globalPosition: characterAt(tester, point)));
+
+  return pane.getSelectedContent()?.plainText;
 }
 
 /// How tall one drawn line of a document is.
@@ -351,6 +381,40 @@ void main() {
     );
 
     expect(copied, 'pha\nthe ');
+  });
+
+  testWidgets('keeps a selection of several lines when it is right clicked inside', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      host(
+        const TextDiff(
+          before: 'alpha\nthe quick fox',
+          after: 'alpha\nthe slow fox',
+          view: DiffineView.unified,
+        ),
+      ),
+    );
+    await dragAcross(tester, from: ('alpha', 2), to: ('the quick fox', 6));
+
+    expect(rightClickCopy(tester, ('alpha', 3)), 'pha\nthe qu');
+  });
+
+  testWidgets('takes the word under a right click outside the selection', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      host(
+        const TextDiff(
+          before: 'alpha\nthe quick fox',
+          after: 'alpha\nthe slow fox',
+          view: DiffineView.unified,
+        ),
+      ),
+    );
+    await dragAcross(tester, from: ('alpha', 2), to: ('the quick fox', 6));
+
+    expect(rightClickCopy(tester, ('the slow fox', 10)), 'fox');
   });
 
   testWidgets('keeps an empty line of the document in what it copies', (WidgetTester tester) async {
