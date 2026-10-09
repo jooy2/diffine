@@ -104,6 +104,10 @@ ChangeRows changeRows(
       rows.add(
         DiffRow(
           kind: DiffRowKind.replace,
+          // Left out rather than empty where there is nothing to draw the pair
+          // as one line with, so a row reads the same whichever way it was
+          // built.
+          edits: worthMarking && inside.edits.isNotEmpty ? inside.edits : null,
           before: DiffLine(
             index: beforeOffset + slot.before,
             text: before[slot.before],

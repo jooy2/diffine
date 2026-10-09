@@ -108,7 +108,7 @@ TextDiff(mode: DiffineMode.editor, defaultBefore: saved, defaultAfter: draft);
 
 | prop | 타입 | 기본값 | 무엇을 정하는지 |
 | --- | --- | --- | --- |
-| `view` | `'split' \| 'unified'` | `'split'` | 좌우로 나눌지, 한 줄로 볼지. |
+| `view` | `'split' \| 'unified' \| 'merged'` | `'split'` | 좌우로 나눌지, 한 열에 놓을지, 한 열에서 고친 줄을 한 번만 그릴지. |
 | `lineNumbers` | `boolean` | `true` | 각 줄에 번호를 붙일지. |
 | `markers` | `boolean` | `true` | 바뀐 줄에 `+`, `−`, `~`를 붙일지. |
 | `wrap` | `boolean` | `false` | 긴 줄을 접을지 옆으로 흘릴지. |
@@ -138,7 +138,7 @@ TextDiff(mode: DiffineMode.editor, defaultBefore: saved, defaultAfter: draft);
 | `renderGutter` | [`DiffineRender`](../types/diffine-render) | — | 줄 옆 여백에 넣을, 애플리케이션 자신의 내용. |
 | `renderWidget` | [`DiffineRender`](../types/diffine-render) | — | 줄 아래에 넣을, 애플리케이션 자신의 내용. |
 
-`collapse`와 `context`는 `viewer`의 것입니다. 에디터는 입력란이 문서 전체를 들고 있어서 아무것도 접지 않습니다. `applyChanges`는 `editor`의 것입니다. 변경을 적용한다는 것은 문서를 쓴다는 뜻이고, 버튼은 `connectors`가 그리는 열에 놓입니다. `connectors`와 `syncScroll`은 두 창 사이의 이야기라서 `unified`에서는 무시됩니다. `languageLabel`은 `viewer`에서 언어 이름을, `editor`에서 그 이름을 고르는 메뉴를 그립니다. 그 선택을 누가 관리하는지는 `language`, `defaultLanguage`, `onLanguageChange`가 정합니다.
+`collapse`와 `context`는 `viewer`의 것입니다. 에디터는 입력란이 문서 전체를 들고 있어서 아무것도 접지 않습니다. `applyChanges`는 `editor`의 것입니다. 변경을 적용한다는 것은 문서를 쓴다는 뜻이고, 버튼은 `connectors`가 그리는 열에 놓입니다. `connectors`와 `syncScroll`은 두 창 사이의 이야기라서 `unified`와 `merged`에서는 무시됩니다. `languageLabel`은 `viewer`에서 언어 이름을, `editor`에서 그 이름을 고르는 메뉴를 그립니다. 그 선택을 누가 관리하는지는 `language`, `defaultLanguage`, `onLanguageChange`가 정합니다.
 
 `scale`은 글자와, 컴포넌트가 그 둘레에 그리는 줄 번호 칸, 막대, 버튼과 아이콘, 메뉴 전부에 곱해집니다. `1.25`면 4분의 1 크게, `0.875`면 8분의 1 작게 그립니다. `font`로 준 크기에도 곱해지므로 둘의 비율은 그대로이고, 상자의 높이는 페이지가 정할 몫이라 바꾸지 않습니다.
 
@@ -150,7 +150,7 @@ TextDiff(mode: DiffineMode.editor, defaultBefore: saved, defaultAfter: draft);
 
 | 인자 | 타입 | 기본값 | 무엇을 정하는지 |
 | --- | --- | --- | --- |
-| `view` | `DiffineView` | `DiffineView.split` | 좌우로 나눌지, 한 줄로 볼지. |
+| `view` | `DiffineView` | `DiffineView.split` | 좌우로 나눌지, 한 열에 놓을지, 한 열에서 고친 줄을 한 번만 그릴지. |
 | `lineNumbers` | `bool` | `true` | 각 줄에 번호를 붙일지. |
 | `markers` | `bool` | `true` | 바뀐 줄에 `+`, `−`, `~`를 붙일지. |
 | `wrap` | `bool` | `false` | 긴 줄을 접을지 옆으로 흘릴지. |
@@ -180,7 +180,7 @@ TextDiff(mode: DiffineMode.editor, defaultBefore: saved, defaultAfter: draft);
 | `renderGutter` | [`DiffineRender?`](../types/diffine-render) | — | 줄 옆 여백에 넣을, 애플리케이션 자신의 내용. |
 | `renderWidget` | [`DiffineRender?`](../types/diffine-render) | — | 줄 아래에 넣을, 애플리케이션 자신의 내용. |
 
-`collapse`와 `context`는 뷰어의 것입니다. 에디터는 입력란이 문서 전체를 들고 있어서 아무것도 접지 않습니다. `applyChanges`는 에디터의 것입니다. 변경을 적용한다는 것은 문서를 쓴다는 뜻이고, 버튼은 `connectors`가 그리는 열에 놓입니다. `connectors`와 `syncScroll`은 두 창 사이의 이야기라서 `DiffineView.unified`에서는 무시됩니다. `languageLabel`은 뷰어에서 언어 이름을, 에디터에서 그 이름을 고르는 메뉴를 그립니다. 그 선택을 누가 관리하는지는 `language`, `defaultLanguage`, `onLanguageChanged`가 정합니다.
+`collapse`와 `context`는 뷰어의 것입니다. 에디터는 입력란이 문서 전체를 들고 있어서 아무것도 접지 않습니다. `applyChanges`는 에디터의 것입니다. 변경을 적용한다는 것은 문서를 쓴다는 뜻이고, 버튼은 `connectors`가 그리는 열에 놓입니다. `connectors`와 `syncScroll`은 두 창 사이의 이야기라서 `DiffineView.unified`와 `DiffineView.merged`에서는 무시됩니다. `languageLabel`은 뷰어에서 언어 이름을, 에디터에서 그 이름을 고르는 메뉴를 그립니다. 그 선택을 누가 관리하는지는 `language`, `defaultLanguage`, `onLanguageChanged`가 정합니다.
 
 `scale`은 글자와, 위젯이 그 둘레에 그리는 줄 번호 칸, 막대, 버튼과 아이콘, 메뉴 전부에 곱해집니다. `1.25`면 4분의 1 크게, `0.875`면 8분의 1 작게 그립니다. `font`로 준 크기에도 곱해지므로 둘의 비율은 그대로이고, `height`와 모서리 반지름은 화면이 정할 몫이라 바꾸지 않습니다.
 

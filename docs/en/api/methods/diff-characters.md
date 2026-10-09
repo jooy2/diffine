@@ -15,6 +15,7 @@ interface DiffInlineResult {
   before: readonly DiffSegment[];
   after: readonly DiffSegment[];
   similarity: number;
+  edits: readonly DiffEdit[];
 }
 ```
 
@@ -29,6 +30,7 @@ class DiffInlineResult {
   final List<DiffSegment> before;
   final List<DiffSegment> after;
   final double similarity;
+  final List<DiffEdit> edits;
 }
 ```
 
@@ -38,4 +40,4 @@ class DiffInlineResult {
 
 [`diffWords`](./diff-words) with the pieces one character long, for two lines where a word is not the unit worth marking.
 
-A side each rather than one list between them, so joining a side back together gives the text that was passed in for it.
+A side each rather than one list between them, so joining a side back together gives the text that was passed in for it, and `edits` lays the two against each other the way [`diffWords`](./diff-words) describes.

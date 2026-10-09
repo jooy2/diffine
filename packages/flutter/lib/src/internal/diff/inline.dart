@@ -12,6 +12,11 @@
 /// to hold, and whichever it picked would be text that was never in the other
 /// document. Two lists each hold their own side, so joining a side back
 /// together gives the line that was passed in.
+///
+/// What one list does need is the order, and that is kept beside the two as
+/// offsets rather than text: each run says where it sits in both lines, so a
+/// view drawing the pair as one line takes the text from whichever side it
+/// wants and still knows where the other side's run went.
 library;
 
 import 'package:diffine/src/internal/diff/myers.dart';
@@ -64,6 +69,49 @@ void _append(List<_Piece> segments, DiffEditKind kind, String text) {
   segments.add(_Piece(kind, text));
 }
 
+/// A run both sides share being built up, which is a [DiffEdit] once it has
+/// stopped growing.
+class _Run {
+  _Run(this.kind, this.beforeStart, this.beforeEnd, this.afterStart, this.afterEnd);
+
+  final DiffEditKind kind;
+  final int beforeStart;
+  int beforeEnd;
+  final int afterStart;
+  int afterEnd;
+
+  DiffEdit get settled => DiffEdit(
+    kind: kind,
+    beforeStart: beforeStart,
+    beforeEnd: beforeEnd,
+    afterStart: afterStart,
+    afterEnd: afterEnd,
+  );
+}
+
+/// Appends a run to the list both sides share, joining it to the run before it
+/// where it can — two matches with nothing between them are one equal run.
+void _extend(List<_Run> edits, DiffEditKind kind, int before, int after) {
+  if (before == 0 && after == 0) {
+    return;
+  }
+
+  final _Run? previous = edits.isEmpty ? null : edits.last;
+
+  if (previous != null && previous.kind == kind) {
+    previous
+      ..beforeEnd += before
+      ..afterEnd += after;
+
+    return;
+  }
+
+  final int beforeStart = previous?.beforeEnd ?? 0;
+  final int afterStart = previous?.afterEnd ?? 0;
+
+  edits.add(_Run(kind, beforeStart, beforeStart + before, afterStart, afterStart + after));
+}
+
 /// A run being built up, which is a [DiffSegment] once it has stopped growing.
 class _Piece {
   _Piece(this.kind, String text) : text = StringBuffer(text);
@@ -89,6 +137,17 @@ DiffInlineResult compareInline(String before, String after, InlineOptions option
           ? const <DiffSegment>[]
           : <DiffSegment>[DiffSegment(DiffEditKind.equal, after)],
       similarity: 1,
+      edits: before.isEmpty
+          ? const <DiffEdit>[]
+          : <DiffEdit>[
+              DiffEdit(
+                kind: DiffEditKind.equal,
+                beforeStart: 0,
+                beforeEnd: before.length,
+                afterStart: 0,
+                afterEnd: after.length,
+              ),
+            ],
     );
   }
 
@@ -106,21 +165,19 @@ DiffInlineResult compareInline(String before, String after, InlineOptions option
 
   final List<_Piece> beforeSegments = <_Piece>[];
   final List<_Piece> afterSegments = <_Piece>[];
+  final List<_Run> edits = <_Run>[];
   int beforeCursor = 0;
   int afterCursor = 0;
   int paired = 0;
 
   for (final DiffMatch match in found.matches) {
-    _append(
-      beforeSegments,
-      DiffEditKind.delete,
-      beforeTokens.sublist(beforeCursor, match.beforeStart).join(),
-    );
-    _append(
-      afterSegments,
-      DiffEditKind.insert,
-      afterTokens.sublist(afterCursor, match.afterStart).join(),
-    );
+    final String deleted = beforeTokens.sublist(beforeCursor, match.beforeStart).join();
+    final String inserted = afterTokens.sublist(afterCursor, match.afterStart).join();
+
+    _append(beforeSegments, DiffEditKind.delete, deleted);
+    _append(afterSegments, DiffEditKind.insert, inserted);
+    _extend(edits, DiffEditKind.delete, deleted.length, 0);
+    _extend(edits, DiffEditKind.insert, 0, inserted.length);
 
     final String beforeText = beforeTokens
         .sublist(match.beforeStart, match.beforeStart + match.length)
@@ -131,14 +188,20 @@ DiffInlineResult compareInline(String before, String after, InlineOptions option
 
     _append(beforeSegments, DiffEditKind.equal, beforeText);
     _append(afterSegments, DiffEditKind.equal, afterText);
+    _extend(edits, DiffEditKind.equal, beforeText.length, afterText.length);
     paired += beforeText.length + afterText.length;
 
     beforeCursor = match.beforeStart + match.length;
     afterCursor = match.afterStart + match.length;
   }
 
-  _append(beforeSegments, DiffEditKind.delete, beforeTokens.sublist(beforeCursor).join());
-  _append(afterSegments, DiffEditKind.insert, afterTokens.sublist(afterCursor).join());
+  final String deleted = beforeTokens.sublist(beforeCursor).join();
+  final String inserted = afterTokens.sublist(afterCursor).join();
+
+  _append(beforeSegments, DiffEditKind.delete, deleted);
+  _append(afterSegments, DiffEditKind.insert, inserted);
+  _extend(edits, DiffEditKind.delete, deleted.length, 0);
+  _extend(edits, DiffEditKind.insert, 0, inserted.length);
 
   final int total = before.length + after.length;
 
@@ -146,5 +209,6 @@ DiffInlineResult compareInline(String before, String after, InlineOptions option
     before: beforeSegments.map((_Piece piece) => piece.settled).toList(),
     after: afterSegments.map((_Piece piece) => piece.settled).toList(),
     similarity: total == 0 ? 1 : paired / total,
+    edits: edits.map((_Run run) => run.settled).toList(),
   );
 }

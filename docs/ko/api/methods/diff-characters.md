@@ -15,6 +15,7 @@ interface DiffInlineResult {
   before: readonly DiffSegment[];
   after: readonly DiffSegment[];
   similarity: number;
+  edits: readonly DiffEdit[];
 }
 ```
 
@@ -29,6 +30,7 @@ class DiffInlineResult {
   final List<DiffSegment> before;
   final List<DiffSegment> after;
   final double similarity;
+  final List<DiffEdit> edits;
 }
 ```
 
@@ -38,4 +40,4 @@ class DiffInlineResult {
 
 조각을 한 글자로 잡은 [`diffWords`](./diff-words)입니다. 단어로 끊어 봐야 표시할 것이 없는 두 줄에 씁니다.
 
-한 목록이 아니라 양쪽으로 나눠 돌려주므로, 한쪽을 이어 붙이면 그쪽에 넘긴 문자열이 그대로 나옵니다.
+한 목록이 아니라 양쪽으로 나눠 돌려주므로, 한쪽을 이어 붙이면 그쪽에 넘긴 문자열이 그대로 나옵니다. 두 쪽을 맞댄 `edits`는 [`diffWords`](./diff-words)에 설명한 것과 같습니다.

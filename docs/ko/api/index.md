@@ -14,11 +14,11 @@ description: 'Diffine이 내보내는 것마다 문서 하나. 두 화면과 그
 
 | import | 무엇이 들어 있는지 | 그리기 전까지 |
 | --- | --- | --- |
-| `diffine-react` | 비교 전부. 텍스트와 이미지와 패치, 그리고 타입. | 2.6 kB |
-| `diffine-react/diff` | 텍스트 비교 엔진만. | 2.9 kB |
+| `diffine-react` | 비교 전부. 텍스트와 이미지와 패치, 그리고 타입. | 2.8 kB |
+| `diffine-react/diff` | 텍스트 비교 엔진만. | 3.1 kB |
 | `diffine-react/image` | 이미지 비교 엔진만. | 4.3 kB |
-| `diffine-react/patch` | 유니파이드 패치 읽기와 쓰기. | 3.3 kB |
-| `diffine-react/text-diff` | `TextDiff`와 `DIFFINE_LANGUAGES`. | 17.7 kB |
+| `diffine-react/patch` | 유니파이드 패치 읽기와 쓰기. | 3.5 kB |
+| `diffine-react/text-diff` | `TextDiff`와 `DIFFINE_LANGUAGES`. | 19.0 kB |
 | `diffine-react/image-diff` | `ImageDiff`. | 15.7 kB |
 | `diffine-react/types` | 타입만. prop에 타입 이름을 쓰려는 애플리케이션을 위한 것. | 0 kB |
 | `diffine-react/styles.css` | 스타일시트. 두 컴포넌트가 함께 씁니다. | 4.8 kB |

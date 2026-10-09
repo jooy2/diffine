@@ -71,6 +71,21 @@ final List<Demo> demos = <Demo>[
     ),
   ),
   Demo(
+    'text/merged',
+    'One line per edit',
+    (DiffineColorScheme scheme, DiffineLocale locale) => TextDiff(
+      before: samples.code.before,
+      after: samples.code.after,
+      beforeLabel: samples.code.beforeLabel,
+      afterLabel: samples.code.afterLabel,
+      language: samples.code.language,
+      view: DiffineView.merged,
+      colorScheme: scheme,
+      locale: locale,
+      height: double.infinity,
+    ),
+  ),
+  Demo(
     'text/wrap',
     'Wrapped prose',
     (DiffineColorScheme scheme, DiffineLocale locale) => TextDiff(

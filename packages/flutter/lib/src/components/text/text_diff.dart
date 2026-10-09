@@ -184,7 +184,10 @@ class TextDiff extends StatefulWidget {
   /// and what bounds it is [DiffOptions.maxCost].
   final DiffOptions diff;
 
-  /// One document either side, or one column with both. Viewer only.
+  /// One document either side, or one column with both — where
+  /// [DiffineView.unified] draws an edited line twice, once as it was and once
+  /// as it is, and [DiffineView.merged] draws it once with what changed marked
+  /// inside it. Viewer only.
   final DiffineView view;
 
   /// Whether each line carries its number.
@@ -866,7 +869,13 @@ class _TextDiffState extends State<TextDiff> {
         : splitLayout(comparison.rows, owner, DiffineSide.after, aligned, plan);
     final PaneLayout oneColumn = split
         ? PaneLayout.none
-        : unifiedLayout(comparison.rows, comparison.changes, owner, plan);
+        : unifiedLayout(
+            comparison.rows,
+            comparison.changes,
+            owner,
+            plan,
+            merge: widget.view == DiffineView.merged,
+          );
 
     final List<PaneLayout> layouts = split
         ? <PaneLayout>[beforeLayout, afterLayout]
@@ -1363,7 +1372,7 @@ class _TextDiffState extends State<TextDiff> {
           paneWidth: paneWidth,
           gutter: gutter,
           characterWidth: characterWidth,
-          longest: layouts.first.widest?.line?.text.length ?? 0,
+          longest: layouts.first.widest?.drawnText?.length ?? 0,
           wrap: widget.wrap,
           scale: scale,
         );
@@ -1372,7 +1381,7 @@ class _TextDiffState extends State<TextDiff> {
                 paneWidth: paneWidth,
                 gutter: gutter,
                 characterWidth: characterWidth,
-                longest: layouts[1].widest?.line?.text.length ?? 0,
+                longest: layouts[1].widest?.drawnText?.length ?? 0,
                 wrap: widget.wrap,
                 scale: scale,
               )

@@ -108,7 +108,7 @@ A document nobody can type into is read from the widget on every build. An edita
 
 | Prop | Type | Default | What it decides |
 | --- | --- | --- | --- |
-| `view` | `'split' \| 'unified'` | `'split'` | One document either side, or one column with both. |
+| `view` | `'split' \| 'unified' \| 'merged'` | `'split'` | One document either side, or one column with both, with an edited line drawn twice or once. |
 | `lineNumbers` | `boolean` | `true` | Whether each line carries its number. |
 | `markers` | `boolean` | `true` | Whether a changed line carries a `+`, `−` or `~`. |
 | `wrap` | `boolean` | `false` | Whether a long line wraps or runs off the side. |
@@ -138,7 +138,7 @@ A document nobody can type into is read from the widget on every build. An edita
 | `renderGutter` | [`DiffineRender`](../types/diffine-render) | — | Something of the application's own, in the gutter beside each line. |
 | `renderWidget` | [`DiffineRender`](../types/diffine-render) | — | Something of the application's own, under each line. |
 
-`collapse` and `context` are the viewer's; an editor holds whole documents in its fields and folds nothing. `applyChanges` is the editor's, because applying a change means writing a document, and its buttons live in the column `connectors` draws. `connectors` and `syncScroll` are about the space between two panes, so both are ignored in the unified view. `languageLabel` draws the name of the language in `viewer` mode and the menu it was chosen from in `editor` mode; `language`, `defaultLanguage` and `onLanguageChange` are the usual pair for that choice.
+`collapse` and `context` are the viewer's; an editor holds whole documents in its fields and folds nothing. `applyChanges` is the editor's, because applying a change means writing a document, and its buttons live in the column `connectors` draws. `connectors` and `syncScroll` are about the space between two panes, so both are ignored in the unified and merged views. `languageLabel` draws the name of the language in `viewer` mode and the menu it was chosen from in `editor` mode; `language`, `defaultLanguage` and `onLanguageChange` are the usual pair for that choice.
 
 `scale` multiplies the text and everything the component draws around it: the gutter, the bars, the buttons and their icons, and the menus. `1.25` draws them a quarter larger and `0.875` an eighth smaller. It multiplies a `font` as well, so the two stay in proportion, and it leaves the height of the box alone, because that is the page's.
 
@@ -150,7 +150,7 @@ Anything else the component is given goes straight to the element, so `id`, `cla
 
 | Argument | Type | Default | What it decides |
 | --- | --- | --- | --- |
-| `view` | `DiffineView` | `DiffineView.split` | One document either side, or one column with both. |
+| `view` | `DiffineView` | `DiffineView.split` | One document either side, or one column with both, with an edited line drawn twice or once. |
 | `lineNumbers` | `bool` | `true` | Whether each line carries its number. |
 | `markers` | `bool` | `true` | Whether a changed line carries a `+`, `−` or `~`. |
 | `wrap` | `bool` | `false` | Whether a long line wraps or runs off the side. |
@@ -180,7 +180,7 @@ Anything else the component is given goes straight to the element, so `id`, `cla
 | `renderGutter` | [`DiffineRender?`](../types/diffine-render) | — | Something of the application's own, in the gutter beside each line. |
 | `renderWidget` | [`DiffineRender?`](../types/diffine-render) | — | Something of the application's own, under each line. |
 
-`collapse` and `context` are the viewer's; an editor holds whole documents in its fields and folds nothing. `applyChanges` is the editor's, because applying a change means writing a document, and its buttons live in the column `connectors` draws. `connectors` and `syncScroll` are about the space between two panes, so both are ignored in the unified view. `languageLabel` draws the name of the language in the viewer and the menu it was chosen from in the editor; `language`, `defaultLanguage` and `onLanguageChanged` are the usual pair for that choice.
+`collapse` and `context` are the viewer's; an editor holds whole documents in its fields and folds nothing. `applyChanges` is the editor's, because applying a change means writing a document, and its buttons live in the column `connectors` draws. `connectors` and `syncScroll` are about the space between two panes, so both are ignored in the unified and merged views. `languageLabel` draws the name of the language in the viewer and the menu it was chosen from in the editor; `language`, `defaultLanguage` and `onLanguageChanged` are the usual pair for that choice.
 
 `scale` multiplies the text and everything the widget draws around it: the gutter, the bars, the buttons and their icons, and the menus. `1.25` draws them a quarter larger and `0.875` an eighth smaller. It multiplies a `font` as well, so the two stay in proportion, and it leaves `height` and the corner radius alone, because the box is the screen's.
 

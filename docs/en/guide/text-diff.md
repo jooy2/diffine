@@ -207,9 +207,9 @@ TextDiff(
 
 :::
 
-## Split and unified
+## Split, unified and merged
 
-`view` decides whether the two documents sit side by side or one under the other.
+`view` decides whether the two documents sit side by side or in one column, and in one column, whether an edited line is drawn twice or once.
 
 In `split`, matching lines are held level with each other and a line with no counterpart gets a blank opposite it. In `unified`, a change is written as the lines that went out followed by the lines that came in, with both documents' numbers down the side. That is the shape a patch has.
 
@@ -231,7 +231,29 @@ TextDiff(before: saved, after: draft, view: DiffineView.unified);
 
 <DiffineDemo sample="code" view="unified" height="20rem" flutter="text/unified" />
 
-It is the same comparison drawn a second way rather than a second comparison. The words picked out inside the lines are the ones the engine already found.
+In `merged`, an edited line is drawn once. The text both versions share is written once, and what went out is struck through next to what came in. A line with no counterpart, and a pair with nothing marked inside it, is drawn the way `unified` draws it, so with `diff.inline` set to `none` the two views are the same.
+
+::: fw react
+
+```tsx
+<TextDiff before={saved} after={draft} view="merged" />
+```
+
+:::
+
+::: fw flutter
+
+```dart
+TextDiff(before: saved, after: draft, view: DiffineView.merged);
+```
+
+:::
+
+<DiffineDemo sample="code" view="merged" height="20rem" flutter="text/merged" />
+
+A merged line copies as the line it is now, without the text that went out of it. A search looks through both versions of the line and marks what it finds in either one, and `renderGutter` and `renderWidget` are handed the line from `after`.
+
+All three are the same comparison drawn differently rather than three comparisons. The words picked out inside the lines are the ones the engine already found.
 
 An editor is always split, whatever it is given. With one column of lines from two documents, there is no way to decide which document a new line at the boundary belongs to.
 
@@ -1024,7 +1046,7 @@ TextDiff(result: result);
 
 ## What it does not do
 
-- **No unified editor.** See [Split and unified](#split-and-unified).
+- **No editor in one column.** See [Split, unified and merged](#split-unified-and-merged).
 - **No syntax awareness.** `highlight` colours what an application's own tokeniser found. Nothing in this package parses a language.
 
 The [playground](./playground) has both modes on the same pair of documents, with every switch on this page above them.

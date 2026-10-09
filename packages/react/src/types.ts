@@ -189,6 +189,22 @@ export interface DiffInlineResult {
    * against.
    */
   similarity: number;
+  /**
+   * The same comparison as one list instead of two: every run of both lines in
+   * the order a reader meets them, and where it sits in each.
+   *
+   * The offsets count the characters of `before` and `after` the way `slice`
+   * does. An equal run covers both lines, a deleted run covers `before` only and
+   * an inserted run `after` only, and where both happened between the same two
+   * equal runs the deletion comes first.
+   *
+   * This is the one place the two sides are tied to each other. With whitespace
+   * or case being ignored an equal run is not the same length on both sides, so
+   * the two lists above cannot be laid against each other by counting — and
+   * drawing the pair as one line, which is what the `merged` view does, needs
+   * exactly that.
+   */
+  edits: readonly DiffEdit[];
 }
 
 /** A run of tokens, and what happened to it. */
@@ -234,6 +250,15 @@ export interface DiffRow {
   kind: DiffRowKind;
   before: DiffLine | null;
   after: DiffLine | null;
+  /**
+   * How the line on the left became the line on the right, run by run, and
+   * where each run sits in both. See {@link DiffInlineResult.edits}.
+   *
+   * Only a `replace` row whose lines were marked inside has these, and that is
+   * the row a `merged` view draws as one line. A row without them, including
+   * one an application built by hand, is drawn as two.
+   */
+  edits?: readonly DiffEdit[];
 }
 
 /**
@@ -818,10 +843,15 @@ export type DiffineMode = 'viewer' | 'editor';
  *
  * - `split` — one document either side, held level with each other.
  * - `unified` — one column, with what went out above what came in.
+ * - `merged` — one column, with an edited line drawn once: the text both
+ *   versions share, and what went out and what came in next to each other
+ *   inside it. A pair that has nothing marked inside it — compared as whole
+ *   lines, or too far apart to be worth marking — is drawn as `unified` draws
+ *   it.
  *
- * A unified column is not a thing to type into, so an editor is always split.
+ * Neither column is a thing to type into, so an editor is always split.
  */
-export type DiffineView = 'split' | 'unified';
+export type DiffineView = 'split' | 'unified' | 'merged';
 
 /**
  * The typeface the two documents are drawn in.
@@ -1057,6 +1087,10 @@ export interface DiffineToken {
  * A line has one set of runs, and two highlighters cutting it at once is not a
  * thing that has an answer.
  *
+ * A line the `merged` view draws from two is asked about as the two lines it
+ * is, once for each side, and each run of it is coloured by the side its text
+ * came from. The function is only ever handed a whole line of one document.
+ *
  * ```tsx
  * <DiffineViewer
  *   before={saved}
@@ -1097,7 +1131,8 @@ export type DiffineHighlight = (
  * It is called for each line a pane draws, so with the rows virtualised it is
  * called for what is on the screen. A line with nothing opposite it — the blank
  * that holds the two sides level — is not a line, and nothing is asked about
- * it.
+ * it. A line the `merged` view draws from two is asked about once, as its line
+ * of `after`, which is also what a reader copies out of it.
  */
 export type DiffineRender = (line: DiffLine, side: DiffineSide) => React.ReactNode;
 

@@ -15,8 +15,19 @@ const String _after = 'one\n2\nthree\nfour\n';
 List<String> drawn(WidgetTester tester) {
   return tester
       .widgetList<Text>(find.byType(Text))
-      .map((Text text) => text.data ?? text.textSpan?.toPlainText() ?? '')
+      .map(
+        (Text text) => text.data ?? text.textSpan?.toPlainText(includeSemanticsLabels: false) ?? '',
+      )
       .toList();
+}
+
+/// The line a merged view drew from two, found by the text it shows.
+TextSpan mergedLineOf(WidgetTester tester, String shown) {
+  return tester
+      .widgetList<Text>(find.byType(Text))
+      .map((Text text) => text.textSpan)
+      .whereType<TextSpan>()
+      .firstWhere((TextSpan span) => span.toPlainText(includeSemanticsLabels: false) == shown);
 }
 
 /// What Ctrl+A and Ctrl+C put on the clipboard, in one pane of [widget].
@@ -51,6 +62,68 @@ Future<String?> copyAll(WidgetTester tester, Widget widget, {int pane = 0}) asyn
   await tester.pump();
   await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
   await tester.sendKeyEvent(LogicalKeyboardKey.keyA);
+  await tester.sendKeyEvent(LogicalKeyboardKey.keyC);
+  await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+  await tester.pump();
+
+  return copied;
+}
+
+/// What Ctrl+C puts on the clipboard after a mouse drags from one character of
+/// a drawn line to another.
+///
+/// Each end is the text of the line as it is drawn and an offset into it.
+Future<String?> copyDragged(
+  WidgetTester tester,
+  Widget widget, {
+  required (String, int) from,
+  required (String, int) to,
+}) async {
+  String? copied;
+
+  tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (
+    MethodCall call,
+  ) async {
+    if (call.method == 'Clipboard.setData') {
+      copied = (call.arguments as Map<Object?, Object?>)['text']! as String;
+    }
+
+    return null;
+  });
+  addTearDown(
+    () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      null,
+    ),
+  );
+
+  await tester.pumpWidget(host(widget));
+
+  /// Where a character of a drawn line is on the screen, halfway down it.
+  Offset at((String, int) point) {
+    final RenderParagraph paragraph = tester.renderObject<RenderParagraph>(
+      find.byWidgetPredicate(
+        (Widget widget) =>
+            widget is RichText &&
+            widget.text.toPlainText(includeSemanticsLabels: false) == point.$1,
+      ),
+    );
+    final Offset caret = paragraph.getOffsetForCaret(TextPosition(offset: point.$2), Rect.zero);
+
+    return paragraph.localToGlobal(caret + Offset(0, paragraph.size.height / 2));
+  }
+
+  final TestGesture gesture = await tester.startGesture(at(from), kind: PointerDeviceKind.mouse);
+
+  await tester.pump();
+  await gesture.moveTo(at(to));
+  await tester.pump();
+  await gesture.up();
+  await tester.pump();
+
+  tester.widget<SelectableRegion>(find.byType(SelectableRegion)).focusNode!.requestFocus();
+  await tester.pump();
+  await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
   await tester.sendKeyEvent(LogicalKeyboardKey.keyC);
   await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
   await tester.pump();
@@ -141,6 +214,71 @@ void main() {
     expect(lines.indexOf('bravo'), lessThan(lines.indexOf('BRAVO')));
   });
 
+  testWidgets('draws an edited line once in a merged view', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      host(
+        const TextDiff(
+          before: 'alpha\nthe quick fox\ncharlie\n',
+          after: 'alpha\nthe slow fox\ncharlie\n',
+          view: DiffineView.merged,
+        ),
+      ),
+    );
+
+    final List<String> lines = drawn(tester);
+
+    expect(mergedLineOf(tester, 'the quickslow fox'), isNotNull);
+    expect(lines, isNot(contains('the quick fox')));
+    expect(lines, isNot(contains('the slow fox')));
+  });
+
+  testWidgets('strikes out what went out of a merged line', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      host(
+        const TextDiff(before: 'the quick fox', after: 'the slow fox', view: DiffineView.merged),
+      ),
+    );
+
+    final TextSpan line = mergedLineOf(tester, 'the quickslow fox');
+    final List<TextSpan> runs = line.children!.cast<TextSpan>();
+
+    expect(runs.map((TextSpan run) => run.text), <String>['the ', 'quick', 'slow', ' fox']);
+    expect(runs[1].style?.decoration, TextDecoration.lineThrough);
+    expect(runs[2].style?.decoration, isNot(TextDecoration.lineThrough));
+    expect(runs[1].semanticsLabel, 'Removed: quick');
+    expect(runs[2].semanticsLabel, 'Added: slow');
+  });
+
+  testWidgets('draws a change with nothing marked inside it the unified way', (
+    WidgetTester tester,
+  ) async {
+    Future<List<String>> linesOf(DiffineView view) async {
+      await tester.pumpWidget(
+        host(
+          TextDiff(
+            before: _before,
+            after: _after,
+            view: view,
+            diff: const DiffOptions(inline: DiffInlineMode.none),
+          ),
+        ),
+      );
+
+      return drawn(tester);
+    }
+
+    expect(await linesOf(DiffineView.merged), await linesOf(DiffineView.unified));
+  });
+
+  testWidgets('copies a merged line as the line it is now', (WidgetTester tester) async {
+    final String? copied = await copyAll(
+      tester,
+      const TextDiff(before: 'the quick fox', after: 'the slow fox', view: DiffineView.merged),
+    );
+
+    expect(copied, 'the slow fox');
+  });
+
   testWidgets('copies several lines with a line break between each', (WidgetTester tester) async {
     final String? copied = await copyAll(
       tester,
@@ -154,6 +292,21 @@ void main() {
     expect(copied, 'one\nthe quick fox\nthe slow fox');
   });
 
+  testWidgets('copies the lines around a merged one as the document has them', (
+    WidgetTester tester,
+  ) async {
+    final String? copied = await copyAll(
+      tester,
+      const TextDiff(
+        before: 'one\nthe quick fox\nend',
+        after: 'one\nthe slow fox\nend',
+        view: DiffineView.merged,
+      ),
+    );
+
+    expect(copied, 'one\nthe slow fox\nend');
+  });
+
   testWidgets('copies each side of a split view as its own document', (WidgetTester tester) async {
     const TextDiff comparison = TextDiff(before: 'one\ntwo', after: 'one\ntwo\nthree');
 
@@ -165,66 +318,37 @@ void main() {
   testWidgets('copies a selection dragged across lines from where it starts to where it ends', (
     WidgetTester tester,
   ) async {
-    String? copied;
-
-    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (
-      MethodCall call,
-    ) async {
-      if (call.method == 'Clipboard.setData') {
-        copied = (call.arguments as Map<Object?, Object?>)['text']! as String;
-      }
-
-      return null;
-    });
-    addTearDown(
-      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-        SystemChannels.platform,
-        null,
+    final String? copied = await copyDragged(
+      tester,
+      const TextDiff(
+        before: 'alpha\nthe quick fox',
+        after: 'alpha\nthe slow fox',
+        view: DiffineView.unified,
       ),
+      from: ('alpha', 2),
+      to: ('the quick fox', 6),
     );
-
-    await tester.pumpWidget(
-      host(
-        const TextDiff(
-          before: 'alpha\nthe quick fox',
-          after: 'alpha\nthe slow fox',
-          view: DiffineView.unified,
-        ),
-      ),
-    );
-
-    /// Where a character of a drawn line is on the screen, halfway down it.
-    Offset at(String shown, int offset) {
-      final RenderParagraph paragraph = tester.renderObject<RenderParagraph>(
-        find.byWidgetPredicate(
-          (Widget widget) =>
-              widget is RichText && widget.text.toPlainText(includeSemanticsLabels: false) == shown,
-        ),
-      );
-      final Offset caret = paragraph.getOffsetForCaret(TextPosition(offset: offset), Rect.zero);
-
-      return paragraph.localToGlobal(caret + Offset(0, paragraph.size.height / 2));
-    }
-
-    final TestGesture gesture = await tester.startGesture(
-      at('alpha', 2),
-      kind: PointerDeviceKind.mouse,
-    );
-
-    await tester.pump();
-    await gesture.moveTo(at('the quick fox', 6));
-    await tester.pump();
-    await gesture.up();
-    await tester.pump();
-
-    tester.widget<SelectableRegion>(find.byType(SelectableRegion)).focusNode!.requestFocus();
-    await tester.pump();
-    await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
-    await tester.sendKeyEvent(LogicalKeyboardKey.keyC);
-    await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
-    await tester.pump();
 
     expect(copied, 'pha\nthe qu');
+  });
+
+  testWidgets('stops a selection that ends in what went out where that run was', (
+    WidgetTester tester,
+  ) async {
+    // `quick` went out and `slow` came in, so a selection that ends inside
+    // `quick` ends in front of `slow`.
+    final String? copied = await copyDragged(
+      tester,
+      const TextDiff(
+        before: 'alpha\nthe quick fox',
+        after: 'alpha\nthe slow fox',
+        view: DiffineView.merged,
+      ),
+      from: ('alpha', 2),
+      to: ('the quickslow fox', 6),
+    );
+
+    expect(copied, 'pha\nthe ');
   });
 
   testWidgets('keeps an empty line of the document in what it copies', (WidgetTester tester) async {

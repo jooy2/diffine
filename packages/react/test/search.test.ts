@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { diffText } from 'diffine-react';
-import { splitLine } from '../src/internal/pieces.js';
-import { fieldLayout, changeOfRow, type PaneLine } from '../src/internal/rows.js';
+import { disjointRanges, splitLine } from '../src/internal/pieces.js';
+import { fieldLayout, changeOfRow, unifiedLayout, type PaneLine } from '../src/internal/rows.js';
 import {
   findMatches,
   lineStarts,
@@ -113,6 +113,83 @@ describe('findMatches', () => {
     ];
 
     expect(findMatches(blank, patternFor('a', PLAIN), false).matches).toEqual([]);
+  });
+});
+
+describe('findMatches in a merged view', () => {
+  /** The one line `abcdef` against `abxxef` is drawn as, which reads `abcdxxef`. */
+  function merged(): PaneLine[] {
+    const result = diffText('abcdef', 'abxxef', { inline: 'character' });
+
+    return unifiedLayout(
+      result.rows,
+      result.changes,
+      changeOfRow(result.rows.length, result.changes),
+      null,
+      true
+    ).lines;
+  }
+
+  /** Every match, as the runs of the drawn line it covers. */
+  function found(query: string): string[] {
+    const lines = merged();
+
+    return findMatches(lines, patternFor(query, PLAIN), false).matches.map((match) =>
+      (match.parts ?? [match])
+        .map((part) => lines[match.row].merged?.drawn.text.slice(part.start, part.end))
+        .join('+')
+    );
+  }
+
+  it('finds a word of the new line across what went out of it', () => {
+    expect(found('abxx')).toEqual(['ab+xx']);
+  });
+
+  it('finds a word that went out', () => {
+    expect(found('bcd')).toEqual(['bcd']);
+  });
+
+  it('counts what both lines share once', () => {
+    expect(found('ab')).toEqual(['ab']);
+    expect(found('f')).toEqual(['f']);
+  });
+
+  it('finds nothing that only the drawn line holds', () => {
+    expect(found('dx')).toEqual([]);
+  });
+
+  it('comes back in the order the line is drawn', () => {
+    expect(
+      findMatches(merged(), patternFor('[bdx]', { ...PLAIN, regex: true }), false).matches.map(
+        (match) => match.start
+      )
+    ).toEqual([1, 3, 4, 5]);
+  });
+});
+
+describe('disjointRanges', () => {
+  it('cuts ranges that cross into ranges that do not, the current one winning', () => {
+    expect(
+      disjointRanges([
+        { start: 0, end: 4 },
+        { start: 2, end: 6, current: true }
+      ])
+    ).toEqual([
+      { start: 0, end: 2, current: false },
+      { start: 2, end: 6, current: true }
+    ]);
+  });
+
+  it('leaves a gap between two ranges as a gap', () => {
+    expect(
+      disjointRanges([
+        { start: 0, end: 2 },
+        { start: 4, end: 6 }
+      ])
+    ).toEqual([
+      { start: 0, end: 2, current: false },
+      { start: 4, end: 6, current: false }
+    ]);
   });
 });
 

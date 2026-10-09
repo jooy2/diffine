@@ -41,7 +41,7 @@ Every part of the view is a prop with a default, so the component goes from a fu
 | Prop | Default | What it decides |
 | --- | --- | --- |
 | `mode` | `'viewer'` | Whether the two documents are read or written (`'editor'`). |
-| `view` | `'split'` | One document either side, or one column with both (`'unified'`). |
+| `view` | `'split'` | One document either side, or one column with both (`'unified'` or `'merged'`). |
 | `lineNumbers` | `true` | Whether each line carries its number. |
 | `markers` | `true` | Whether a changed line carries a `+`, `−` or `~` beside it. |
 | `wrap` | `false` | Whether a long line wraps or runs off the side. |
@@ -311,11 +311,11 @@ Every entry is its own bundle, and importing one costs what that one is. The roo
 
 | Import | What it is | Before it draws |
 | --- | --- | --- |
-| `diffine-react` | The whole comparison: text, pictures, patches, types. | 2.6 kB |
-| `diffine-react/diff` | The text comparison on its own. | 2.9 kB |
+| `diffine-react` | The whole comparison: text, pictures, patches, types. | 2.8 kB |
+| `diffine-react/diff` | The text comparison on its own. | 3.1 kB |
 | `diffine-react/image` | The picture comparison on its own. | 4.3 kB |
-| `diffine-react/patch` | Reading and writing a unified diff. | 3.3 kB |
-| `diffine-react/text-diff` | `TextDiff`, and the list its menu of languages is made from. | 17.7 kB |
+| `diffine-react/patch` | Reading and writing a unified diff. | 3.5 kB |
+| `diffine-react/text-diff` | `TextDiff`, and the list its menu of languages is made from. | 19.0 kB |
 | `diffine-react/image-diff` | `ImageDiff`. | 15.7 kB |
 | `diffine-react/types` | The types on their own. | 0 kB |
 | `diffine-react/styles.css` | The stylesheet, for both components. | 4.8 kB |

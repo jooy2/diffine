@@ -14,6 +14,15 @@ List<String> shapes(DiffResult result) => result.rows.map(shape).toList();
 List<String> texts(List<DiffSegment> segments) =>
     segments.map((DiffSegment piece) => '${piece.kind.name}:${piece.text}').toList();
 
+/// Each run both sides share, as its kind and where it sits in each.
+List<String> edits(List<DiffEdit> runs) => runs
+    .map(
+      (DiffEdit edit) =>
+          '${edit.kind.name} ${edit.beforeStart}-${edit.beforeEnd} '
+          '${edit.afterStart}-${edit.afterEnd}',
+    )
+    .toList();
+
 void main() {
   group('diffText', () {
     test('reads an empty document as no lines rather than one empty line', () {
@@ -163,6 +172,21 @@ void main() {
       expect(row.after!.segments.map((DiffSegment piece) => piece.text).join(), row.after!.text);
     });
 
+    test('lays an edited pair against itself, and nothing else', () {
+      final DiffResult result = diffText('same\nthe quick fox\ngone', 'same\nthe slow fox');
+
+      expect(
+        result.rows.map(
+          (DiffRow row) => row.edits?.map((DiffEdit edit) => edit.kind.name).join(' '),
+        ),
+        <String?>[null, 'equal delete insert equal', null],
+      );
+      expect(
+        diffText('one', 'two', const DiffOptions(inline: DiffInlineMode.none)).rows.first.edits,
+        isNull,
+      );
+    });
+
     test('marks nothing inside a pair that has too little in common', () {
       final DiffRow row = diffText('alpha beta gamma', 'nothing alike at all').rows.first;
 
@@ -302,6 +326,34 @@ void main() {
 
       expect(result.before.map((DiffSegment piece) => piece.text).join(), 'Title here');
       expect(result.after.map((DiffSegment piece) => piece.text).join(), 'title there');
+    });
+
+    test('lays the two sides against each other, with what went out first', () {
+      expect(edits(diffCharacters('abcdef', 'abxxef').edits), <String>[
+        'equal 0-2 0-2',
+        'delete 2-4 2-2',
+        'insert 4-4 2-4',
+        'equal 4-6 4-6',
+      ]);
+    });
+
+    test('joins two matches with nothing between them into one equal run', () {
+      // `abc` is one equal piece on the left and two on the right, which is why
+      // the pieces of the two sides cannot be laid against each other by count.
+      final DiffInlineResult result = diffCharacters('abc', 'abXc');
+
+      expect(texts(result.before), <String>['equal:abc']);
+      expect(edits(result.edits), <String>['equal 0-2 0-2', 'insert 2-2 2-3', 'equal 2-3 3-4']);
+    });
+
+    test('measures an equal run on each side where whitespace made the lengths differ', () {
+      final DiffInlineResult result = diffWords(
+        'a  b c',
+        'a b d',
+        const DiffOptions(whitespace: DiffWhitespace.amount),
+      );
+
+      expect(edits(result.edits), <String>['equal 0-5 0-4', 'delete 5-6 4-4', 'insert 6-6 4-5']);
     });
   });
 

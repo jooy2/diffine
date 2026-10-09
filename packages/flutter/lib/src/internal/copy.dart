@@ -2,8 +2,10 @@
 ///
 /// A pane is not the document it is showing. It has numbers down the side, a
 /// mark for what happened to each line, bands standing in for the lines that
-/// are folded away, and in a view holding two documents level a blank opposite
-/// every line the other side does not have. None of that is in the file.
+/// are folded away, in a view holding two documents level a blank opposite
+/// every line the other side does not have, and in a merged view the words
+/// that went out of a line, drawn next to the ones that came in. None of that
+/// is in the file.
 ///
 /// The columns are already left out of a selection, because they are drawn
 /// inside a container that takes no part in one, and the blanks and the bands
@@ -19,6 +21,8 @@
 /// desktop, and on the web the browser's own menu, which reads the selection
 /// without a key being pressed.
 library;
+
+import 'dart:math' as math;
 
 import 'package:diffine/src/internal/rows.dart';
 import 'package:flutter/rendering.dart';
@@ -85,7 +89,10 @@ class PaneSelection {
 /// down when the line is all a pane holds.
 class LineSelection implements SelectionRegistrar {
   /// The selection of one drawn line.
-  LineSelection({required this.row, required this.pane});
+  LineSelection({required this.drawn, required this.row, required this.pane});
+
+  /// The line it belongs to.
+  PaneLine drawn;
 
   /// Where the line sits in its pane's own list.
   int row;
@@ -137,7 +144,13 @@ class LineSelection implements SelectionRegistrar {
     return _selectables.keys.any((Selectable selectable) => selectable.getSelection() != null);
   }
 
-  /// The part of the line [inner] has selected, and the breaks that follow it.
+  /// The part of the line [inner] has selected, as the document has it, and
+  /// the breaks that follow it.
+  ///
+  /// A line drawn from two is drawn with what went out still in it, and what a
+  /// reader copies is the line of `after` it stands for. A point inside a run
+  /// that went out is where the run was, which is where the text after it
+  /// starts.
   SelectedContent? _contentOf(Selectable inner) {
     final SelectedContent? content = inner.getSelectedContent();
 
@@ -145,7 +158,18 @@ class LineSelection implements SelectionRegistrar {
       return null;
     }
 
-    return SelectedContent(plainText: content.plainText + '\n' * pane.breaksAfter(row));
+    final SelectedContentRange? range = inner.getSelection();
+    final MergedLine? merged = drawn.merged;
+    String text = content.plainText;
+
+    if (merged != null && range != null) {
+      final int start = merged.afterOffset(math.min(range.startOffset, range.endOffset));
+      final int end = merged.afterOffset(math.max(range.startOffset, range.endOffset));
+
+      text = merged.after.text.substring(start, end);
+    }
+
+    return SelectedContent(plainText: text + '\n' * pane.breaksAfter(row));
   }
 }
 

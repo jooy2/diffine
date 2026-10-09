@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { diffImage, diffText, paintDiffImage } from 'diffine-react';
 import { joinLines } from '../src/internal/copy.js';
-import { changeOfRow, splitLayout } from '../src/internal/rows.js';
+import { changeOfRow, splitLayout, unifiedLayout } from '../src/internal/rows.js';
 
 /** One side of a comparison, laid out the way a viewer draws it. */
 function paneOf(before: string, after: string, side: 'before' | 'after') {
@@ -62,6 +62,22 @@ describe('what a reader copies out of a pane', () => {
     const layout = paneOf(BEFORE, AFTER, 'before');
 
     expect(joinLines(layout, 3, 4, 0, 0)).toBeNull();
+  });
+});
+
+describe('what a reader copies out of a merged line', () => {
+  it('copies the line as it is now, without what went out of it', () => {
+    const result = diffText('keep\nthe quick fox', 'keep\nthe slow fox');
+    const layout = unifiedLayout(
+      result.rows,
+      result.changes,
+      changeOfRow(result.rows.length, result.changes),
+      null,
+      true
+    );
+
+    expect(layout.lines[1].merged?.drawn.text).toBe('the quickslow fox');
+    expect(joinLines(layout, 0, 1, 0, 12)).toBe('keep\nthe slow fox');
   });
 });
 

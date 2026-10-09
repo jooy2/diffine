@@ -3,9 +3,10 @@
  *
  * A pane is not the document it is showing. It has numbers down the side, a
  * mark for what happened to each line, a word for a screen reader in front of
- * changed ones, bands standing in for the lines that are folded away, and — in
- * a view holding two documents level — a blank opposite every line the other
- * side does not have. None of that is in the file.
+ * changed ones, bands standing in for the lines that are folded away, in a view
+ * holding two documents level a blank opposite every line the other side does
+ * not have, and in a merged view the words that went out of a line, drawn next
+ * to the ones that came in. None of that is in the file.
  *
  * The columns are already left out of a selection by the stylesheet, which is
  * what `user-select` is for. The blanks are not: they are real empty lines in
@@ -69,6 +70,11 @@ function lineOf(pane: HTMLElement, node: Node): number | null {
  * highlighting and the search between them asked for. The word a screen reader
  * hears is taken back out of the clone: it is in front of every changed line
  * and it is in none of them.
+ *
+ * So is a run that went out, which only a line drawn from two has. That line
+ * stands for its line of `after`, and what went out is not in it — a point in
+ * the middle of such a run is where the run was, which is where the text after
+ * it starts.
  */
 function offsetIn(pane: HTMLElement, row: number, node: Node, offset: number): number {
   const text = pane.querySelector<HTMLElement>(`[data-row="${row}"] .diffine-text`);
@@ -88,8 +94,8 @@ function offsetIn(pane: HTMLElement, row: number, node: Node, offset: number): n
 
   const fragment = range.cloneContents();
 
-  for (const said of fragment.querySelectorAll('.diffine-said')) {
-    said.remove();
+  for (const left of fragment.querySelectorAll('.diffine-said, del')) {
+    left.remove();
   }
 
   return fragment.textContent?.length ?? 0;

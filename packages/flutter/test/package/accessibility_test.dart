@@ -52,6 +52,27 @@ void main() {
     handle.dispose();
   });
 
+  testWidgets('says which words of a merged line went out and which came in', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle handle = tester.ensureSemantics();
+
+    await tester.pumpWidget(
+      host(
+        const TextDiff(before: 'the quick fox', after: 'the slow fox', view: DiffineView.merged),
+      ),
+    );
+
+    final String line = semanticsLabels(
+      tester,
+    ).firstWhere((String label) => label.startsWith('Changed'));
+
+    expect(line, contains('Removed: quick'));
+    expect(line, contains('Added: slow'));
+    expect(line.indexOf('Removed: quick'), lessThan(line.indexOf('Added: slow')));
+    handle.dispose();
+  });
+
   testWidgets('says it in the language it was given', (WidgetTester tester) async {
     final SemanticsHandle handle = tester.ensureSemantics();
 

@@ -17,10 +17,71 @@
 /// as far sideways as the document goes.
 library;
 
+import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:diffine/src/internal/fold.dart';
 import 'package:diffine/src/types.dart';
+
+/// One run of a line drawn from two, and where it sits in all three.
+class MergedRun {
+  /// One run.
+  const MergedRun({required this.edit, required this.start, required this.end});
+
+  /// Where it sits in the two lines, and what happened to it.
+  final DiffEdit edit;
+
+  /// Where it starts in the line as it is drawn.
+  final int start;
+
+  /// Where it ends there, exclusive.
+  final int end;
+}
+
+/// A pair of lines drawn as one.
+///
+/// The drawn line is neither of the two: it is the text they share, with what
+/// went out and what came in next to each other where they differ. So it is
+/// kept apart from [PaneLine.line], which stays the line of `after` that this
+/// stands for — the one a reader copies, and the one handed to anything of the
+/// application's own.
+class MergedLine {
+  /// One pair.
+  const MergedLine({
+    required this.drawn,
+    required this.before,
+    required this.after,
+    required this.runs,
+  });
+
+  /// The line as it is drawn, cut into its equal, deleted and inserted runs.
+  final DiffLine drawn;
+
+  /// The line from `before`.
+  final DiffLine before;
+
+  /// The line from `after`.
+  final DiffLine after;
+
+  /// Where each run of the drawn line came from, in order.
+  final List<MergedRun> runs;
+
+  /// Where a point of the drawn line falls in the line of `after`.
+  ///
+  /// A point inside a run that went out falls where that run was, which is
+  /// where the text after it starts.
+  int afterOffset(int offset) {
+    for (final MergedRun run in runs) {
+      if (offset < run.end) {
+        return run.edit.kind == DiffEditKind.delete
+            ? run.edit.afterStart
+            : run.edit.afterStart + math.max(0, offset - run.start);
+      }
+    }
+
+    return after.text.length;
+  }
+}
 
 /// One line as a pane draws it.
 class PaneLine {
@@ -32,6 +93,7 @@ class PaneLine {
     required this.numbers,
     required this.change,
     this.fold,
+    this.merged,
   });
 
   /// What happened to the row this came from.
@@ -55,6 +117,13 @@ class PaneLine {
   /// so everything that counts lines or measures one of them carries on working
   /// without knowing this is here.
   final FoldRun? fold;
+
+  /// The pair this line draws as one, for a line of [DiffineView.merged].
+  final MergedLine? merged;
+
+  /// The text as it is drawn, which is what sets how wide and how tall the
+  /// line is.
+  String? get drawnText => merged?.drawn.text ?? line?.text;
 }
 
 /// Everything a pane needs to draw, and to be pointed at from outside.
@@ -73,6 +142,83 @@ class PaneLayout {
 
   /// The longest line in the document, which is what sets the width to scroll.
   final PaneLine? widest;
+}
+
+/// How many characters a line takes up on the screen.
+int _drawnLength(PaneLine? drawn) {
+  return drawn?.drawnText?.length ?? 0;
+}
+
+/// The pair of lines in a row drawn as one, or `null` where it cannot be.
+///
+/// Only a row the engine laid the two lines against each other for can be, and
+/// only when what it laid out covers both lines in order. A row comes from
+/// outside as often as from the engine — a `result` worked out somewhere else,
+/// one read back from storage — and runs that point past the end of a line
+/// would draw text that is in neither document. A row like that is drawn as two
+/// lines instead, which is always true.
+MergedLine? mergeRow(DiffRow row) {
+  final DiffLine? before = row.before;
+  final DiffLine? after = row.after;
+  final List<DiffEdit>? edits = row.edits;
+
+  if (row.kind != DiffRowKind.replace ||
+      before == null ||
+      after == null ||
+      edits == null ||
+      edits.isEmpty) {
+    return null;
+  }
+
+  final List<MergedRun> runs = <MergedRun>[];
+  final List<DiffSegment> segments = <DiffSegment>[];
+  final StringBuffer text = StringBuffer();
+  int beforeAt = 0;
+  int afterAt = 0;
+  int cursor = 0;
+
+  for (final DiffEdit edit in edits) {
+    final int beforeLength = edit.beforeEnd - edit.beforeStart;
+    final int afterLength = edit.afterEnd - edit.afterStart;
+    final bool fits =
+        edit.beforeStart == beforeAt &&
+        edit.afterStart == afterAt &&
+        beforeLength >= 0 &&
+        afterLength >= 0 &&
+        edit.beforeEnd <= before.text.length &&
+        edit.afterEnd <= after.text.length &&
+        switch (edit.kind) {
+          DiffEditKind.equal => true,
+          DiffEditKind.delete => afterLength == 0,
+          DiffEditKind.insert => beforeLength == 0,
+        };
+
+    if (!fits) {
+      return null;
+    }
+
+    final String piece = edit.kind == DiffEditKind.delete
+        ? before.text.substring(edit.beforeStart, edit.beforeEnd)
+        : after.text.substring(edit.afterStart, edit.afterEnd);
+
+    runs.add(MergedRun(edit: edit, start: cursor, end: cursor + piece.length));
+    segments.add(DiffSegment(edit.kind, piece));
+    text.write(piece);
+    beforeAt = edit.beforeEnd;
+    afterAt = edit.afterEnd;
+    cursor += piece.length;
+  }
+
+  if (beforeAt != before.text.length || afterAt != after.text.length) {
+    return null;
+  }
+
+  return MergedLine(
+    drawn: DiffLine(index: after.index, text: text.toString(), segments: segments),
+    before: before,
+    after: after,
+    runs: runs,
+  );
 }
 
 /// Which change each row belongs to, or -1 where a row did not change.
@@ -146,7 +292,7 @@ PaneLayout splitLayout(
     positions[row] = lines.length;
     lines.add(drawn);
 
-    if (line != null && (widest == null || line.text.length > (widest.line?.text.length ?? 0))) {
+    if (line != null && (widest == null || line.text.length > _drawnLength(widest))) {
       widest = drawn;
     }
   }
@@ -199,16 +345,24 @@ PaneLayout fieldLayout(List<DiffRow> rows, Int32List owner, DiffineSide side, St
 /// those lines are the same ones a split view marks, because they were worked
 /// out before either view got hold of them.
 ///
+/// With [merge], a pair of lines that were edited rather than replaced is drawn
+/// once instead: the text both share, with what went out and what came in next
+/// to each other inside it. The lines either side of such a pair are drawn the
+/// unified way, a run of them at a time, so a change with nothing worth merging
+/// in it — compared as whole lines, or too far apart to mark — comes out
+/// exactly as it does without [merge].
+///
 /// [PaneLayout.positions] is filled in for the sake of the type it shares with
-/// a split pane. Nothing in a unified view points at a row from outside it:
+/// a split pane. Nothing in a one-column view points at a row from outside it:
 /// there is one pane, so there is nothing to hold level and nothing to draw a
 /// band between.
 PaneLayout unifiedLayout(
   List<DiffRow> rows,
   List<DiffChange> changes,
   Int32List owner,
-  FoldPlan? plan,
-) {
+  FoldPlan? plan, {
+  bool merge = false,
+}) {
   final List<PaneLine> lines = <PaneLine>[];
   final Int32List positions = Int32List(rows.length);
   PaneLine? widest;
@@ -216,22 +370,14 @@ PaneLayout unifiedLayout(
 
   positions.fillRange(0, rows.length, -1);
 
-  void push(DiffRowKind kind, DiffineSide side, DiffLine line, List<int?> numbers, int row) {
-    final PaneLine drawn = PaneLine(
-      kind: kind,
-      side: side,
-      line: line,
-      numbers: numbers,
-      change: owner[row],
-    );
-
+  void push(PaneLine drawn, int row) {
     if (positions[row] < 0) {
       positions[row] = lines.length;
     }
 
     lines.add(drawn);
 
-    if (line.text.length > (widest?.line?.text.length ?? 0)) {
+    if (_drawnLength(drawn) > _drawnLength(widest)) {
       widest = drawn;
     }
   }
@@ -267,10 +413,53 @@ PaneLayout unifiedLayout(
       final DiffLine? after = row.after;
 
       if (before != null && after != null) {
-        push(DiffRowKind.equal, DiffineSide.before, before, <int?>[
-          before.index + 1,
-          after.index + 1,
-        ], cursor);
+        push(
+          PaneLine(
+            kind: DiffRowKind.equal,
+            side: DiffineSide.before,
+            line: before,
+            numbers: <int?>[before.index + 1, after.index + 1],
+            change: owner[cursor],
+          ),
+          cursor,
+        );
+      }
+    }
+  }
+
+  /// A run of changed rows the unified way: every line out, then every line in.
+  void pushApart(int from, int to) {
+    for (int row = from; row < to; row += 1) {
+      final DiffLine? line = rows[row].before;
+
+      if (line != null) {
+        push(
+          PaneLine(
+            kind: DiffRowKind.delete,
+            side: DiffineSide.before,
+            line: line,
+            numbers: <int?>[line.index + 1, null],
+            change: owner[row],
+          ),
+          row,
+        );
+      }
+    }
+
+    for (int row = from; row < to; row += 1) {
+      final DiffLine? line = rows[row].after;
+
+      if (line != null) {
+        push(
+          PaneLine(
+            kind: DiffRowKind.insert,
+            side: DiffineSide.after,
+            line: line,
+            numbers: <int?>[null, line.index + 1],
+            change: owner[row],
+          ),
+          row,
+        );
       }
     }
   }
@@ -279,22 +468,33 @@ PaneLayout unifiedLayout(
     pushUnchanged(change.rowStart);
     band(change.rowStart);
 
-    for (int row = change.rowStart; row < change.rowEnd; row += 1) {
-      final DiffLine? line = rows[row].before;
+    // Where the run of rows not drawn yet starts. A pair drawn as one line ends
+    // that run, so the lines around it stay on the side of it they belong to.
+    int pending = change.rowStart;
 
-      if (line != null) {
-        push(DiffRowKind.delete, DiffineSide.before, line, <int?>[line.index + 1, null], row);
+    for (int row = change.rowStart; merge && row < change.rowEnd; row += 1) {
+      final MergedLine? merged = mergeRow(rows[row]);
+
+      if (merged == null) {
+        continue;
       }
+
+      pushApart(pending, row);
+      push(
+        PaneLine(
+          kind: DiffRowKind.replace,
+          side: DiffineSide.after,
+          line: merged.after,
+          numbers: <int?>[merged.before.index + 1, merged.after.index + 1],
+          change: owner[row],
+          merged: merged,
+        ),
+        row,
+      );
+      pending = row + 1;
     }
 
-    for (int row = change.rowStart; row < change.rowEnd; row += 1) {
-      final DiffLine? line = rows[row].after;
-
-      if (line != null) {
-        push(DiffRowKind.insert, DiffineSide.after, line, <int?>[null, line.index + 1], row);
-      }
-    }
-
+    pushApart(pending, change.rowEnd);
     cursor = change.rowEnd;
   }
 

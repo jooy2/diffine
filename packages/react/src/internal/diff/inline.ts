@@ -13,9 +13,20 @@
  * it picked would be text that was never in the other document. Two lists each
  * hold their own side, so joining a side back together gives the line that was
  * passed in.
+ *
+ * What one list does need is the order, and that is kept beside the two as
+ * offsets rather than text: each run says where it sits in both lines, so a view
+ * drawing the pair as one line takes the text from whichever side it wants and
+ * still knows where the other side's run went.
  */
 
-import type { DiffInlineMode, DiffInlineResult, DiffSegment, DiffWhitespace } from '../../types.js';
+import type {
+  DiffEdit,
+  DiffInlineMode,
+  DiffInlineResult,
+  DiffSegment,
+  DiffWhitespace
+} from '../../types.js';
 import { matchSequences } from './myers.js';
 import { comparisonKey, splitGraphemes, splitWords } from './tokens.js';
 
@@ -27,7 +38,7 @@ export interface InlineOptions {
   maxCost: number;
 }
 
-const NOTHING_IN_COMMON: DiffInlineResult = { before: [], after: [], similarity: 0 };
+const NOTHING_IN_COMMON: DiffInlineResult = { before: [], after: [], similarity: 0, edits: [] };
 
 /** Appends text to a side, joining it to the piece before it where it can. */
 function append(segments: DiffSegment[], kind: DiffSegment['kind'], text: string): void {
@@ -46,6 +57,35 @@ function append(segments: DiffSegment[], kind: DiffSegment['kind'], text: string
   segments.push({ kind, text });
 }
 
+/**
+ * Appends a run to the list both sides share, joining it to the run before it
+ * where it can — two matches with nothing between them are one equal run.
+ */
+function extend(edits: DiffEdit[], kind: DiffEdit['kind'], before: number, after: number): void {
+  if (before === 0 && after === 0) {
+    return;
+  }
+
+  const previous = edits[edits.length - 1];
+  const beforeStart = previous?.beforeEnd ?? 0;
+  const afterStart = previous?.afterEnd ?? 0;
+
+  if (previous && previous.kind === kind) {
+    previous.beforeEnd += before;
+    previous.afterEnd += after;
+
+    return;
+  }
+
+  edits.push({
+    kind,
+    beforeStart,
+    beforeEnd: beforeStart + before,
+    afterStart,
+    afterEnd: afterStart + after
+  });
+}
+
 /** Compares two lines with the tokens `mode` asks for. */
 export function compareInline(
   before: string,
@@ -57,10 +97,19 @@ export function compareInline(
   }
 
   if (before === after) {
+    const whole: DiffEdit = {
+      kind: 'equal',
+      beforeStart: 0,
+      beforeEnd: before.length,
+      afterStart: 0,
+      afterEnd: after.length
+    };
+
     return {
       before: before === '' ? [] : [{ kind: 'equal', text: before }],
       after: after === '' ? [] : [{ kind: 'equal', text: after }],
-      similarity: 1
+      similarity: 1,
+      edits: before === '' ? [] : [whole]
     };
   }
 
@@ -72,13 +121,19 @@ export function compareInline(
 
   const beforeSegments: DiffSegment[] = [];
   const afterSegments: DiffSegment[] = [];
+  const edits: DiffEdit[] = [];
   let beforeCursor = 0;
   let afterCursor = 0;
   let paired = 0;
 
   for (const match of matches) {
-    append(beforeSegments, 'delete', beforeTokens.slice(beforeCursor, match.beforeStart).join(''));
-    append(afterSegments, 'insert', afterTokens.slice(afterCursor, match.afterStart).join(''));
+    const deleted = beforeTokens.slice(beforeCursor, match.beforeStart).join('');
+    const inserted = afterTokens.slice(afterCursor, match.afterStart).join('');
+
+    append(beforeSegments, 'delete', deleted);
+    append(afterSegments, 'insert', inserted);
+    extend(edits, 'delete', deleted.length, 0);
+    extend(edits, 'insert', 0, inserted.length);
 
     const beforeText = beforeTokens
       .slice(match.beforeStart, match.beforeStart + match.length)
@@ -87,20 +142,27 @@ export function compareInline(
 
     append(beforeSegments, 'equal', beforeText);
     append(afterSegments, 'equal', afterText);
+    extend(edits, 'equal', beforeText.length, afterText.length);
     paired += beforeText.length + afterText.length;
 
     beforeCursor = match.beforeStart + match.length;
     afterCursor = match.afterStart + match.length;
   }
 
-  append(beforeSegments, 'delete', beforeTokens.slice(beforeCursor).join(''));
-  append(afterSegments, 'insert', afterTokens.slice(afterCursor).join(''));
+  const deleted = beforeTokens.slice(beforeCursor).join('');
+  const inserted = afterTokens.slice(afterCursor).join('');
+
+  append(beforeSegments, 'delete', deleted);
+  append(afterSegments, 'insert', inserted);
+  extend(edits, 'delete', deleted.length, 0);
+  extend(edits, 'insert', 0, inserted.length);
 
   const total = before.length + after.length;
 
   return {
     before: beforeSegments,
     after: afterSegments,
-    similarity: total === 0 ? 1 : paired / total
+    similarity: total === 0 ? 1 : paired / total,
+    edits
   };
 }

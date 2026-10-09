@@ -39,7 +39,7 @@ class PlaygroundSettings {
     this.afterLabel,
     this.language = 'plain',
     this.detail = DiffInlineMode.word,
-    this.unified = false,
+    this.layout = DiffineView.split,
     this.wrap = false,
     this.numbers = true,
     this.align = true,
@@ -105,7 +105,7 @@ class PlaygroundSettings {
       afterLabel: label('afterLabel'),
       language: text('language', or: fallback.language),
       detail: DiffInlineMode.values.asNameMap()[value['detail']] ?? fallback.detail,
-      unified: flag('unified', or: fallback.unified),
+      layout: DiffineView.values.asNameMap()[value['layout']] ?? fallback.layout,
       wrap: flag('wrap', or: fallback.wrap),
       numbers: flag('numbers', or: fallback.numbers),
       align: flag('align', or: fallback.align),
@@ -163,8 +163,10 @@ class PlaygroundSettings {
   /// What is compared inside a pair of lines that were edited.
   final DiffInlineMode detail;
 
-  /// One column rather than two. Viewer only.
-  final bool unified;
+  /// One document either side, or one column with both. Viewer only.
+  ///
+  /// Not [view], which the pictures have already taken.
+  final DiffineView layout;
 
   /// Whether a long line wraps.
   final bool wrap;

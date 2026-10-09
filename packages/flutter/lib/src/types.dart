@@ -249,7 +249,12 @@ class DiffSegment {
 @immutable
 class DiffInlineResult {
   /// What one pair of lines has in common.
-  const DiffInlineResult({required this.before, required this.after, required this.similarity});
+  const DiffInlineResult({
+    required this.before,
+    required this.after,
+    required this.similarity,
+    this.edits = const <DiffEdit>[],
+  });
 
   /// `before`, broken into equal and delete pieces.
   final List<DiffSegment> before;
@@ -264,6 +269,21 @@ class DiffInlineResult {
   /// in characters, and it is what [DiffOptions.inlineThreshold] is measured
   /// against.
   final double similarity;
+
+  /// The same comparison as one list instead of two: every run of both lines
+  /// in the order a reader meets them, and where it sits in each.
+  ///
+  /// The offsets count the UTF-16 code units of `before` and `after`, which is
+  /// what `String.substring` counts. An equal run covers both lines, a deleted
+  /// run covers `before` only and an inserted run `after` only, and where both
+  /// happened between the same two equal runs the deletion comes first.
+  ///
+  /// This is the one place the two sides are tied to each other. With
+  /// whitespace or case being ignored an equal run is not the same length on
+  /// both sides, so [before] and [after] cannot be laid against each other by
+  /// counting — and drawing the pair as one line, which is what
+  /// [DiffineView.merged] does, needs exactly that.
+  final List<DiffEdit> edits;
 }
 
 /// A run of tokens, and what happened to it.
@@ -328,7 +348,7 @@ class DiffLine {
 @immutable
 class DiffRow {
   /// One row of the comparison.
-  const DiffRow({required this.kind, this.before, this.after});
+  const DiffRow({required this.kind, this.before, this.after, this.edits});
 
   /// What happened over this row.
   final DiffRowKind kind;
@@ -338,6 +358,15 @@ class DiffRow {
 
   /// The line from `after`, or `null` for a blank.
   final DiffLine? after;
+
+  /// How the line on the left became the line on the right, run by run, and
+  /// where each run sits in both. See [DiffInlineResult.edits].
+  ///
+  /// Only a [DiffRowKind.replace] row whose lines were marked inside has
+  /// these, and that is the row [DiffineView.merged] draws as one line. A row
+  /// without them, including one an application built by hand, is drawn as
+  /// two.
+  final List<DiffEdit>? edits;
 
   /// Whichever of the two sides this row asks for.
   DiffLine? side(DiffineSide which) {
@@ -1199,13 +1228,20 @@ enum DiffineMode {
 
 /// How the two documents are laid out.
 ///
-/// A unified column is not a thing to type into, so an editor is always split.
+/// Neither column is a thing to type into, so an editor is always split.
 enum DiffineView {
   /// One document either side, held level with each other.
   split,
 
   /// One column, with what went out above what came in.
   unified,
+
+  /// One column, with an edited line drawn once: the text both versions share,
+  /// and what went out and what came in next to each other inside it.
+  ///
+  /// A pair that has nothing marked inside it — compared as whole lines, or too
+  /// far apart to be worth marking — is drawn as [unified] draws it.
+  merged,
 }
 
 /// The typeface the two documents are drawn in.
@@ -1353,6 +1389,11 @@ class DiffineToken {
 /// Passing this replaces whatever `language` was doing rather than adding to
 /// it. A line has one set of runs, and two highlighters cutting it at once is
 /// not a thing that has an answer.
+///
+/// A line [DiffineView.merged] draws from two is asked about as the two lines
+/// it is, once for each side, and each run of it is coloured by the side its
+/// text came from. The function is only ever handed a whole line of one
+/// document.
 typedef DiffineHighlight = List<DiffineToken>? Function(DiffLine line, DiffineSide side);
 
 /// Something of the application's own, drawn beside or under one line.
@@ -1366,7 +1407,8 @@ typedef DiffineHighlight = List<DiffineToken>? Function(DiffLine line, DiffineSi
 /// It is called for each line a pane draws, so with the rows virtualised it is
 /// called for what is on the screen. A line with nothing opposite it — the
 /// blank that holds the two sides level — is not a line, and nothing is asked
-/// about it.
+/// about it. A line [DiffineView.merged] draws from two is asked about once, as
+/// its line of `after`, which is also what a reader copies out of it.
 typedef DiffineRender = Widget? Function(DiffLine line, DiffineSide side);
 
 /// How the two pictures are laid out.

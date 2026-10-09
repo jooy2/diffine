@@ -110,6 +110,9 @@ const chosen = ref({
   lineNumbers: props.lineNumbers
 });
 
+/** The one-column view the switch turns on: the page's own, where it asked for one. */
+const column: DiffineView = props.view === 'split' ? 'unified' : props.view;
+
 const locale = computed(() => (lang.value.startsWith('ko') ? 'ko' : 'en'));
 
 const labels = computed(() =>
@@ -230,8 +233,8 @@ const { box, frame, embedded, waiting, missing, src } = useFlutterFrame({
       <label v-if="mode === 'viewer'">
         <input
           type="checkbox"
-          :checked="chosen.view === 'unified'"
-          @change="chosen.view = ($event.target as HTMLInputElement).checked ? 'unified' : 'split'"
+          :checked="chosen.view !== 'split'"
+          @change="chosen.view = ($event.target as HTMLInputElement).checked ? column : 'split'"
         />
         {{ labels.view }}
       </label>

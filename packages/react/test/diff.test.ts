@@ -168,6 +168,17 @@ describe('diffText', () => {
     expect(row.after?.segments.map((piece) => piece.text).join('')).toBe(row.after?.text);
   });
 
+  it('lays an edited pair against itself, and nothing else', () => {
+    const result = diffText('same\nthe quick fox\ngone', 'same\nthe slow fox');
+
+    expect(result.rows.map((row) => row.edits?.map((edit) => edit.kind).join(' '))).toEqual([
+      undefined,
+      'equal delete insert equal',
+      undefined
+    ]);
+    expect(diffText('one', 'two', { inline: 'none' }).rows[0].edits).toBeUndefined();
+  });
+
   it('marks nothing inside a pair that has too little in common', () => {
     const [row] = diffText('alpha beta gamma', 'nothing alike at all').rows;
 
@@ -274,6 +285,34 @@ describe('diffWords', () => {
 
     expect(result.before.map((piece) => piece.text).join('')).toBe('Title here');
     expect(result.after.map((piece) => piece.text).join('')).toBe('title there');
+  });
+
+  it('lays the two sides against each other, with what went out first', () => {
+    expect(diffCharacters('abcdef', 'abxxef').edits).toEqual([
+      { kind: 'equal', beforeStart: 0, beforeEnd: 2, afterStart: 0, afterEnd: 2 },
+      { kind: 'delete', beforeStart: 2, beforeEnd: 4, afterStart: 2, afterEnd: 2 },
+      { kind: 'insert', beforeStart: 4, beforeEnd: 4, afterStart: 2, afterEnd: 4 },
+      { kind: 'equal', beforeStart: 4, beforeEnd: 6, afterStart: 4, afterEnd: 6 }
+    ]);
+  });
+
+  it('joins two matches with nothing between them into one equal run', () => {
+    // `abc` is one equal piece on the left and two on the right, which is why
+    // the pieces of the two sides cannot be laid against each other by count.
+    const result = diffCharacters('abc', 'abXc');
+
+    expect(result.before).toEqual([{ kind: 'equal', text: 'abc' }]);
+    expect(result.edits.map((edit) => edit.kind)).toEqual(['equal', 'insert', 'equal']);
+  });
+
+  it('measures an equal run on each side where whitespace made the two lengths differ', () => {
+    const result = diffWords('a  b c', 'a b d', { whitespace: 'amount' });
+
+    expect(result.edits).toEqual([
+      { kind: 'equal', beforeStart: 0, beforeEnd: 5, afterStart: 0, afterEnd: 4 },
+      { kind: 'delete', beforeStart: 5, beforeEnd: 6, afterStart: 4, afterEnd: 4 },
+      { kind: 'insert', beforeStart: 6, beforeEnd: 6, afterStart: 4, afterEnd: 5 }
+    ]);
   });
 });
 

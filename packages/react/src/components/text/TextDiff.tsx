@@ -152,7 +152,9 @@ export interface TextDiffProps extends Omit<
   diff?: DiffOptions;
 
   /**
-   * One document either side, or one column with both. Viewer only.
+   * One document either side, or one column with both — where `unified` draws
+   * an edited line twice, once as it was and once as it is, and `merged` draws
+   * it once with what changed marked inside it. Viewer only.
    * @default 'split'
    */
   view?: DiffineView;
@@ -818,9 +820,11 @@ export function TextDiff({
         : splitLayout(comparison.rows, owner, 'after', aligned, plan),
     [comparison, owner, editing, afterText, aligned, plan]
   );
+  const merging = !split && view === 'merged';
   const oneColumn = React.useMemo(
-    () => (split ? NO_LINES : unifiedLayout(comparison.rows, comparison.changes, owner, plan)),
-    [split, comparison, owner, plan]
+    () =>
+      split ? NO_LINES : unifiedLayout(comparison.rows, comparison.changes, owner, plan, merging),
+    [split, comparison, owner, plan, merging]
   );
 
   const layouts = split ? [beforeLayout, afterLayout] : [oneColumn];
@@ -1116,7 +1120,7 @@ export function TextDiff({
       className={[editing ? 'diffine diffine-editor' : 'diffine', className]
         .filter(Boolean)
         .join(' ')}
-      data-view={split ? 'split' : 'unified'}
+      data-view={split ? 'split' : merging ? 'merged' : 'unified'}
       data-linked={split && connectors}
       data-scheme={colorScheme}
       data-wrap={wrap}

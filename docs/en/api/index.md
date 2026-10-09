@@ -14,11 +14,11 @@ description: 'Every export of Diffine, a page apiece — the two views, the engi
 
 | Import | What it holds | Before it draws |
 | --- | --- | --- |
-| `diffine-react` | The whole comparison: text, pictures, patches and the types. | 2.6 kB |
-| `diffine-react/diff` | The text comparison, on its own. | 2.9 kB |
+| `diffine-react` | The whole comparison: text, pictures, patches and the types. | 2.8 kB |
+| `diffine-react/diff` | The text comparison, on its own. | 3.1 kB |
 | `diffine-react/image` | The picture comparison, on its own. | 4.3 kB |
-| `diffine-react/patch` | Reading and writing a unified diff. | 3.3 kB |
-| `diffine-react/text-diff` | `TextDiff`, and `DIFFINE_LANGUAGES`. | 17.7 kB |
+| `diffine-react/patch` | Reading and writing a unified diff. | 3.5 kB |
+| `diffine-react/text-diff` | `TextDiff`, and `DIFFINE_LANGUAGES`. | 19.0 kB |
 | `diffine-react/image-diff` | `ImageDiff`. | 15.7 kB |
 | `diffine-react/types` | The types on their own, for an application naming one in a prop. | 0 kB |
 | `diffine-react/styles.css` | The stylesheet, for both components. | 4.8 kB |

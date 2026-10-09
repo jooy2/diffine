@@ -110,6 +110,7 @@ export function DiffineRows({
             renderGutter={renderGutter}
             renderWidget={renderWidget}
             invisibles={invisibles}
+            merged={drawn.merged}
           />
         );
       })}
@@ -136,6 +137,7 @@ export function DiffineRows({
             lineNumbers={lineNumbers}
             markers={markers}
             strings={strings}
+            merged={layout.widest.merged}
           />
         </div>
       ) : null}

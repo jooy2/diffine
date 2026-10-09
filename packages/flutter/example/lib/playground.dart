@@ -120,7 +120,7 @@ class _PlaygroundState extends State<Playground> {
       beforeLabel: settings.beforeLabel,
       afterLabel: settings.afterLabel,
       language: _language,
-      view: settings.unified ? DiffineView.unified : DiffineView.split,
+      view: settings.layout,
       alignLines: settings.align,
       wrap: settings.wrap,
       lineNumbers: settings.numbers,

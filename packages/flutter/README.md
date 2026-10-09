@@ -41,28 +41,28 @@ TextDiff(
 
 Every part of the view is an argument with a default, so the widget goes from a full side-by-side down to a bare column of lines without a colour being named:
 
-| Argument         | Default                     | What it decides                                                 |
-| ---------------- | --------------------------- | --------------------------------------------------------------- |
-| `mode`           | `DiffineMode.viewer`        | Whether the two documents are read or written (`.editor`).      |
-| `view`           | `DiffineView.split`         | One document either side, or one column with both (`.unified`). |
-| `lineNumbers`    | `true`                      | Whether each line carries its number.                           |
-| `markers`        | `true`                      | Whether a changed line carries a `+`, `−` or `~` beside it.     |
-| `wrap`           | `false`                     | Whether a long line wraps or runs off the side.                 |
-| `alignLines`     | `true`                      | Whether a line is held level with its counterpart.              |
-| `collapse`       | `false`                     | Whether runs of unchanged lines far from a change are folded.   |
-| `context`        | `3`                         | How many unchanged lines are kept either side of a change.      |
-| `connectors`     | `true`                      | Whether the column between the panes draws each change as a band. |
-| `syncScroll`     | `true`                      | Whether scrolling one pane scrolls the other.                   |
-| `header`         | `true`                      | Whether each side is named above it.                            |
-| `navigation`     | `true`                      | Whether the buttons for moving between changes are drawn.       |
-| `search`         | `true`                      | Whether a reader can search a pane from inside the widget.      |
-| `summary`        | `true`                      | Whether the counts are written under the view.                  |
-| `showInvisibles` | `false`                     | Whether the spaces and tabs inside a line are drawn.            |
-| `height`         | the theme's `384`           | How tall the whole comparison is. `double.infinity` fills its parent. |
-| `scale`          | `1`                         | How large the text and the widget's own controls are drawn, as a multiple. |
-| `colorScheme`    | `DiffineColorScheme.system` | `.light`, `.dark`, or the brightness of the screen around it.   |
-| `locale`         | `DiffineLocale.en`          | The language of the widget's own words. `.ko` is the other.     |
-| `strings`        | —                           | Words to use instead of the locale's.                           |
+| Argument         | Default                     | What it decides                                                              |
+| ---------------- | --------------------------- | ---------------------------------------------------------------------------- |
+| `mode`           | `DiffineMode.viewer`        | Whether the two documents are read or written (`.editor`).                   |
+| `view`           | `DiffineView.split`         | One document either side, or one column with both (`.unified` or `.merged`). |
+| `lineNumbers`    | `true`                      | Whether each line carries its number.                                        |
+| `markers`        | `true`                      | Whether a changed line carries a `+`, `−` or `~` beside it.                  |
+| `wrap`           | `false`                     | Whether a long line wraps or runs off the side.                              |
+| `alignLines`     | `true`                      | Whether a line is held level with its counterpart.                           |
+| `collapse`       | `false`                     | Whether runs of unchanged lines far from a change are folded.                |
+| `context`        | `3`                         | How many unchanged lines are kept either side of a change.                   |
+| `connectors`     | `true`                      | Whether the column between the panes draws each change as a band.            |
+| `syncScroll`     | `true`                      | Whether scrolling one pane scrolls the other.                                |
+| `header`         | `true`                      | Whether each side is named above it.                                         |
+| `navigation`     | `true`                      | Whether the buttons for moving between changes are drawn.                    |
+| `search`         | `true`                      | Whether a reader can search a pane from inside the widget.                   |
+| `summary`        | `true`                      | Whether the counts are written under the view.                               |
+| `showInvisibles` | `false`                     | Whether the spaces and tabs inside a line are drawn.                         |
+| `height`         | the theme's `384`           | How tall the whole comparison is. `double.infinity` fills its parent.        |
+| `scale`          | `1`                         | How large the text and the widget's own controls are drawn, as a multiple.   |
+| `colorScheme`    | `DiffineColorScheme.system` | `.light`, `.dark`, or the brightness of the screen around it.                |
+| `locale`         | `DiffineLocale.en`          | The language of the widget's own words. `.ko` is the other.                  |
+| `strings`        | —                           | Words to use instead of the locale's.                                        |
 
 Only the lines a reader can see are built, whichever way those arguments are set: the panes are lists, so a comparison of twenty thousand lines draws the forty that are on the screen and the scrollbar is still the length of the document.
 

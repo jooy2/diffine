@@ -9,8 +9,9 @@ import type {
   DiffineSide,
   DiffineTextStrings
 } from '../../types.js';
-import type { LineRange } from '../../internal/pieces.js';
-import { splitLine } from '../../internal/pieces.js';
+import type { LinePiece, LineRange } from '../../internal/pieces.js';
+import { disjointRanges, mergeTokens, splitLine } from '../../internal/pieces.js';
+import type { MergedLine } from '../../internal/rows.js';
 import type { SearchMatch } from '../../internal/search.js';
 
 /** What is drawn in the marker column, per side. */
@@ -117,6 +118,13 @@ export interface DiffineLineProps {
   renderWidget?: DiffineRender;
   /** Whether the spaces and tabs inside the line are drawn. */
   invisibles?: boolean;
+  /**
+   * The pair this line draws as one, for a line of a merged view.
+   *
+   * `line` is still the line of `after` it stands for, which is what the
+   * application's gutter and widget are handed.
+   */
+  merged?: MergedLine;
 }
 
 /**
@@ -143,7 +151,8 @@ export function DiffineLine({
   match,
   renderGutter,
   renderWidget,
-  invisibles = false
+  invisibles = false,
+  merged
 }: DiffineLineProps): React.JSX.Element {
   const label = line ? labelFor(strings, kind, side) : null;
   const slot = line && renderGutter ? renderGutter(line, side) : null;
@@ -173,7 +182,16 @@ export function DiffineLine({
       ) : null}
       <span className="diffine-text">
         {label ? <span className="diffine-said">{`${label}: `}</span> : null}
-        {line ? (
+        {merged ? (
+          <DiffineMergedText
+            merged={merged}
+            strings={strings}
+            highlight={highlight}
+            matches={matches}
+            match={match}
+            invisibles={invisibles}
+          />
+        ) : line ? (
           <DiffineLineText
             line={line}
             side={side}
@@ -191,7 +209,9 @@ export function DiffineLine({
     <div
       className="diffine-line"
       data-kind={line ? kind : 'blank'}
-      data-side={side}
+      // A line drawn from two belongs to neither side, so it takes neither
+      // side's tint: most of it is text that did not change.
+      data-side={merged ? 'both' : side}
       {...(row === null ? {} : { 'data-row': row })}
       {...(change < 0 ? {} : { 'data-change': change })}
       {...(current ? { 'data-current': 'true' } : {})}
@@ -205,6 +225,36 @@ export function DiffineLine({
       {widget ? <div className="diffine-row">{body}</div> : body}
       {widget ? <div className="diffine-widget">{widget}</div> : null}
     </div>
+  );
+}
+
+/**
+ * A run of a line that the comparison has nothing to say about, with whatever a
+ * search or a highlighter does.
+ */
+function plainPiece(piece: LinePiece, key: number, invisibles: boolean): React.ReactNode {
+  // A run a search turned up is a `<mark>` for the same reason a run the
+  // comparison turned up is one: it is text picked out of the line for the
+  // reader's benefit rather than text with a colour on it.
+  if (piece.match) {
+    return (
+      <mark
+        key={key}
+        className={piece.className ? `diffine-found ${piece.className}` : 'diffine-found'}
+        data-current={piece.match === 'current' ? 'true' : undefined}
+        style={piece.style}
+      >
+        {marked(piece.text, invisibles)}
+      </mark>
+    );
+  }
+
+  return piece.className || piece.style ? (
+    <span key={key} className={piece.className} style={piece.style}>
+      {marked(piece.text, invisibles)}
+    </span>
+  ) : (
+    <React.Fragment key={key}>{marked(piece.text, invisibles)}</React.Fragment>
   );
 }
 
@@ -239,29 +289,7 @@ function DiffineLineText({
     <>
       {pieces.map((piece, index) => {
         if (piece.kind === 'equal') {
-          // A run a search turned up is a `<mark>` for the same reason a run the
-          // comparison turned up is one: it is text picked out of the line for
-          // the reader's benefit rather than text with a colour on it.
-          if (piece.match) {
-            return (
-              <mark
-                key={index}
-                className={piece.className ? `diffine-found ${piece.className}` : 'diffine-found'}
-                data-current={piece.match === 'current' ? 'true' : undefined}
-                style={piece.style}
-              >
-                {marked(piece.text, invisibles)}
-              </mark>
-            );
-          }
-
-          return piece.className || piece.style ? (
-            <span key={index} className={piece.className} style={piece.style}>
-              {marked(piece.text, invisibles)}
-            </span>
-          ) : (
-            <React.Fragment key={index}>{marked(piece.text, invisibles)}</React.Fragment>
-          );
+          return plainPiece(piece, index, invisibles);
         }
 
         return (
@@ -274,6 +302,88 @@ function DiffineLineText({
           >
             {marked(piece.text, invisibles)}
           </mark>
+        );
+      })}
+    </>
+  );
+}
+
+/**
+ * A pair of lines drawn as one: the text both share, with what went out and
+ * what came in next to each other where they differ.
+ *
+ * What went out is a `<del>` and what came in an `<ins>`, each with the word for
+ * it in front where only a screen reader hears it. On a line that only went out
+ * or only came in, the word in front of the line says which, and the marks
+ * inside it only say where. Here the two are mixed in one line, and without a
+ * word on each run a reader hears both versions run together as one sentence
+ * that neither document holds.
+ *
+ * A run is drawn as one element however many pieces a highlighter or a search
+ * cut it into, so the word is said once per run rather than once per piece.
+ */
+function DiffineMergedText({
+  merged,
+  strings,
+  highlight,
+  matches,
+  match,
+  invisibles
+}: {
+  merged: MergedLine;
+  strings: DiffineTextStrings;
+  highlight?: DiffineHighlight;
+  matches?: readonly SearchMatch[];
+  match?: SearchMatch | null;
+  invisibles: boolean;
+}): React.JSX.Element {
+  const found = matches
+    ? disjointRanges(
+        matches.flatMap((each) =>
+          (each.parts ?? [each]).map((part) => ({
+            start: part.start,
+            end: part.end,
+            current: each === match
+          }))
+        )
+      )
+    : undefined;
+  const tokens = highlight
+    ? mergeTokens(merged, highlight(merged.before, 'before'), highlight(merged.after, 'after'))
+    : null;
+  const pieces = splitLine(merged.drawn, tokens, found) ?? [];
+  // Two runs next to each other are never the same kind, so a run is every
+  // piece up to the next change of kind.
+  const runs: { kind: LinePiece['kind']; pieces: LinePiece[] }[] = [];
+
+  for (const piece of pieces) {
+    const last = runs[runs.length - 1];
+
+    if (last && last.kind === piece.kind) {
+      last.pieces.push(piece);
+    } else {
+      runs.push({ kind: piece.kind, pieces: [piece] });
+    }
+  }
+
+  return (
+    <>
+      {runs.map((run, index) => {
+        const inside = run.pieces.map((piece, at) => plainPiece(piece, at, invisibles));
+
+        if (run.kind === 'equal') {
+          return <React.Fragment key={index}>{inside}</React.Fragment>;
+        }
+
+        const Run = run.kind === 'delete' ? 'del' : 'ins';
+
+        return (
+          <Run key={index} className="diffine-piece" data-kind={run.kind}>
+            <span className="diffine-said">
+              {`${run.kind === 'delete' ? strings.removed : strings.added}: `}
+            </span>
+            {inside}
+          </Run>
         );
       })}
     </>

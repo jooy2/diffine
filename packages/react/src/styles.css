@@ -241,9 +241,9 @@
 /*
  * How wide that gutter is, per view.
  *
- * A unified view puts both documents' numbers down the side, so its gutter is
- * two number columns rather than one. Everything else is the same arithmetic in
- * both views, which is why it is written once here rather than twice.
+ * A view in one column puts both documents' numbers down the side, so its gutter
+ * is two number columns rather than one. Everything else is the same arithmetic
+ * in every view, which is why it is written once here rather than per view.
  */
 
 .diffine[data-numbers='true'] {
@@ -251,7 +251,7 @@
   --diffine-gutter-rule: 1px;
 }
 
-.diffine[data-view='unified'][data-numbers='true'] {
+.diffine:is([data-view='unified'], [data-view='merged'])[data-numbers='true'] {
   --diffine-gutter-numbers: calc(2 * var(--diffine-number-width));
 }
 
@@ -832,6 +832,20 @@ button.diffine-fold:focus-visible {
   background: var(--diffine-delete-piece);
 }
 
+/* A line drawn from two puts both kinds of run on the same line, where the
+   colour is all that would tell them apart. So what went out is struck through
+   as well, which is the mark for text that is not there any more in every
+   medium a reader has met it in. What came in keeps no underline: the strike is
+   enough to tell the two apart, and a line of code underlined in places reads
+   as a line of links. */
+del.diffine-piece {
+  text-decoration-line: line-through;
+}
+
+ins.diffine-piece {
+  text-decoration: none;
+}
+
 /* ---- What a search found -------------------------------------------------
  *
  * Written after the pieces above rather than before them, which is what settles
@@ -1171,7 +1185,7 @@ button.diffine-fold:focus-visible {
 }
 
 /* One pane, so one bar across the whole of it. */
-.diffine[data-view='unified'] .diffine-find-bar {
+.diffine:is([data-view='unified'], [data-view='merged']) .diffine-find-bar {
   grid-template-columns: 1fr;
 }
 

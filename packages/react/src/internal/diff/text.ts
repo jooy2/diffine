@@ -88,8 +88,7 @@ export function changeRows(
     if (beforeSlot >= 0 && afterSlot >= 0) {
       const inside = compareInline(before[beforeSlot], after[afterSlot], options);
       const worthMarking = inside.similarity >= options.inlineThreshold;
-
-      rows.push({
+      const row: DiffRow = {
         kind: 'replace',
         before: {
           index: beforeOffset + beforeSlot,
@@ -101,7 +100,15 @@ export function changeRows(
           text: after[afterSlot],
           segments: worthMarking ? inside.after : []
         }
-      });
+      };
+
+      // Left off rather than empty where there is nothing to draw the pair as
+      // one line with, so a row reads the same whichever way it was built.
+      if (worthMarking && inside.edits.length > 0) {
+        row.edits = inside.edits;
+      }
+
+      rows.push(row);
     } else if (beforeSlot >= 0) {
       rows.push({
         kind: 'delete',

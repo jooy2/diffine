@@ -18,8 +18,41 @@
  * down. The longest line of the whole document is kept for that.
  */
 
-import type { DiffChange, DiffLine, DiffRow, DiffRowKind, DiffineSide } from '../types.js';
+import type {
+  DiffChange,
+  DiffEdit,
+  DiffLine,
+  DiffRow,
+  DiffRowKind,
+  DiffSegment,
+  DiffineSide
+} from '../types.js';
 import type { FoldPlan, FoldRun } from './fold.js';
+
+/** One run of a line drawn from two, and where it sits in all three. */
+export interface MergedRun extends DiffEdit {
+  /** Where the run sits in the line as it is drawn, as a half-open interval. */
+  start: number;
+  end: number;
+}
+
+/**
+ * A pair of lines drawn as one.
+ *
+ * The drawn line is neither of the two: it is the text they share, with what
+ * went out and what came in next to each other where they differ. So it is
+ * kept apart from {@link PaneLine.line}, which stays the line of `after` that
+ * this stands for — the one a reader copies, and the one handed to anything of
+ * the application's own.
+ */
+export interface MergedLine {
+  /** The line as it is drawn, cut into its equal, deleted and inserted runs. */
+  drawn: DiffLine;
+  before: DiffLine;
+  after: DiffLine;
+  /** Where each run of the drawn line came from, in order. */
+  runs: readonly MergedRun[];
+}
 
 /** One line as a pane draws it. */
 export interface PaneLine {
@@ -41,6 +74,8 @@ export interface PaneLine {
    * without knowing this is here.
    */
   fold?: FoldRun;
+  /** The pair this line draws as one, for a line of a merged view. */
+  merged?: MergedLine;
 }
 
 /** Everything a pane needs to draw, and to be pointed at from outside. */
@@ -50,6 +85,74 @@ export interface PaneLayout {
   positions: Int32Array;
   /** The longest line in the document, which is what sets the width to scroll. */
   widest: PaneLine | null;
+}
+
+/** How many characters a line takes up on the screen. */
+function drawnLength(drawn: PaneLine | null): number {
+  return (drawn?.merged?.drawn ?? drawn?.line)?.text.length ?? 0;
+}
+
+/**
+ * The pair of lines in a row drawn as one, or `null` where it cannot be.
+ *
+ * Only a row the engine laid the two lines against each other for can be, and
+ * only when what it laid out covers both lines in order. A row comes from
+ * outside as often as from the engine — a `result` worked out on a server, one
+ * read back from storage — and runs that point past the end of a line would
+ * draw text that is in neither document. A row like that is drawn as two lines
+ * instead, which is always true.
+ */
+export function mergeRow(row: DiffRow): MergedLine | null {
+  const { before, after, edits } = row;
+
+  if (row.kind !== 'replace' || !before || !after || !edits || edits.length === 0) {
+    return null;
+  }
+
+  const runs: MergedRun[] = [];
+  const segments: DiffSegment[] = [];
+  let beforeAt = 0;
+  let afterAt = 0;
+  let cursor = 0;
+
+  for (const edit of edits) {
+    const beforeLength = edit.beforeEnd - edit.beforeStart;
+    const afterLength = edit.afterEnd - edit.afterStart;
+    const fits =
+      edit.beforeStart === beforeAt &&
+      edit.afterStart === afterAt &&
+      beforeLength >= 0 &&
+      afterLength >= 0 &&
+      (edit.kind === 'equal' ||
+        (edit.kind === 'delete' && afterLength === 0) ||
+        (edit.kind === 'insert' && beforeLength === 0));
+
+    if (!fits) {
+      return null;
+    }
+
+    const text =
+      edit.kind === 'delete'
+        ? before.text.slice(edit.beforeStart, edit.beforeEnd)
+        : after.text.slice(edit.afterStart, edit.afterEnd);
+
+    runs.push({ ...edit, start: cursor, end: cursor + text.length });
+    segments.push({ kind: edit.kind, text });
+    beforeAt = edit.beforeEnd;
+    afterAt = edit.afterEnd;
+    cursor += text.length;
+  }
+
+  if (beforeAt !== before.text.length || afterAt !== after.text.length) {
+    return null;
+  }
+
+  return {
+    drawn: { index: after.index, text: segments.map((segment) => segment.text).join(''), segments },
+    before,
+    after,
+    runs
+  };
 }
 
 /** Which change each row belongs to, or -1 where a row did not change. */
@@ -108,7 +211,7 @@ export function splitLayout(
     positions[row] = lines.length;
     lines.push(drawn);
 
-    if (line && (!widest || line.text.length > (widest.line?.text.length ?? 0))) {
+    if (line && (!widest || line.text.length > drawnLength(widest))) {
       widest = drawn;
     }
   }
@@ -165,37 +268,38 @@ export function fieldLayout(
  * lines are the same ones a split view marks, because they were worked out
  * before either view got hold of them.
  *
+ * With `merge`, a pair of lines that were edited rather than replaced is drawn
+ * once instead: the text both share, with what went out and what came in next
+ * to each other inside it. The lines either side of such a pair are drawn the
+ * unified way, a run of them at a time, so a change with nothing worth merging
+ * in it — compared as whole lines, or too far apart to mark — comes out exactly
+ * as it does without `merge`.
+ *
  * `positions` is filled in for the sake of the type it shares with a split
- * pane. Nothing in a unified view points at a row from outside it: there is one
- * pane, so there is nothing to hold level and nothing to draw a band between.
+ * pane. Nothing in a one-column view points at a row from outside it: there is
+ * one pane, so there is nothing to hold level and nothing to draw a band
+ * between.
  */
 export function unifiedLayout(
   rows: readonly DiffRow[],
   changes: readonly DiffChange[],
   owner: Int32Array,
-  plan: FoldPlan | null
+  plan: FoldPlan | null,
+  merge = false
 ): PaneLayout {
   const lines: PaneLine[] = [];
   const positions = new Int32Array(rows.length).fill(-1);
   let widest: PaneLine | null = null;
   let cursor = 0;
 
-  function push(
-    kind: DiffRowKind,
-    side: DiffineSide,
-    line: DiffLine,
-    numbers: (number | null)[],
-    row: number
-  ): void {
-    const drawn: PaneLine = { kind, side, line, numbers, change: owner[row] };
-
+  function push(drawn: PaneLine, row: number): void {
     if (positions[row] < 0) {
       positions[row] = lines.length;
     }
 
     lines.push(drawn);
 
-    if (line.text.length > (widest?.line?.text.length ?? 0)) {
+    if (drawnLength(drawn) > drawnLength(widest)) {
       widest = drawn;
     }
   }
@@ -220,7 +324,53 @@ export function unifiedLayout(
       const row = rows[cursor];
 
       if (row.before && row.after) {
-        push('equal', 'before', row.before, [row.before.index + 1, row.after.index + 1], cursor);
+        push(
+          {
+            kind: 'equal',
+            side: 'before',
+            line: row.before,
+            numbers: [row.before.index + 1, row.after.index + 1],
+            change: owner[cursor]
+          },
+          cursor
+        );
+      }
+    }
+  }
+
+  /** A run of changed rows the unified way: every line out, then every line in. */
+  function pushApart(from: number, to: number): void {
+    for (let row = from; row < to; row += 1) {
+      const line = rows[row].before;
+
+      if (line) {
+        push(
+          {
+            kind: 'delete',
+            side: 'before',
+            line,
+            numbers: [line.index + 1, null],
+            change: owner[row]
+          },
+          row
+        );
+      }
+    }
+
+    for (let row = from; row < to; row += 1) {
+      const line = rows[row].after;
+
+      if (line) {
+        push(
+          {
+            kind: 'insert',
+            side: 'after',
+            line,
+            numbers: [null, line.index + 1],
+            change: owner[row]
+          },
+          row
+        );
       }
     }
   }
@@ -229,22 +379,33 @@ export function unifiedLayout(
     pushUnchanged(change.rowStart);
     band(change.rowStart);
 
-    for (let row = change.rowStart; row < change.rowEnd; row += 1) {
-      const line = rows[row].before;
+    // Where the run of rows not drawn yet starts. A pair drawn as one line ends
+    // that run, so the lines around it stay on the side of it they belong to.
+    let pending = change.rowStart;
 
-      if (line) {
-        push('delete', 'before', line, [line.index + 1, null], row);
+    for (let row = change.rowStart; merge && row < change.rowEnd; row += 1) {
+      const merged = mergeRow(rows[row]);
+
+      if (!merged) {
+        continue;
       }
+
+      pushApart(pending, row);
+      push(
+        {
+          kind: 'replace',
+          side: 'after',
+          line: merged.after,
+          numbers: [merged.before.index + 1, merged.after.index + 1],
+          change: owner[row],
+          merged
+        },
+        row
+      );
+      pending = row + 1;
     }
 
-    for (let row = change.rowStart; row < change.rowEnd; row += 1) {
-      const line = rows[row].after;
-
-      if (line) {
-        push('insert', 'after', line, [null, line.index + 1], row);
-      }
-    }
-
+    pushApart(pending, change.rowEnd);
     cursor = change.rowEnd;
   }
 

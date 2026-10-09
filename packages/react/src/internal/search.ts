@@ -24,7 +24,7 @@
 import * as React from 'react';
 import { useIsomorphicLayoutEffect } from './layout.js';
 import type { RowMetrics } from './metrics.js';
-import type { PaneLayout, PaneLine } from './rows.js';
+import type { MergedLine, PaneLayout, PaneLine } from './rows.js';
 
 /** How a query is read. */
 export interface SearchOptions {
@@ -36,12 +36,26 @@ export interface SearchOptions {
   regex: boolean;
 }
 
+/** A range inside one line, as a half-open interval. */
+export interface LineSpan {
+  start: number;
+  end: number;
+}
+
 /** Where one match sits: which line of the pane, and the range inside it. */
 export interface SearchMatch {
   /** Where the line sits in the pane's own list, which is what is scrolled to. */
   row: number;
   start: number;
   end: number;
+  /**
+   * The runs the match covers, where it does not cover all of `start` to `end`.
+   *
+   * Only a line drawn from two has these. A match in the text of `after` that
+   * runs across a word that went out is drawn either side of that word and not
+   * over it, because the word is not part of what was found.
+   */
+  parts?: readonly LineSpan[];
 }
 
 /** Every match, and whether the scan reached the end of the document. */
@@ -70,6 +84,9 @@ const WORD = /[\p{L}\p{N}_]/u;
 
 /** No matches, as one array rather than a new empty one per render. */
 const NONE: SearchResult = { matches: [], capped: false };
+
+/** No ranges, for the lines with nothing in them, which is most of them. */
+const NO_SPANS: readonly LineSpan[] = [];
 
 /**
  * The expression a query means, or `null` when it does not mean one yet.
@@ -110,13 +127,140 @@ function bounded(text: string, start: number, end: number): boolean {
 }
 
 /**
- * Every match in a pane's lines, in the order the pane draws them.
+ * Every match in one run of text, up to `most` of them.
  *
  * A match of no width is skipped rather than collected. `a*` matches the empty
  * string between every pair of characters, and a search bar that answers "four
  * hundred matches" to a pattern that found nothing is worse than one that
  * answers none.
+ *
+ * The limit is checked inside the line rather than after it, because a single
+ * line can be the whole of a minified file, and one letter typed into the box
+ * is a match every few characters of it.
  */
+function spansIn(
+  text: string,
+  pattern: RegExp,
+  wholeWord: boolean,
+  most: number
+): readonly LineSpan[] {
+  if (text === '' || most <= 0) {
+    return NO_SPANS;
+  }
+
+  const spans: LineSpan[] = [];
+
+  pattern.lastIndex = 0;
+
+  let found = pattern.exec(text);
+
+  while (found) {
+    const start = found.index;
+    const end = start + found[0].length;
+
+    if (end === start) {
+      pattern.lastIndex = start + 1;
+    } else {
+      if (!wholeWord || bounded(text, start, end)) {
+        spans.push({ start, end });
+
+        if (spans.length >= most) {
+          return spans;
+        }
+      }
+
+      pattern.lastIndex = end;
+    }
+
+    found = pattern.exec(text);
+  }
+
+  return spans;
+}
+
+/**
+ * A range of one of the two lines, as the runs of the drawn line it lands on.
+ *
+ * A run whose text is drawn from the other side — an equal run, when whitespace
+ * or case was ignored and the two spellings differ in length — is landed on by
+ * the same distance into it, held inside it.
+ */
+function partsOf(merged: MergedLine, side: 'before' | 'after', span: LineSpan): LineSpan[] {
+  const parts: LineSpan[] = [];
+
+  for (const run of merged.runs) {
+    if (run.kind === (side === 'before' ? 'insert' : 'delete')) {
+      continue;
+    }
+
+    const from = side === 'before' ? run.beforeStart : run.afterStart;
+    const to = side === 'before' ? run.beforeEnd : run.afterEnd;
+
+    if (to <= span.start || from >= span.end) {
+      continue;
+    }
+
+    const width = run.end - run.start;
+    const start = run.start + Math.min(width, Math.max(0, span.start - from));
+    const end = run.start + Math.min(width, Math.min(to, span.end) - from);
+    const last = parts[parts.length - 1];
+
+    if (end <= start) {
+      continue;
+    }
+
+    if (last && last.end === start) {
+      last.end = end;
+    } else {
+      parts.push({ start, end });
+    }
+  }
+
+  return parts;
+}
+
+/**
+ * Every match in a line drawn from two, as ranges of what is drawn.
+ *
+ * The two lines are searched one at a time, so what is found is text one of the
+ * documents actually holds. Searching the drawn line instead would find text
+ * that is in neither — the end of a word that went out run into the start of
+ * the one that came in — and miss a word of `after` with a deletion in the
+ * middle of it.
+ *
+ * What the two lines share is found in both, and counted once.
+ */
+function mergedSpans(
+  merged: MergedLine,
+  pattern: RegExp,
+  wholeWord: boolean,
+  most: number
+): Omit<SearchMatch, 'row'>[] {
+  const found: Omit<SearchMatch, 'row'>[] = [];
+  const seen = new Set<string>();
+
+  for (const side of ['after', 'before'] as const) {
+    for (const span of spansIn(merged[side].text, pattern, wholeWord, most)) {
+      const parts = partsOf(merged, side, span);
+      const key = parts.map((part) => `${part.start}:${part.end}`).join(' ');
+
+      if (parts.length === 0 || seen.has(key)) {
+        continue;
+      }
+
+      seen.add(key);
+      found.push({
+        start: parts[0].start,
+        end: parts[parts.length - 1].end,
+        ...(parts.length > 1 ? { parts } : {})
+      });
+    }
+  }
+
+  return found.sort((a, b) => a.start - b.start || a.end - b.end);
+}
+
+/** Every match in a pane's lines, in the order the pane draws them. */
 export function findMatches(
   lines: readonly PaneLine[],
   pattern: RegExp | null,
@@ -130,35 +274,17 @@ export function findMatches(
   const matches: SearchMatch[] = [];
 
   for (const [row, drawn] of lines.entries()) {
-    const text = drawn.line?.text;
+    const most = limit - matches.length;
+    const spans = drawn.merged
+      ? mergedSpans(drawn.merged, pattern, wholeWord, most)
+      : spansIn(drawn.line?.text ?? '', pattern, wholeWord, most);
 
-    if (!text) {
-      continue;
-    }
+    for (const span of spans) {
+      matches.push({ ...span, row });
 
-    pattern.lastIndex = 0;
-
-    let found = pattern.exec(text);
-
-    while (found) {
-      const start = found.index;
-      const end = start + found[0].length;
-
-      if (end === start) {
-        pattern.lastIndex = start + 1;
-      } else {
-        if (!wholeWord || bounded(text, start, end)) {
-          matches.push({ row, start, end });
-
-          if (matches.length >= limit) {
-            return { matches, capped: true };
-          }
-        }
-
-        pattern.lastIndex = end;
+      if (matches.length >= limit) {
+        return { matches, capped: true };
       }
-
-      found = pattern.exec(text);
     }
   }
 

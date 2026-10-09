@@ -136,6 +136,68 @@ describe('TextDiff, reading', () => {
     ]);
   });
 
+  it('draws an edited line once in a merged view, with what changed inside it', () => {
+    const markup = render({ before: BEFORE, after: AFTER, view: 'merged' });
+
+    expect(markup).toContain('data-view="merged"');
+    expect(linesOf(markup, 'before')).toEqual(['equal 11one', 'equal 33three']);
+    expect(linesOf(markup, 'both')).toEqual(['replace 22~Changed: twoAdded:  changed']);
+    expect(linesOf(markup, 'after')).toEqual(['insert 4+Added: four']);
+    expect(markup).toContain(
+      '<ins class="diffine-piece" data-kind="insert"><span class="diffine-said">Added: </span> changed</ins>'
+    );
+  });
+
+  it('strikes out what went out next to what came in', () => {
+    const markup = render({ before: 'the quick fox', after: 'the slow fox', view: 'merged' });
+
+    expect(markup).toContain(
+      'the <del class="diffine-piece" data-kind="delete"><span class="diffine-said">Removed: </span>quick</del>' +
+        '<ins class="diffine-piece" data-kind="insert"><span class="diffine-said">Added: </span>slow</ins> fox'
+    );
+  });
+
+  it('keeps the lines around a merged one on the side of it they were on', () => {
+    const markup = render({
+      before: 'head\nalpha one\nbeta two\ntail',
+      after: 'head\nalpha 1\nnew\nbeta 2\ntail',
+      view: 'merged'
+    });
+
+    expect(
+      markup
+        .split('<div class="diffine-line"')
+        .slice(1)
+        .map((piece) => /data-kind="([^"]+)"/.exec(piece)?.[1])
+    ).toEqual(['equal', 'replace', 'insert', 'replace', 'equal']);
+  });
+
+  it('draws a change with nothing marked inside it the unified way', () => {
+    const lines = (view: 'unified' | 'merged') =>
+      render({ before: BEFORE, after: AFTER, view, diff: { inline: 'none' } }).replace(
+        /data-view="[a-z]+"/,
+        ''
+      );
+
+    expect(lines('merged')).toBe(lines('unified'));
+  });
+
+  it('draws a pair as two lines where the runs it was handed do not fit it', () => {
+    const result = diffText('the quick fox', 'the slow fox');
+    const broken = {
+      ...result,
+      rows: result.rows.map((row) => ({
+        ...row,
+        edits: row.edits?.map((edit) => ({ ...edit, afterEnd: edit.afterEnd + 40 }))
+      }))
+    };
+    const markup = render({ result: broken, view: 'merged' });
+
+    expect(markup).not.toContain('data-side="both"');
+    expect(markup).toContain('data-kind="delete"');
+    expect(markup).toContain('data-kind="insert"');
+  });
+
   it('picks out the words that moved inside a line', () => {
     const markup = render({ before: 'the quick fox', after: 'the slow fox' });
 
@@ -383,6 +445,22 @@ describe('colouring a line', () => {
     expect(markup).toContain('<span class="all">aaa</span>');
     expect(markup).toContain('<mark class="diffine-piece all" data-kind="delete">bbb</mark>');
     expect(markup).toContain('<mark class="diffine-piece all" data-kind="insert">ccc</mark>');
+  });
+
+  it('colours each run of a merged line the way its own side colours it', () => {
+    const markup = render({
+      before: 'let a = 1;',
+      after: 'const a = 1;',
+      view: 'merged',
+      highlight: (line, side) => [{ length: line.text.indexOf(' '), className: side }]
+    });
+
+    expect(markup).toContain(
+      '<del class="diffine-piece" data-kind="delete"><span class="diffine-said">Removed: </span><span class="before">let</span></del>'
+    );
+    expect(markup).toContain(
+      '<ins class="diffine-piece" data-kind="insert"><span class="diffine-said">Added: </span><span class="after">const</span></ins>'
+    );
   });
 
   it('leaves the line alone when the application has nothing to say about it', () => {

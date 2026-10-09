@@ -8,7 +8,15 @@
 
 - **`DiffineStrings` takes three more words**, so an application that builds one from scratch has to give `imageAdded`, `imageRemoved` and `absent`. One built with `copyWith` over a locale's own table is unaffected.
 
+- **`DiffineView` has a third value, `merged`.** A `switch` over it that names every value needs a case for it.
+
 ### Added
+
+- **`DiffineView.merged` draws an edited line once.** The text both versions share is written once, and what went out is struck through next to what came in, so a reader sees `the quick slow fox` with `quick` struck out instead of one line for each version. A pair with nothing marked inside it, and a line with no counterpart, is drawn the way `DiffineView.unified` draws it, so with `DiffOptions.inline` set to `DiffInlineMode.none` the two views are the same.
+
+  The rest of the widget reads a merged line for what it is. Copying it gives the line as it is now, without what went out. A search looks through both versions of it, so it finds a word that went out as well as a word of the new line with a deletion in the middle of it, and never a run of text that only the drawn line holds. A `highlight` is asked about each side and each run is coloured by its own, `renderGutter` and `renderWidget` are handed the line from `after`, and a screen reader hears which runs went out and which came in.
+
+- **`DiffInlineResult.edits` and `DiffRow.edits` lay the two lines of a pair against each other.** They list every run of both lines in the order a reader meets them, as `DiffEdit`s with where each sits in each line. The two lists of segments cannot be laid against each other by counting once whitespace or case is being ignored, because an equal run is then a different length on each side, and drawing a pair as one line needs exactly that. A row is given `edits` only where its lines were marked inside; one without them, including a row an application built by hand, is drawn as two lines in the merged view. Both are optional arguments, so an object built by hand is unaffected.
 
 - **`absent` compares a picture with the side it arrived on, or went away from.** A file added to a repository has nothing to put on the left and a file deleted from one has nothing to put on the right, and `ImageDiff` read both of those as a comparison waiting for its second picture. Naming the side that has none turns it into the comparison it is: every pixel of the picture that is there comes back as arrived or gone, the bar underneath says which of the two happened, and the empty pane says there is no picture rather than inviting one.
 

@@ -179,7 +179,7 @@ class RowHeights extends ChangeNotifier {
       return lineHeight;
     }
 
-    final String? text = layout.lines[row].line?.text;
+    final String? text = layout.lines[row].drawnText;
     final double width = widths[pane];
 
     if (text == null || text.isEmpty || width <= 0) {

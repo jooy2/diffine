@@ -1,5 +1,6 @@
 import type * as React from 'react';
 import type { DiffEditKind, DiffLine, DiffineToken } from '../types.js';
+import type { MergedLine } from './rows.js';
 
 /** One run of a line, with everything that decides how it is drawn. */
 export interface LinePiece {
@@ -99,4 +100,101 @@ export function splitLine(
   }
 
   return pieces;
+}
+
+/** Appends the part of a line's runs that falls between two offsets of it. */
+function cutTokens(
+  tokens: readonly DiffineToken[] | null | undefined,
+  start: number,
+  end: number,
+  into: DiffineToken[]
+): void {
+  let at = 0;
+
+  for (const token of tokens ?? []) {
+    const from = Math.max(at, start);
+    const to = Math.min(at + token.length, end);
+
+    if (to > from) {
+      into.push({ ...token, length: to - from });
+    }
+
+    at += token.length;
+
+    if (at >= end) {
+      return;
+    }
+  }
+
+  // The runs stopped short of the end, which leaves the rest of the line plain.
+  into.push({ length: end - Math.max(at, start) });
+}
+
+/**
+ * The runs a highlighter gave the two lines of a pair, cut to fit the line
+ * drawn from both of them.
+ *
+ * A highlighter is only ever handed a whole line of a document, because a
+ * grammar applied to a fragment does not come out right — and the drawn line is
+ * a line of neither. So each side is coloured on its own and every run of the
+ * drawn line takes its colours from the side its text came from: a word that
+ * went out the way `before` colours it, and the rest the way `after` does.
+ */
+export function mergeTokens(
+  merged: MergedLine,
+  before: readonly DiffineToken[] | null | undefined,
+  after: readonly DiffineToken[] | null | undefined
+): DiffineToken[] | null {
+  if (!before?.length && !after?.length) {
+    return null;
+  }
+
+  const tokens: DiffineToken[] = [];
+
+  for (const run of merged.runs) {
+    if (run.kind === 'delete') {
+      cutTokens(before, run.beforeStart, run.beforeEnd, tokens);
+    } else {
+      cutTokens(after, run.afterStart, run.afterEnd, tokens);
+    }
+  }
+
+  return tokens;
+}
+
+/**
+ * Ranges that may overlap, as ranges that do not.
+ *
+ * {@link splitLine} walks the matches of a line in order and expects each one to
+ * start after the last one ended, which a single search over a single line
+ * always gives it. A line drawn from two is searched twice, once per side, and
+ * a match in one can sit across a match in the other. Where they overlap, the
+ * one a reader is on wins.
+ */
+export function disjointRanges(ranges: readonly LineRange[]): LineRange[] {
+  const edges = [...new Set(ranges.flatMap((range) => [range.start, range.end]))].sort(
+    (a, b) => a - b
+  );
+  const disjoint: LineRange[] = [];
+
+  for (let index = 0; index + 1 < edges.length; index += 1) {
+    const start = edges[index];
+    const end = edges[index + 1];
+    const covering = ranges.filter((range) => range.start <= start && range.end >= end);
+
+    if (covering.length === 0) {
+      continue;
+    }
+
+    const current = covering.some((range) => range.current);
+    const last = disjoint[disjoint.length - 1];
+
+    if (last && last.end === start && Boolean(last.current) === current) {
+      last.end = end;
+    } else {
+      disjoint.push({ start, end, current });
+    }
+  }
+
+  return disjoint;
 }

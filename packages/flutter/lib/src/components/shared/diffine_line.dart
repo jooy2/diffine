@@ -167,11 +167,27 @@ class DiffineLineWidget extends StatelessWidget {
         ? renderWidget!(line, drawn.side)
         : null;
     final String? said = line != null ? _labelFor(strings, drawn.kind, drawn.side) : null;
-    final Color? tint = rowTint(theme, drawn.kind, drawn.side, line == null);
-    final double scale = DiffineScale.of(context);
-    final Widget? drawnText = line == null
+    final MergedLine? merged = drawn.merged;
+    // A line drawn from two belongs to neither side, so it takes neither
+    // side's tint: most of it is text that did not change.
+    final Color? tint = merged != null
         ? null
-        : _LineText(
+        : rowTint(theme, drawn.kind, drawn.side, line == null);
+    final double scale = DiffineScale.of(context);
+    final Widget? drawnText = merged != null
+        ? _MergedText(
+            theme: theme,
+            merged: merged,
+            strings: strings,
+            wrap: wrap,
+            highlight: highlight,
+            matches: matches,
+            match: match,
+            invisibles: invisibles,
+            scale: scale,
+          )
+        : line != null
+        ? _LineText(
             theme: theme,
             line: line,
             side: drawn.side,
@@ -181,11 +197,12 @@ class DiffineLineWidget extends StatelessWidget {
             match: match,
             invisibles: invisibles,
             scale: scale,
-          );
+          )
+        : null;
     final PaneSelection? pane = selection;
     final Widget? text = drawnText == null || pane == null
         ? drawnText
-        : _SelectableLine(row: row, selection: pane, child: drawnText);
+        : _SelectableLine(drawn: drawn, row: row, selection: pane, child: drawnText);
 
     final Widget body = Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -359,61 +376,189 @@ class _LineText extends StatelessWidget {
             style: base,
             children: <InlineSpan>[
               for (final LinePiece piece in pieces)
-                TextSpan(text: piece.text, style: _styleOf(piece, base)),
+                TextSpan(text: piece.text, style: _styleOf(theme, piece, base)),
             ],
           );
-    final Widget text = Text.rich(
-      span,
-      softWrap: wrap,
-      overflow: wrap ? TextOverflow.clip : TextOverflow.visible,
-      maxLines: wrap ? null : 1,
-    );
 
-    if (!invisibles || !line.text.contains(RegExp(r'[ \t]'))) {
-      return text;
-    }
-
-    return CustomPaint(
-      painter: _InvisiblesPainter(
-        span: span,
-        text: line.text,
-        colour: theme.invisible,
-        direction: Directionality.of(context),
-        wrap: wrap,
-        scale: scale,
-      ),
-      child: text,
+    return _drawLine(
+      context,
+      theme: theme,
+      span: span,
+      text: line.text,
+      wrap: wrap,
+      invisibles: invisibles,
+      scale: scale,
     );
   }
+}
 
-  TextStyle _styleOf(LinePiece piece, TextStyle base) {
-    Color? background;
+/// The style one piece of a line is drawn in.
+///
+/// [struck] is for a line drawn from two, where a run that went out sits on the
+/// same line as one that came in and the colour is all that would tell them
+/// apart. So what went out is struck through as well, which is the mark for
+/// text that is not there any more in every medium a reader has met it in.
+TextStyle _styleOf(DiffineTheme theme, LinePiece piece, TextStyle base, {bool struck = false}) {
+  Color? background;
 
-    if (piece.kind == DiffEditKind.delete) {
-      background = theme.deletePiece;
-    } else if (piece.kind == DiffEditKind.insert) {
-      background = theme.insertPiece;
+  if (piece.kind == DiffEditKind.delete) {
+    background = theme.deletePiece;
+  } else if (piece.kind == DiffEditKind.insert) {
+    background = theme.insertPiece;
+  }
+
+  if (piece.match == PieceMatch.current) {
+    background = theme.searchCurrent;
+  } else if (piece.match == PieceMatch.found) {
+    background = theme.search;
+  }
+
+  final TextStyle? own = piece.style;
+  final DiffineTokenKind? kind = piece.tokenKind;
+  TextStyle style = own ?? (kind == null ? base : base.copyWith(color: theme.code.of(kind)));
+
+  if (struck && piece.kind == DiffEditKind.delete) {
+    style = style.copyWith(decoration: TextDecoration.lineThrough);
+  }
+
+  return background == null ? style : style.copyWith(backgroundColor: background);
+}
+
+/// The text of a line, with the marks for its spaces and tabs behind it where
+/// they are drawn.
+Widget _drawLine(
+  BuildContext context, {
+  required DiffineTheme theme,
+  required InlineSpan span,
+  required String text,
+  required bool wrap,
+  required bool invisibles,
+  required double scale,
+}) {
+  final Widget drawn = Text.rich(
+    span,
+    softWrap: wrap,
+    overflow: wrap ? TextOverflow.clip : TextOverflow.visible,
+    maxLines: wrap ? null : 1,
+  );
+
+  if (!invisibles || !text.contains(RegExp(r'[ \t]'))) {
+    return drawn;
+  }
+
+  return CustomPaint(
+    painter: _InvisiblesPainter(
+      span: span,
+      text: text,
+      colour: theme.invisible,
+      direction: Directionality.of(context),
+      wrap: wrap,
+      scale: scale,
+    ),
+    child: drawn,
+  );
+}
+
+/// A pair of lines drawn as one: the text both share, with what went out and
+/// what came in next to each other where they differ.
+///
+/// Each run that went out or came in has the word for it in front where only a
+/// screen reader hears it. On a line that only went out or only came in, the
+/// word in front of the line says which, and the marks inside it only say
+/// where. Here the two are mixed in one line, and without a word on each run a
+/// reader hears both versions run together as one sentence that neither
+/// document holds.
+///
+/// What a reader copies out of it is the line of `after` it stands for. See
+/// `copy.dart`.
+class _MergedText extends StatelessWidget {
+  const _MergedText({
+    required this.theme,
+    required this.merged,
+    required this.strings,
+    required this.wrap,
+    required this.invisibles,
+    required this.scale,
+    this.highlight,
+    this.matches,
+    this.match,
+  });
+
+  final DiffineTheme theme;
+  final MergedLine merged;
+  final DiffineStrings strings;
+  final bool wrap;
+  final bool invisibles;
+  final double scale;
+  final DiffineHighlight? highlight;
+  final List<SearchMatch>? matches;
+  final SearchMatch? match;
+
+  @override
+  Widget build(BuildContext context) {
+    final TextStyle base = theme.lineStyle;
+    final List<SearchMatch>? matches = this.matches;
+    final List<LineRange>? found = matches == null
+        ? null
+        : disjointRanges(<LineRange>[
+            for (final SearchMatch each in matches)
+              for (final LineSpan part in each.parts ?? <LineSpan>[LineSpan(each.start, each.end)])
+                LineRange(part.start, part.end, current: each == match),
+          ]);
+    final DiffineHighlight? highlight = this.highlight;
+    final List<DiffineToken>? tokens = highlight == null
+        ? null
+        : mergeTokens(
+            merged,
+            highlight(merged.before, DiffineSide.before),
+            highlight(merged.after, DiffineSide.after),
+          );
+    final List<LinePiece> pieces = splitLine(merged.drawn, tokens, found) ?? const <LinePiece>[];
+    final List<InlineSpan> children = <InlineSpan>[];
+    DiffEditKind? previous;
+
+    for (final LinePiece piece in pieces) {
+      // Two runs next to each other are never the same kind, so a piece of a
+      // different kind from the one before it is where a run starts.
+      final bool starts = piece.kind != previous && piece.kind != DiffEditKind.equal;
+      final String? word = !starts
+          ? null
+          : piece.kind == DiffEditKind.delete
+          ? strings.removed
+          : strings.added;
+
+      children.add(
+        TextSpan(
+          text: piece.text,
+          style: _styleOf(theme, piece, base, struck: true),
+          semanticsLabel: word == null ? null : '$word: ${piece.text}',
+        ),
+      );
+      previous = piece.kind;
     }
 
-    if (piece.match == PieceMatch.current) {
-      background = theme.searchCurrent;
-    } else if (piece.match == PieceMatch.found) {
-      background = theme.search;
-    }
-
-    final TextStyle? own = piece.style;
-    final DiffineTokenKind? kind = piece.tokenKind;
-    final TextStyle style =
-        own ?? (kind == null ? base : base.copyWith(color: theme.code.of(kind)));
-
-    return background == null ? style : style.copyWith(backgroundColor: background);
+    return _drawLine(
+      context,
+      theme: theme,
+      span: TextSpan(style: base, children: children),
+      text: merged.drawn.text,
+      wrap: wrap,
+      invisibles: invisibles,
+      scale: scale,
+    );
   }
 }
 
 /// A line's text, registered with the pane's record of what is selected.
 class _SelectableLine extends StatefulWidget {
-  const _SelectableLine({required this.row, required this.selection, required this.child});
+  const _SelectableLine({
+    required this.drawn,
+    required this.row,
+    required this.selection,
+    required this.child,
+  });
 
+  final PaneLine drawn;
   final int row;
   final PaneSelection selection;
   final Widget child;
@@ -423,7 +568,11 @@ class _SelectableLine extends StatefulWidget {
 }
 
 class _SelectableLineState extends State<_SelectableLine> {
-  late final LineSelection _line = LineSelection(row: widget.row, pane: widget.selection);
+  late final LineSelection _line = LineSelection(
+    drawn: widget.drawn,
+    row: widget.row,
+    pane: widget.selection,
+  );
 
   @override
   void initState() {
@@ -447,6 +596,7 @@ class _SelectableLineState extends State<_SelectableLine> {
     }
 
     _line
+      ..drawn = widget.drawn
       ..row = widget.row
       ..pane = widget.selection;
   }

@@ -18,7 +18,10 @@
 /// direction the translation runs in.
 library;
 
+import 'dart:math' as math;
+
 import 'package:diffine/src/internal/rows.dart';
+import 'package:diffine/src/types.dart';
 
 /// How a query is read.
 class SearchOptions {
@@ -44,10 +47,30 @@ class SearchOptions {
   }
 }
 
+/// A range inside one line.
+class LineSpan {
+  /// One range.
+  const LineSpan(this.start, this.end);
+
+  /// Where it starts.
+  final int start;
+
+  /// Where it ends, exclusive.
+  final int end;
+
+  @override
+  bool operator ==(Object other) {
+    return other is LineSpan && other.start == start && other.end == end;
+  }
+
+  @override
+  int get hashCode => Object.hash(start, end);
+}
+
 /// Where one match sits: which line of the pane, and the range inside it.
 class SearchMatch {
   /// One match.
-  const SearchMatch(this.row, this.start, this.end);
+  const SearchMatch(this.row, this.start, this.end, [this.parts]);
 
   /// Where the line sits in the pane's own list, which is what is scrolled to.
   final int row;
@@ -58,13 +81,43 @@ class SearchMatch {
   /// Where it ends, exclusive.
   final int end;
 
+  /// The runs the match covers, where it does not cover all of [start] to
+  /// [end].
+  ///
+  /// Only a line drawn from two has these. A match in the text of `after` that
+  /// runs across a word that went out is drawn either side of that word and
+  /// not over it, because the word is not part of what was found.
+  final List<LineSpan>? parts;
+
   @override
   bool operator ==(Object other) {
-    return other is SearchMatch && other.row == row && other.start == start && other.end == end;
+    return other is SearchMatch &&
+        other.row == row &&
+        other.start == start &&
+        other.end == end &&
+        _sameParts(other.parts, parts);
   }
 
   @override
-  int get hashCode => Object.hash(row, start, end);
+  int get hashCode => Object.hash(row, start, end, parts == null ? null : Object.hashAll(parts!));
+}
+
+bool _sameParts(List<LineSpan>? a, List<LineSpan>? b) {
+  if (a == null || b == null) {
+    return a == b;
+  }
+
+  if (a.length != b.length) {
+    return false;
+  }
+
+  for (int index = 0; index < a.length; index += 1) {
+    if (a[index] != b[index]) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 /// Every match, and whether the scan reached the end of the document.
@@ -134,12 +187,127 @@ bool _bounded(String text, int start, int end) {
   return !_word.hasMatch(left) && !_word.hasMatch(right);
 }
 
-/// Every match in a pane's lines, in the order the pane draws them.
+/// Every match in one run of text, up to [most] of them.
 ///
 /// A match of no width is skipped rather than collected. `a*` matches the empty
 /// string between every pair of characters, and a search bar that answers "four
 /// hundred matches" to a pattern that found nothing is worse than one that
 /// answers none.
+///
+/// The limit is checked inside the line rather than after it, because a single
+/// line can be the whole of a minified file, and one letter typed into the box
+/// is a match every few characters of it.
+List<LineSpan> _spansIn(String text, RegExp pattern, bool wholeWord, int most) {
+  if (text.isEmpty || most <= 0) {
+    return const <LineSpan>[];
+  }
+
+  final List<LineSpan> spans = <LineSpan>[];
+
+  for (final RegExpMatch found in pattern.allMatches(text)) {
+    // A match of no width is not a match. `allMatches` moves on by one
+    // character of its own accord, so there is nothing to do but skip it.
+    if (found.end == found.start) {
+      continue;
+    }
+
+    if (!wholeWord || _bounded(text, found.start, found.end)) {
+      spans.add(LineSpan(found.start, found.end));
+
+      if (spans.length >= most) {
+        break;
+      }
+    }
+  }
+
+  return spans;
+}
+
+/// A range of one of the two lines, as the runs of the drawn line it lands on.
+///
+/// A run whose text is drawn from the other side — an equal run, when
+/// whitespace or case was ignored and the two spellings differ in length — is
+/// landed on by the same distance into it, held inside it.
+List<LineSpan> _partsOf(MergedLine merged, DiffineSide side, LineSpan span) {
+  final List<LineSpan> parts = <LineSpan>[];
+  final DiffEditKind other = side == DiffineSide.before ? DiffEditKind.insert : DiffEditKind.delete;
+
+  for (final MergedRun run in merged.runs) {
+    if (run.edit.kind == other) {
+      continue;
+    }
+
+    final int from = side == DiffineSide.before ? run.edit.beforeStart : run.edit.afterStart;
+    final int to = side == DiffineSide.before ? run.edit.beforeEnd : run.edit.afterEnd;
+
+    if (to <= span.start || from >= span.end) {
+      continue;
+    }
+
+    final int width = run.end - run.start;
+    final int start = run.start + math.min(width, math.max(0, span.start - from));
+    final int end = run.start + math.min(width, math.min(to, span.end) - from);
+
+    if (end <= start) {
+      continue;
+    }
+
+    if (parts.isNotEmpty && parts.last.end == start) {
+      parts.last = LineSpan(parts.last.start, end);
+    } else {
+      parts.add(LineSpan(start, end));
+    }
+  }
+
+  return parts;
+}
+
+/// Every match in a line drawn from two, as ranges of what is drawn.
+///
+/// The two lines are searched one at a time, so what is found is text one of
+/// the documents actually holds. Searching the drawn line instead would find
+/// text that is in neither — the end of a word that went out run into the
+/// start of the one that came in — and miss a word of `after` with a deletion
+/// in the middle of it.
+///
+/// What the two lines share is found in both, and counted once.
+List<SearchMatch> _mergedMatches(
+  int row,
+  MergedLine merged,
+  RegExp pattern,
+  bool wholeWord,
+  int most,
+) {
+  final List<SearchMatch> found = <SearchMatch>[];
+  final Set<String> seen = <String>{};
+
+  for (final DiffineSide side in const <DiffineSide>[DiffineSide.after, DiffineSide.before]) {
+    final String text = side == DiffineSide.after ? merged.after.text : merged.before.text;
+
+    for (final LineSpan span in _spansIn(text, pattern, wholeWord, most)) {
+      final List<LineSpan> parts = _partsOf(merged, side, span);
+      final String key = parts.map((LineSpan part) => '${part.start}:${part.end}').join(' ');
+
+      if (parts.isEmpty || !seen.add(key)) {
+        continue;
+      }
+
+      found.add(
+        SearchMatch(row, parts.first.start, parts.last.end, parts.length > 1 ? parts : null),
+      );
+    }
+  }
+
+  found.sort((SearchMatch a, SearchMatch b) {
+    final int byStart = a.start.compareTo(b.start);
+
+    return byStart != 0 ? byStart : a.end.compareTo(b.end);
+  });
+
+  return found;
+}
+
+/// Every match in a pane's lines, in the order the pane draws them.
 SearchResult findMatches(
   List<PaneLine> lines,
   RegExp? pattern,
@@ -153,25 +321,25 @@ SearchResult findMatches(
   final List<SearchMatch> matches = <SearchMatch>[];
 
   for (int row = 0; row < lines.length; row += 1) {
-    final String? text = lines[row].line?.text;
+    final MergedLine? merged = lines[row].merged;
+    final int most = limit - matches.length;
+    final List<SearchMatch> found = merged != null
+        ? _mergedMatches(row, merged, pattern, wholeWord, most)
+        : <SearchMatch>[
+            for (final LineSpan span in _spansIn(
+              lines[row].line?.text ?? '',
+              pattern,
+              wholeWord,
+              most,
+            ))
+              SearchMatch(row, span.start, span.end),
+          ];
 
-    if (text == null || text.isEmpty) {
-      continue;
-    }
+    for (final SearchMatch match in found) {
+      matches.add(match);
 
-    for (final RegExpMatch found in pattern.allMatches(text)) {
-      // A match of no width is not a match. `allMatches` moves on by one
-      // character of its own accord, so there is nothing to do but skip it.
-      if (found.end == found.start) {
-        continue;
-      }
-
-      if (!wholeWord || _bounded(text, found.start, found.end)) {
-        matches.add(SearchMatch(row, found.start, found.end));
-
-        if (matches.length >= limit) {
-          return SearchResult(matches, true);
-        }
+      if (matches.length >= limit) {
+        return SearchResult(matches, true);
       }
     }
   }

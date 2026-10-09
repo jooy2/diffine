@@ -31,7 +31,12 @@ import { useData } from 'vitepress';
 import { createElement } from 'react';
 import { ImageDiff } from 'diffine-react/image-diff';
 import { TextDiff } from 'diffine-react/text-diff';
-import type { DiffInlineMode, DiffineImageUnchanged, DiffineImageView } from 'diffine-react';
+import type {
+  DiffInlineMode,
+  DiffineImageUnchanged,
+  DiffineImageView,
+  DiffineView
+} from 'diffine-react';
 import 'diffine-react/styles.css';
 import { useFlutterFrame } from '../flutter';
 import { useReactIsland } from '../island';
@@ -50,6 +55,7 @@ const SHOTS: readonly Shot[] = ['retouched', 'moved', 'saved', 'badge', 'blank']
 const VIEWS: readonly DiffineImageView[] = ['split', 'overlay', 'wipe', 'mask'];
 const RESTS: readonly DiffineImageUnchanged[] = ['keep', 'dim', 'hide'];
 const DETAILS: readonly DiffInlineMode[] = ['word', 'character', 'none'];
+const LAYOUTS: readonly DiffineView[] = ['split', 'unified', 'merged'];
 
 const WORDS = {
   en: {
@@ -70,7 +76,8 @@ const WORDS = {
       blank: 'Nothing — paste your own'
     },
     details: { word: 'Words', character: 'Characters', none: 'Whole lines' },
-    unified: 'Unified',
+    layout: 'Lay them out',
+    layouts: { split: 'Side by side', unified: 'Unified', merged: 'Merged' },
     wrap: 'Wrap',
     numbers: 'Numbers',
     align: 'Align',
@@ -114,7 +121,8 @@ const WORDS = {
       blank: '빈 문서 — 직접 붙여 넣기'
     },
     details: { word: '단어', character: '글자', none: '줄만' },
-    unified: '한 줄로 보기',
+    layout: '배치',
+    layouts: { split: '나란히', unified: '위아래로', merged: '한 줄로 합쳐서' },
     wrap: '줄 바꿈',
     numbers: '줄 번호',
     align: '줄 맞추기',
@@ -166,7 +174,7 @@ const mode = ref<Mode>('text');
 const editing = ref(true);
 const pick = ref<Pick>('code');
 const options = ref({
-  unified: false,
+  layout: 'split' as DiffineView,
   wrap: false,
   numbers: true,
   align: true,
@@ -288,14 +296,14 @@ function restart(chosen: Pick): void {
 watch(pick, restart);
 
 /*
- * A field cannot be a unified column, so the unified view and editing take
- * turns: asking for one gives up the other, and what was typed stays with the
- * page either way.
+ * A field cannot be a column holding both documents, so the views with one
+ * column and editing take turns: asking for one gives up the other, and what
+ * was typed stays with the page either way.
  */
 watch(
-  () => options.value.unified,
-  (unified) => {
-    if (unified) {
+  () => options.value.layout,
+  (layout) => {
+    if (layout !== 'split') {
       editing.value = false;
     }
   }
@@ -303,7 +311,7 @@ watch(
 
 watch(editing, (on) => {
   if (on) {
-    options.value.unified = false;
+    options.value.layout = 'split';
   }
 });
 
@@ -406,7 +414,7 @@ function draw() {
     key,
     before,
     after,
-    view: options.value.unified ? 'unified' : 'split',
+    view: options.value.layout,
     alignLines: options.value.align,
     languageLabel: true,
     language: language.value
@@ -546,7 +554,7 @@ function tell(): void {
       afterLabel: documents.afterLabel ?? '',
       language: language.value,
       detail: options.value.detail,
-      unified: options.value.unified,
+      layout: options.value.layout,
       wrap: options.value.wrap,
       numbers: options.value.numbers,
       align: options.value.align,
@@ -693,6 +701,19 @@ watch(missing, () => void nextTick(measure));
           </option>
         </select>
       </label>
+      <!--
+        Always there, although the editor has no view with one column: hidden
+        while editing, it was a choice nobody found. Choosing one turns editing
+        off instead, which is the one way the two can both be true.
+      -->
+      <label class="play-field">
+        <span>{{ words.layout }}</span>
+        <select v-model="options.layout">
+          <option v-for="name in LAYOUTS" :key="name" :value="name">
+            {{ words.layouts[name] }}
+          </option>
+        </select>
+      </label>
       <label class="play-field">
         <span>{{ words.scale }}</span>
         <input type="range" min="75" max="150" step="12.5" v-model.number="scale" />
@@ -706,15 +727,6 @@ watch(missing, () => void nextTick(measure));
         <label>
           <input type="checkbox" v-model="editing" />
           {{ words.editing }}
-        </label>
-        <!--
-          Always there, although the editor has no unified view: hidden while
-          editing, it was a switch nobody found. Turning it on turns editing
-          off instead, which is the one way the two can both be true.
-        -->
-        <label>
-          <input type="checkbox" v-model="options.unified" />
-          {{ words.unified }}
         </label>
         <label>
           <input type="checkbox" v-model="options.wrap" />

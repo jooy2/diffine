@@ -32,7 +32,95 @@ List<String> found(String text, String query, {SearchOptions options = const Sea
   ).matches.map((SearchMatch match) => '${match.row}:${match.start}-${match.end}').toList();
 }
 
+/// The one line `abcdef` against `abxxef` is drawn as, which reads `abcdxxef`.
+List<PaneLine> merged() {
+  final DiffResult result = diffText(
+    'abcdef',
+    'abxxef',
+    const DiffOptions(inline: DiffInlineMode.character),
+  );
+
+  return unifiedLayout(
+    result.rows,
+    result.changes,
+    changeOfRow(result.rows.length, result.changes),
+    null,
+    merge: true,
+  ).lines;
+}
+
+/// Every match in [merged], as the runs of the drawn line it covers.
+List<String> foundMerged(String query, {SearchOptions options = const SearchOptions()}) {
+  final List<PaneLine> lines = merged();
+
+  return findMatches(lines, patternFor(query, options), options.wholeWord).matches
+      .map(
+        (SearchMatch match) => (match.parts ?? <LineSpan>[LineSpan(match.start, match.end)])
+            .map(
+              (LineSpan part) =>
+                  lines[match.row].merged!.drawn.text.substring(part.start, part.end),
+            )
+            .join('+'),
+      )
+      .toList();
+}
+
 void main() {
+  group('findMatches in a merged view', () {
+    test('finds a word of the new line across what went out of it', () {
+      expect(foundMerged('abxx'), <String>['ab+xx']);
+    });
+
+    test('finds a word that went out', () {
+      expect(foundMerged('bcd'), <String>['bcd']);
+    });
+
+    test('counts what both lines share once', () {
+      expect(foundMerged('ab'), <String>['ab']);
+      expect(foundMerged('f'), <String>['f']);
+    });
+
+    test('finds nothing that only the drawn line holds', () {
+      expect(foundMerged('dx'), isEmpty);
+    });
+
+    test('comes back in the order the line is drawn', () {
+      final List<SearchMatch> matches = findMatches(
+        merged(),
+        patternFor('[bdx]', const SearchOptions(regex: true)),
+        false,
+      ).matches;
+
+      expect(matches.map((SearchMatch match) => match.start), <int>[1, 3, 4, 5]);
+    });
+  });
+
+  group('disjointRanges', () {
+    test('cuts ranges that cross into ranges that do not, the current one winning', () {
+      final List<LineRange> ranges = disjointRanges(const <LineRange>[
+        LineRange(0, 4),
+        LineRange(2, 6, current: true),
+      ]);
+
+      expect(
+        ranges.map((LineRange range) => '${range.start}-${range.end} ${range.current}'),
+        <String>['0-2 false', '2-6 true'],
+      );
+    });
+
+    test('leaves a gap between two ranges as a gap', () {
+      final List<LineRange> ranges = disjointRanges(const <LineRange>[
+        LineRange(0, 2),
+        LineRange(4, 6),
+      ]);
+
+      expect(ranges.map((LineRange range) => '${range.start}-${range.end}'), <String>[
+        '0-2',
+        '4-6',
+      ]);
+    });
+  });
+
   group('patternFor', () {
     test('looks for the query as the text it is, punctuation included', () {
       expect(found('a.b\naxb', 'a.b'), <String>['0:0-3']);
